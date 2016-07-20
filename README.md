@@ -1,5 +1,5 @@
 # memalloy
-Memory consistency modelling using Alloy
+Memory consistency modelling using Alloy.
 
 Alloy models can be executed in
 [AlloyStar](http://alloy.mit.edu/alloy/hola/). An unofficial copy of
