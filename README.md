@@ -16,4 +16,14 @@ tips:
 * When opening a solution in the Alloy Visualizer, change the
   *Projection* setting from *None* to *Exec*. This makes solutions much more
   readable.
-  
+
+## Directory structure
+
+* **hw**: architecture-level memory consistency models
+
+* **sw**: language-level memory consistency models
+
+* **mappings**: language-to-architecture compiler mappings
+
+* **tests**: questions about memory consistency models and the
+relationships between them
