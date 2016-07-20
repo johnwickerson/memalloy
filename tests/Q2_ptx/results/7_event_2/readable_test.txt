@@ -1,0 +1,19 @@
+CTA1
+T1
+a:W;
+b:membar.cta;
+c:W;
+
+T2
+d:R;
+e:membar.sys;
+f:W;
+
+CTA2
+T3
+g:W
+
+--------------
+f -> a (co)
+g -> d (rf)
+b -> g (co)

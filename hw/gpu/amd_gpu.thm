@@ -1,0 +1,70 @@
+<?xml version="1.0"?>
+<alloy>
+
+<view>
+
+<defaultnode/>
+
+<defaultedge/>
+
+<node>
+   <type name="Action"/>
+   <type name="CacheEntry"/>
+   <type name="CLEAN"/>
+   <type name="DIRTY"/>
+   <type name="Fetch"/>
+   <type name="FlushDone"/>
+   <type name="FlushLoc"/>
+   <type name="GState"/>
+   <type name="Inst"/>
+   <type name="Int"/>
+   <type name="Inv"/>
+   <type name="INVALID"/>
+   <type name="Load"/>
+   <type name="LState"/>
+   <type name="MemEntry"/>
+   <type name="Store"/>
+   <type name="String"/>
+   <type name="univ"/>
+   <type name="VALID"/>
+   <type name="Zero"/>
+   <type name="seq/Int"/>
+   <set name="$mp_a0" type="Action"/>
+   <set name="$mp_a1" type="Action"/>
+   <set name="$mp_a2" type="Action"/>
+   <set name="$mp_a3" type="Action"/>
+   <set name="$mp_a4" type="Action"/>
+   <set name="$mp_a5" type="Action"/>
+   <set name="$mp_a6" type="Action"/>
+   <set name="$mp_a7" type="Action"/>
+   <set name="$mp_a8" type="Action"/>
+   <set name="$mp_a9" type="Action"/>
+   <set name="$mp_x" type="Loc"/>
+   <set name="$mp_y" type="Loc"/>
+   <set name="integer/Bit" type="Int"/>
+</node>
+
+<node visible="no">
+   <type name="Freshness"/>
+   <type name="Hygiene"/>
+   <type name="Loc"/>
+   <type name="Val"/>
+</node>
+
+<edge attribute="yes">
+   <relation name="fr"> <type name="CacheEntry"/> <type name="Freshness"/> </relation>
+   <relation name="hy"> <type name="CacheEntry"/> <type name="Hygiene"/> </relation>
+   <relation name="rval"> <type name="Load"/> <type name="Val"/> </relation>
+   <relation name="val"> <type name="MemEntry"/> <type name="Val"/> </relation>
+   <relation name="wval"> <type name="Store"/> <type name="Val"/> </relation>
+</edge>
+
+<edge visible="no">
+   <relation name="same_thd"> <type name="Action"/> <type name="Action"/> </relation>
+   <relation name="same_wg"> <type name="Action"/> <type name="Action"/> </relation>
+   <relation name="then"> <type name="Action"/> <type name="Action"/> </relation>
+</edge>
+
+</view>
+
+</alloy>
