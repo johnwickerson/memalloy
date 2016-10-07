@@ -11,14 +11,22 @@ published in the following paper:
   Proc. *Principles of Programming Languages (POPL)*, 2017. To
   appear. [[Preprint]](http://johnwickerson.github.io/papers/memalloy.pdf).
 
-Memory consistency modelling using Alloy.
+The main results are summarised in Table 2 on
+[page 11 of the paper](http://johnwickerson.github.io/papers/memalloy.pdf#page=11). The
+aim of this page is to give instructions for reproducing the results
+in that table.
 
-Alloy models can be executed in
-[AlloyStar](http://alloy.mit.edu/alloy/hola/). An unofficial copy of
-AlloyStar, incorporating a couple of minor tweaks, can be downloaded
+## Getting Started
+
+Most of our models rely only on
+[the basic Alloy tool](http://alloy.csail.mit.edu/alloy/), but some
+depend on the higher-order quantification that is only supported in
+[the AlloyStar tool](http://alloy.mit.edu/alloy/hola/). An unofficial copy of
+AlloyStar (incorporating a couple of minor tweaks) can be downloaded
 from
-[a GitHub repository](https://github.com/johnwickerson/AlloyStar). Some
-tips:
+[our GitHub repository](https://github.com/johnwickerson/AlloyStar).
+
+Some tips:
 
 * Set the solver to *Glucose* or *Plingeling*, set the maximum memory
   usage and stack size as high as possible (e.g. 4GB of memory and
