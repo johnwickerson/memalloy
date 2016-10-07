@@ -9,7 +9,7 @@ published in the following paper:
   [George A. Constantinides](http://cas.ee.ic.ac.uk/people/gac1/),
   "Automatically Comparing Memory Consistency Models", in
   Proc. *Principles of Programming Languages (POPL)*, 2017. To
-  appear. [Preprint](http://johnwickerson.github.io/papers/memalloy.pdf)
+  appear. [[Preprint]](http://johnwickerson.github.io/papers/memalloy.pdf).
 
 Memory consistency modelling using Alloy.
 
