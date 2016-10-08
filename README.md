@@ -16,28 +16,18 @@ The main results are summarised in Table 2 on
 aim of this page is to give instructions for reproducing the results
 in that table.
 
-## Getting Started
+## Installation
 
 Most of our models rely only on
 [the basic Alloy tool](http://alloy.csail.mit.edu/alloy/), but some
 depend on the higher-order quantification that is only supported in
-[the AlloyStar tool](http://alloy.mit.edu/alloy/hola/). An unofficial copy of
-AlloyStar (incorporating a couple of minor tweaks) can be downloaded
-from
+[the AlloyStar tool](http://alloy.mit.edu/alloy/hola/). An unofficial
+copy of AlloyStar (incorporating a couple of minor tweaks) can be
+downloaded from
 [our GitHub repository](https://github.com/johnwickerson/AlloyStar).
 
-Some tips:
-
-* Set the solver to *Glucose* or *Plingeling*, set the maximum memory
-  usage and stack size as high as possible (e.g. 4GB of memory and
-  64MB of stack), and set the maximum number of CEGIS iterations to 0
-  (which indicates 'no maximum').
-  
-* When opening a solution in the Alloy Visualizer, change the
-  *Projection* setting from *None* to *Exec*. This makes solutions much more
-  readable.
-
-## Directory structure
+The files in this repository can be downloaded and then opened individually
+in Alloy. This repository is structured into four subdirectories:
 
 * **hw**: architecture-level memory consistency models
 
@@ -47,3 +37,19 @@ Some tips:
 
 * **tests**: questions about memory consistency models and the
 relationships between them
+
+## Running Alloy
+
+* Set the solver to *Glucose* or *Plingeling* (via `Options ->
+  Solver`).
+
+* Set the maximum memory usage and stack size as high as possible,
+  e.g. 4GB of memory and 64MB of stack (via `Options -> Maximum
+  memory` and `Options -> Maximum stack`).
+
+* Set the maximum number of CEGIS iterations to 0, which indicates 'no
+  maximum' (via `Options -> Max CEGIS iterations`).
+  
+* When opening a solution in the Alloy Visualizer, change the
+  *Projection* setting from *None* to *Exec*. This makes solutions much more
+  readable.
