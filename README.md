@@ -29,26 +29,29 @@ downloaded from
 The files in this repository can be downloaded and then opened individually
 in Alloy. This repository is structured into four subdirectories:
 
-* **hw**: architecture-level memory consistency models
+* `hw`: architecture-level memory consistency models
 
-* **sw**: language-level memory consistency models
+* `sw`: language-level memory consistency models
 
-* **mappings**: language-to-architecture compiler mappings
+* `mappings`: language-to-architecture compiler mappings
 
-* **tests**: questions about memory consistency models and the
+* `tests`: questions about memory consistency models and the
 relationships between them
 
 ## Running Alloy
 
-* Set the solver to *Glucose* or *Plingeling* (via `Options ->
+* Set the solver to *Glucose* or *Plingeling* (via `Options →
   Solver`).
 
 * Set the maximum memory usage and stack size as high as possible,
-  e.g. 4GB of memory and 64MB of stack (via `Options -> Maximum
-  memory` and `Options -> Maximum stack`).
+  e.g. 4GB of memory and 64MB of stack (via `Options → Maximum
+  memory` and `Options → Maximum stack`).
 
 * Set the maximum number of CEGIS iterations to 0, which indicates 'no
-  maximum' (via `Options -> Max CEGIS iterations`).
+maximum' (via `Options → Max CEGIS iterations`).
+
+* Open an Alloy model file, e.g. `tests/Q2_c11_simp/question.als` (via
+`File → Open...`). 
   
 * When opening a solution in the Alloy Visualizer, change the
   *Projection* setting from *None* to *Exec*. This makes solutions much more
