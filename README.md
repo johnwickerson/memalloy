@@ -41,18 +41,43 @@ relationships between them
 ## Running Alloy
 
 * Set the solver to *Glucose* or *Plingeling* (via `Options →
-  Solver`).
-
-* Set the maximum memory usage and stack size as high as possible,
+  Solver`). Set the maximum memory usage and stack size as high as possible,
   e.g. 4GB of memory and 64MB of stack (via `Options → Maximum
-  memory` and `Options → Maximum stack`).
-
-* Set the maximum number of CEGIS iterations to 0, which indicates 'no
-maximum' (via `Options → Max CEGIS iterations`).
+  memory` and `Options → Maximum stack`). Set the maximum number of
+  CEGIS iterations to 0, which indicates 'no maximum' (via `Options →
+  Max CEGIS iterations`).
 
 * Open an Alloy model file, e.g. `tests/Q2_c11_simp/question.als` (via
-`File → Open...`). 
+`File → Open...`).
+
+* Run a command by picking it from the `Execute` menu (e.g. `Execute →
+Run gp for exactly 1 Exec, 5 E expect 1`).
+
+* Alloy will respond with either "No instance found" or "Instance
+  found". In the latter case, click on "Instance" to load the Alloy
+  Visualizer.
   
-* When opening a solution in the Alloy Visualizer, change the
-  *Projection* setting from *None* to *Exec*. This makes solutions much more
-  readable.
+* When opening an instance in the Alloy Visualizer, change the
+  `Projection` setting from `none` to `Exec`. This greatly improves
+  readability. If the instance involves two executions, click on the
+  `<<` and `>>` buttons at the bottom to switch between them. If the
+  instance involves separate hardware and software executions, project
+  over both types of execution at the same time for maximum
+  readability.
+
+* In the Alloy Visualizer, the `Theme` button allows nodes and edges
+to be hidden or restyled according to their type.
+
+
+## Reproducing Results
+
+| hello  | testing  | blah  | foo  | qux  |
+|---|:---:|---:|---|---|
+| 1  | 2  | 3  | 4  |  5 |
+
+## Going Further
+
+* For learning more about the Alloy language, the definitive reference
+  is [Daniel Jackson's book](http://softwareabstractions.org/). There
+  is also a good
+  [online tutorial](http://alloy.mit.edu/alloy/tutorials/online/).
