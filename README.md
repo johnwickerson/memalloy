@@ -85,11 +85,9 @@ of SAT solving. Finally, the **Instance?** column reports whether an
 instance is found or not.
 
 | Task | File | Command | Solver | Time /s | Instance? |
-|------|------|---------|--------|------|-----------|
-| 1    | `tests/Q2_c11_sra_simp/question.als` | `run gp for 1 Exec, 6
-E, 3 Int expect 1` | *Glucose* | 0.7+0.6 | yes |
-| 2    | `tests/Q2_c11_swrf_simp/question.als` | `run p1 for 1 Exec, 7
-E, 4 Int expect 0` | *Glucose* | 0.8+625 | no |
+|------|------|---------|--------|---------|-----------|
+| 1 | `tests/Q2_c11_sra_simp/question.als` | `run gp for 1 Exec, 6 E, 3 Int expect 1` | *Glucose* | 0.7+0.6 | yes |
+| 2 | `tests/Q2_c11_swrf_simp/question.als` | `run p1 for 1 Exec, 7 E, 4 Int expect 0` | *Glucose* | 0.8+625 | no |
 
 ## Going Further
 
