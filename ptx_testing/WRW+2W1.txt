@@ -1,0 +1,7 @@
+irreflexive [
+             ((X.rf) & intra_gl_raw[X]) .
+             (((X.R) -> (X.W)) & cta_fence_raw[X] - X.sloc) .
+             ((X.co) & intra_cta_raw[X]) .
+             (((X.W) -> (X.W)) & gl_fence_raw[X] - X.sloc) .
+             ((X.co) & intra_gl_raw[X])
+            ]

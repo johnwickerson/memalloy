@@ -4,7 +4,6 @@ open relations[E]
 sig Exec {
   ev : set E, // domain of all events
   W, R, F : set E, // writes, reads, fences
-  I : set E, // initial writes
   naL : set E, // events accessing non-atomic locations
   sb : E -> E, // sequenced before
   ad : E -> E, // address dependency
@@ -21,12 +20,6 @@ sig Exec {
     
   // fences are disjoint from accesses
   no ((R + W) & F)
-
-  // initial events are writes
-  I in W - R
-
-  // at most one initial write per location
-  (I -> I) & sloc in iden
     	
   // sequenced-before is intra-thread
   sb in sthd
@@ -62,8 +55,8 @@ sig Exec {
   // of dependencies
   //transitive[cd]
 
-  // sthd is an equivalence relation among non-initial events
-  is_equivalence[sthd, ev - I]
+  // sthd is an equivalence relation
+  is_equivalence[sthd, ev]
     
   // loc is an equivalence relation among reads and writes
   is_equivalence[sloc, R + W]
@@ -71,7 +64,7 @@ sig Exec {
   // naL contains zero or more sloc-classes
   naL . sloc = naL
 
-  // rf in W one -> R
+  rf in W lone -> R
   rf in sloc
 
   // co is acyclic and transitive
@@ -81,24 +74,6 @@ sig Exec {
   // total orders on writes to x
   (co + ~co) = ((W - naL) -> (W - naL)) & sloc - iden
   	
-}
-
-pred withinit[x:Exec] {
-  // rf connects each read to exactly one write
-  x.rf in x.W one -> x.R
-
-  // for every event that accesses a location, there is
-  // exactly one initial event at the same location
-  all e : x.(R+W) | one (e.(x.sloc) & x.I)
-
-  // initial writes have no co-predecessor
-  all e : x.I | no e.~(x.co)
-}
-
-pred withoutinit[x:Exec] {
-  // rf connects each read to at most one write
-  x.rf in x.W lone -> x.R
-  no x.I
 }
 
 fun fr_init[x:Exec] : E->E {
@@ -130,15 +105,6 @@ pred total_sb[x : Exec] {
 pred forced_co[x : Exec] {
   (imm[x.co]) . (imm[x.co]) . ~(imm[x.co]) in
     (rc[x.rf]) . (rc[(x.sb) . (rc[~(x.rf)])])
-}
-
-pred forced_co_init[x : Exec] {
-  ~(imm[x.co]) . (imm[x.co]) . (imm[x.co]) . (imm[x.co]) . ~(imm[x.co]) in
-    (rc[x.rf]) . (rc[(x.sb) . (rc[~(x.rf)])])
-}
-
-pred forced_co_efficient[x : Exec] {
-  x.co in (rc[x.rf]) . (rc[(x.sb) . (rc[~(x.rf)])])
 }
 
 pred no_if_zero[x:Exec] {

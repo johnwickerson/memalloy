@@ -11,19 +11,9 @@ fun sbF[x : Exec_C] : E -> E {
   (x.sb) . (stor[x.F])
 }
 
-// fun rs[x : Exec_C] : E -> E {
-//   let rs_prime = x.sthd + (x.ev -> (x.(R & W))) |
-//   (x.co & rs_prime) - ((x.co - rs_prime) . (x.co))
-// }
-
 fun rs[x : Exec_C] : E -> E {
   *(x.sb & x.sloc) . *(x.rf)
 }
-
-// fun sw[x : Exec_C] : E -> E {
-//   ((stor[x.rel]) . (rc[Fsb[x]]) . (stor[x.(A & W)]) . (rc[rs[x]]) .
-//        (x.rf) . (stor[x.(R & A)]) . (rc[sbF[x]]) . (stor[x.acq])) - (x.sthd)
-// }
 
 fun sw[x : Exec_C] : E -> E {
   ((stor[x.rel]) . (rc[Fsb[x]]) . (stor[x.(A & W)]) . (rs[x]) .
@@ -34,19 +24,6 @@ fun hb[x : Exec_C] : E -> E {
   ^(x.sb + sw[x])   
 }
 
-// pred Hb[x : Exec_C] {
-//   is_acyclic[hb[x]]
-// }
-
-// pred Coh[x : Exec_C] {
-//   irreflexive[(x.co + (x.co).(x.rf) + (fr[x]) +
-// 	       ((fr[x]) . (x.rf))) . (hb[x])]
-// }
-
-// pred Rf[x : Exec_C] {
-//   irreflexive[(x.rf) . (hb[x])]
-// }
-
 fun hbl[x : Exec_C] : E -> E {
   (hb[x]) & (x.sloc)
 }
@@ -54,10 +31,6 @@ fun hbl[x : Exec_C] : E -> E {
 pred NaRf[x : Exec_C] {
   ((x.rf) . (stor[x.naL])) in imm[(stor[x.W]) . (hbl[x])]
 }
-
-// pred Rmw[x : Exec_C] {
-//   irreflexive[x.rf + ((x.co) . (fr[x])) + ((x.co) . (x.rf))]
-// }
 
 fun cnf[x : Exec_C] : E -> E {
   ((x.W -> x.W) + (x.W -> x.R) + (x.R -> x.W)) & (x.sloc) - iden
@@ -73,6 +46,18 @@ pred Ur[x : Exec_C] {
 
 pred HbCom[x:Exec_C] {
   is_acyclic[ ((hb[x]) & x.sloc) + x.rf + x.co + (fr[x]) ]
+}
+
+pred Ssimp[x : Exec_C] {
+  let scb = x.co + fr[x] + (hb[x]) |
+  let FscbF = (rc[Fsb[x]]) . scb . (rc[sbF[x]]) |
+  let scp = FscbF & (x.sc -> x.sc) - iden |
+  is_acyclic[scp]
+}
+
+pred racefree[x : Exec_C] {
+  Dr[x]
+  Ur[x]
 }
 
 pred dead_base[x:Exec_C] {
@@ -106,15 +91,6 @@ pred dead_base[x:Exec_C] {
 
 }
 
-pred dead_efficient[x : Exec_C] {
-
-  dead_base[x]
-
-  // co edges can't be changed to make consistent exec
-  forced_co_efficient[x]
-    
-}
-
 pred dead[x : Exec_C] {
 
   dead_base[x]
@@ -123,6 +99,3 @@ pred dead[x : Exec_C] {
   forced_co[x]
     
 }
-
-fact { all x : Exec_C | withoutinit[x] }
-

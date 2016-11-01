@@ -1,6 +1,6 @@
 /* Manually generated from opencl.cat */
 
-module opencl[E]
+module opencl_orig[E]
 open opencl_base[E]
 
 pred S_orig[x : Exec_OpenCL] {
@@ -12,7 +12,8 @@ pred S_orig[x : Exec_OpenCL] {
   let S5 = (Fsb[x]) . (fr[x]) |
   let S6 = (fr[x]) . (sbF[x]) |
   let S7 = (Fsb[x]) . (fr[x]). (sbF[x]) |
-  let scp = (S1 + S2 + S3 + S4 + S44 + S5 + S6 + S7) & (x.sc -> x.sc) - iden |
+  let Sall = S1 + S2 + S3 + S4 + S44 + S5 + S6 + S7 |
+  let scp = Sall & (x.sc -> x.sc) - iden |
   let unv = x.ev -> x.ev |
   let s_cond1 = unv - (unv . (stor[x.(sc - (sy & fga))]) . unv) |
   let s_cond2 = unv - (unv . (stor[x.(sc - (dv - fga))]) . unv) |
@@ -29,11 +30,4 @@ pred consistent[x : Exec_OpenCL] {
   LnaRf[x]
   Rmw[x]
   S_orig[x]
-}		      		      
-
-pred racefree[x : Exec_OpenCL] {
-  Dr[x]
-  Bd[x]
 }
-
-

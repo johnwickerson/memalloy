@@ -1,0 +1,30 @@
+GPU_PTX IRIW
+"Rfe PodRR Fre Rfe PodRR Fre"
+{
+0:.reg .s32 r0;
+0:.reg .b64 r1 = x;
+1:.reg .s32 r0;
+1:.reg .s32 r2;
+1:.reg .b64 r1 = x;
+1:.reg .b64 r3 = y;
+2:.reg .s32 r0;
+2:.reg .b64 r1 = y;
+3:.reg .s32 r0;
+3:.reg .s32 r2;
+3:.reg .b64 r1 = y;
+3:.reg .b64 r3 = x;
+}
+ P0                | P1                | P2                | P3                ;
+                   | mov.s32 r2, 1     |                   | mov.s32 r2, 2     ;
+ mov.s32 r0,2      | ld.cg.s32 r0,[r1] | mov.s32 r0,2      | ld.cg.s32 r0,[r1] ;
+                   | membar.gl         |                   | membar.cta        ;
+ st.cg.s32 [r1],r0 | st.cg.s32 [r3],r2 | st.cg.s32 [r1],r0 | st.cg.s32 [r3],r2 ;
+
+scopeTree
+(device (kernel (cta (warp P0)) (cta (warp P1) (warp P2) (warp P3))))
+
+y: global, x: global
+
+exists
+(1:r0=2 /\ x=2 /\ 3:r0=2 /\ y=2)
+

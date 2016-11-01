@@ -1,0 +1,93 @@
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+% Results for IRWIW.litmus %
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+GPU_PTX IRIW
+"Rfe PodRR Fre Rfe PodRR Fre"
+
+{}
+
+ P0                 | P1                 | P2                 | P3                 ;
+                    | mov.s32 r2, 1      |                    | mov.s32 r2, 2      ;
+ mov.s32 r0, 2      | ld.cg.s32 r0, [r1] | mov.s32 r0, 2      | ld.cg.s32 r0, [r1] ;
+                    | membar.gl          |                    | membar.cta         ;
+ st.cg.s32 [r1], r0 | st.cg.s32 [r3], r2 | st.cg.s32 [r1], r0 | st.cg.s32 [r3], r2 ;
+
+exists (1:r0=2 /\ x=2 /\ 3:r0=2 /\ y=2)
+(device (kernel (cta (warp P0)) (cta (warp P1) (warp P2) (warp P3))))
+y:global; x:global
+Generated assembler
+//START _litmus_P1
+	mov.s32 sr21, 1 ;
+	ld.cg.s32 sr01, [sr11] ;
+	membar.gl ;
+	st.cg.s32 [sr31], sr21 ;
+//START _litmus_P0
+	mov.s32 sr00, 2 ;
+	st.cg.s32 [sr10], sr00 ;
+//START _litmus_P2
+	mov.s32 sr02, 2 ;
+	st.cg.s32 [sr12], sr02 ;
+//START _litmus_P3
+	mov.s32 sr23, 2 ;
+	ld.cg.s32 sr03, [sr13] ;
+	membar.cta ;
+	st.cg.s32 [sr33], sr23 ;
+
+Binary '/tmp/dir5d3128.tmp/IRWIW.exe' successfully loaded
+Specification clusters: 4
+Specification: [[(746, 3, 'R4'), (743, 2, 'R10')], [(854, 2, 'R10')], [(887, 2, 'R10')], [(931, 3, 'R4'), (928, 2, 'R10')]]
+Cluster 0: OK
+Cluster 1: OK
+Cluster 2: OK
+Cluster 3: OK
+!!SUCCESS!!
+Test IRIW Allowed
+Histogram (5 states)
+34926 :>1:r0=0; 3:r0=0; x=2; y=1;
+28389 :>1:r0=2; 3:r0=0; x=2; y=1;
+22329 :>1:r0=0; 3:r0=2; x=2; y=1;
+14357 :>1:r0=2; 3:r0=2; x=2; y=1;
+1     :>1:r0=2; 3:r0=0; x=2; y=2;
+No
+
+Witnesses
+Positive: 0, Negative: 100002
+Condition exists (1:r0=2 /\ x=2 /\ 3:r0=2 /\ y=2) is NOT validated
+Observation IRIW Never 0 100002
+Time IRIW 11.45
+
+  -- device info --
+Name:                           GeForce GTX TITAN
+Major revision number:          3
+Minor revision number:          5
+Total global memory:            6442123264
+Total shared memory per block:  49152
+Number of multiprocessors:      14
+
+Machine: formal
+Revision 1951, version 5.01 GPU_PTX experimental backend
+Command line: ./litmus IRWIW.litmus -mach GTXTitan.cfg
+Parameters
+#ifndef SIZE_OF_TEST
+#define SIZE_OF_TEST 100000
+#endif
+#ifndef NUMBER_OF_RUN
+#define NUMBER_OF_RUN 1
+#endif
+/* cc options: -arch=sm_35 -lOpenCL */
+/* barrier: user */
+/* speedcheck: no */
+/* gpu_general_bc: true */
+/* gpu_mem_stress: true */
+/* gpu-rand-threads: true */
+/* gpu_cuda: true */
+/* gpu_ptx: true */
+/* gpu_gen_addr: true */
+/* gpu_cvt_global_to_gen: true */
+/* gpu_cvt_shared_to_gen: true */
+/* gpu_max_ctas: 14 */
+/* gpu_min_ctas: 10 */
+/* gpu_max_threads: 512 */
+/* gpu_min_threads: 128 */
+/* gpu_mem_stress_iterations: 0 */
+/* gpu_busy_wait_atomics: true */

@@ -4,7 +4,7 @@ fences.
 */
 
 open ../sw/exec_C[SE] as SW
-open ../hw/cpu/exec_x86[HE] as HW
+open ../hw/exec_x86[HE] as HW
 
 module c11_x86f[SE,HE]
 

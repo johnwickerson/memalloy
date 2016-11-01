@@ -3,7 +3,7 @@ An OpenCL-to-PTX mapping
 */
 
 open ../sw/opencl/exec_OpenCL[SE] as SW
-open ../hw/gpu/exec_ptx[HE] as HW
+open ../hw/exec_ptx[HE] as HW
 module opencl_ptx_base[SE,HE]
 
 fun map_scope[e: SE, X : SW/Exec_OpenCL, X' : HW/Exec_PTX] : set HE {

@@ -132,6 +132,11 @@ pred Bd[x : Exec_OpenCL] {
   is_empty[bd]
 }
 
+pred racefree[x : Exec_OpenCL] {
+  Dr[x]
+  Bd[x]
+}
+
 pred dead[x : Exec_C] {
 
   // avoid "if(r==0)" in generated litmus test
@@ -162,5 +167,3 @@ pred dead[x : Exec_C] {
   pdr in dhb_global + ~dhb_global + dhb_local + ~dhb_local
     
 }
-
-fact { all x : Exec_OpenCL | withoutinit[x] }

@@ -1,0 +1,11 @@
+//IRIW (1_unique)
+//(T0 CTA) (T1,T2,T3 CTA)
+//(T1 membar.cta) (T3 membar.gl)
+irreflexive [
+             ((X.rf) & intra_gl_raw[X]) .
+             (((X.R) -> (X.R)) & cta_fence_raw[X] - X.sloc) .
+             ((fr[X]) & intra_cta_raw[X]) .
+             ((X.rf) & intra_cta_raw[X]) .
+             (((X.R) -> (X.R)) & gl_fence_raw[X] - X.sloc) .
+             ((fr[X]) & intra_gl_raw[X])
+            ]

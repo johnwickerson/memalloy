@@ -1,0 +1,96 @@
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+% Results for 3.CORR.litmus %
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+GPU_PTX CoRR
+
+{}
+
+ P0                 | P1                 | P2                 ;
+ mov.s32 r0, 1      | ld.cg.s32 r0, [r1] | mov.s32 r0, 2      ;
+                    | membar.cta         | mov.s32 r2, 3      ;
+ st.cg.s32 [r1], r0 | ld.cg.s32 r2, [r3] | st.cg.s32 [r1], r0 ;
+                    |                    | membar.gl          ;
+                    |                    | st.cg.s32 [r3], r2 ;
+
+exists (1:r0=1 /\ 1:r2=0 /\ x=1)
+(device (kernel (cta (warp P0)) (cta (warp P1) (warp P2))))
+x:global; y:global
+Generated assembler
+//START _litmus_P1
+	ld.cg.s32 sr01, [sr11] ;
+	membar.cta ;
+	ld.cg.s32 sr21, [sr31] ;
+//START _litmus_P0
+	mov.s32 sr00, 1 ;
+	st.cg.s32 [sr10], sr00 ;
+//START _litmus_P2
+	mov.s32 sr02, 2 ;
+	mov.s32 sr22, 3 ;
+	st.cg.s32 [sr12], sr02 ;
+	membar.gl ;
+	st.cg.s32 [sr32], sr22 ;
+
+Binary '/tmp/dir5a0af8.tmp/3.CORR.exe' successfully loaded
+Specification clusters: 3
+Specification: [[(734, 3, 'R4'), (732, 3, 'R5')], [(823, 2, 'R8')], [(863, 2, 'R8'), (866, 2, 'R10')]]
+Cluster 0: OK
+Cluster 1: OK
+Cluster 2: OK
+!!SUCCESS!!
+Test CoRR Allowed
+Histogram (12 states)
+11    :>1:r0=0; 1:r2=0; x=1;
+4     :>1:r0=0; 1:r2=2; x=1;
+1     :>1:r0=2; 1:r2=2; x=1;
+23469 :>1:r0=0; 1:r2=0; x=3;
+12156 :>1:r0=0; 1:r2=1; x=3;
+15495 :>1:r0=1; 1:r2=1; x=3;
+8783  :>1:r0=2; 1:r2=1; x=3;
+14229 :>1:r0=0; 1:r2=2; x=3;
+7985  :>1:r0=1; 1:r2=2; x=3;
+17837 :>1:r0=2; 1:r2=2; x=3;
+25    :>1:r0=1; 1:r2=3; x=3;
+5     :>1:r0=2; 1:r2=3; x=3;
+No
+
+Witnesses
+Positive: 0, Negative: 100000
+Condition exists (1:r0=1 /\ 1:r2=0 /\ x=1) is NOT validated
+Observation CoRR Never 0 100000
+Time CoRR 6.34
+
+  -- device info --
+Name:                           GeForce GTX TITAN
+Major revision number:          3
+Minor revision number:          5
+Total global memory:            6442123264
+Total shared memory per block:  49152
+Number of multiprocessors:      14
+
+Machine: formal
+Revision 1951, version 5.01 GPU_PTX experimental backend
+Command line: ./litmus 3.CORR.litmus -mach GTXTitan.cfg
+Parameters
+#ifndef SIZE_OF_TEST
+#define SIZE_OF_TEST 100000
+#endif
+#ifndef NUMBER_OF_RUN
+#define NUMBER_OF_RUN 1
+#endif
+/* cc options: -arch=sm_35 -lOpenCL */
+/* barrier: user */
+/* speedcheck: no */
+/* gpu_general_bc: true */
+/* gpu_mem_stress: true */
+/* gpu-rand-threads: true */
+/* gpu_cuda: true */
+/* gpu_ptx: true */
+/* gpu_gen_addr: true */
+/* gpu_cvt_global_to_gen: true */
+/* gpu_cvt_shared_to_gen: true */
+/* gpu_max_ctas: 14 */
+/* gpu_min_ctas: 10 */
+/* gpu_max_threads: 512 */
+/* gpu_min_threads: 128 */
+/* gpu_mem_stress_iterations: 0 */
+/* gpu_busy_wait_atomics: true */

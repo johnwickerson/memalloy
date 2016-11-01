@@ -1,5 +1,5 @@
 open ../sw/opencl/exec_OpenCL[E] as SW
-open ../hw/gpu/amd_gpu as HW
+open ../hw/amd_gpu as HW
 module opencl_amd[E]
 
 pred apply_map[X : SW/Exec_OpenCL, map : E -> HW/Inst] {

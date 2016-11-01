@@ -4,7 +4,7 @@ atomic hardware events.
 */
 
 open ../sw/exec_C[SE] as SW
-open ../hw/cpu/exec_x86[HE] as HW
+open ../hw/exec_x86[HE] as HW
 
 module c11_x86a[SE,HE]
 
@@ -13,25 +13,45 @@ pred apply_map[X : SW/Exec_C, X' : HW/Exec_X86, map : SE -> HE] {
   X.ev = SE
   X'.ev = HE
 
-  // every software event is mapped to exactly one hardware event
-  map in X.ev one -> one X'.ev
+  // every software event is mapped to at least one hardware event
+  map in X.ev one -> some X'.ev
+
+  // all events except RMWs and SC writes compile to single hardware events
+  all e : X.(ev - (R&W) - (W&sc)) | one e.map
 
   // there are no no-ops on the software side
   X.ev in X.(R + W + F)
 
-  // RMWs are not considered
-  no (X.(R&W))
-  no (X'.(R&W))
-  no X'.atom
-
   // Reads compile to reads
-  (X.R).map = X'.R
+  (X.(R-W)).map in X'.R
 
-  // Writes compile to writes
-  (X.W).map = X'.W
+  // CAS's and SC writes compile to locked events
+  (X.(failedCAS + (R&W) + (W&sc))).map = X'.locked
 
-  // SC events compile to atomic events
-  (X.sc).map = X'.locked
+  // Non-SC writes compile to non-locked writes
+  (X.((W-R)-sc)).map = X'.(W-locked)
+
+  // SC writes compile to locked RMWs
+  all e : X.(W&sc) | some disj e1, e2 : X'.ev {
+    e.map = e1 + e2
+    e1 in X'.(R & locked)
+    e2 in X'.(W & locked)
+    (e1 -> e2) in imm[X'.sb] & X'.atom
+    
+    // read does not observe a too-late value
+    (e2 -> e1) not in ((X'.co) . (X'.rf))
+
+    // read does not observe a too-early value
+    (e1 -> e2) not in ((fr[X']) . (X'.co))
+  }
+
+  // RMWs compile to locked RMWs
+  all e : X.(R&W) | some disj e1, e2 : X'.ev {
+    e.map = e1 + e2
+    e1 in X'.(R & locked)
+    e2 in X'.(W & locked)
+    (e1 -> e2) in imm[X'.sb] & X'.atom
+  }
 
   // SC fences compile to fences
   (X.(F & sc)).map in X'.F
@@ -40,7 +60,7 @@ pred apply_map[X : SW/Exec_C, X' : HW/Exec_X86, map : SE -> HE] {
   (X.(F - sc)).map in X'.(ev - (R + W + F))
  
   // the mapping preserves sb
-  (X.sb).map = map.(X'.sb)
+  (X.sb).map in map.(X'.sb)
 
   // the mapping preserves dependencies
   (X.cd).map = map.(X'.cd)

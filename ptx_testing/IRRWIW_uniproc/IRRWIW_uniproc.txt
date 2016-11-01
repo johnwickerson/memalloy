@@ -1,0 +1,121 @@
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+% Results for 3.CORR.litmus %
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+GPU_PTX CoRR
+
+{}
+
+ P0                 | P1                 | P2                 | P3                 ;
+                    |                    |                    | mov.s32 r2, 3      ;
+ mov.s32 r0, 1      | ld.cg.s32 r0, [r1] | mov.s32 r0, 2      | ld.cg.s32 r0, [r1] ;
+                    | membar.cta         |                    | membar.gl          ;
+ st.cg.s32 [r1], r0 | ld.cg.s32 r2, [r3] | st.cg.s32 [r1], r0 | st.cg.s32 [r3], r2 ;
+                    |                    |                    |                    ;
+                    |                    |                    |                    ;
+
+exists (1:r0=1 /\ 1:r2=0 /\ x=1 /\ 3:r0=2)
+(device (kernel (cta (warp P0)) (cta (warp P1) (warp P2) (warp P3))))
+x:global; y:global
+Generated assembler
+//START _litmus_P1
+	ld.cg.s32 sr01, [sr11] ;
+	membar.cta ;
+	ld.cg.s32 sr21, [sr31] ;
+//START _litmus_P0
+	mov.s32 sr00, 1 ;
+	st.cg.s32 [sr10], sr00 ;
+//START _litmus_P2
+	mov.s32 sr02, 2 ;
+	st.cg.s32 [sr12], sr02 ;
+//START _litmus_P3
+	mov.s32 sr23, 3 ;
+	ld.cg.s32 sr03, [sr13] ;
+	membar.gl ;
+	st.cg.s32 [sr33], sr23 ;
+
+Binary '/tmp/dir904bdd.tmp/3.CORR.exe' successfully loaded
+Specification clusters: 4
+Specification: [[(739, 3, 'R4'), (737, 3, 'R5')], [(830, 2, 'R8')], [(863, 2, 'R8')], [(905, 3, 'R4'), (902, 2, 'R10')]]
+Cluster 0: OK
+Cluster 1: OK
+Cluster 2: OK
+Cluster 3: OK
+!!SUCCESS!!
+Test CoRR Allowed
+Histogram (33 states)
+34    :>1:r0=0; 1:r2=0; 3:r0=0; x=1;
+19    :>1:r0=0; 1:r2=2; 3:r0=0; x=1;
+11    :>1:r0=2; 1:r2=2; 3:r0=0; x=1;
+5     :>1:r0=0; 1:r2=0; 3:r0=2; x=1;
+8     :>1:r0=0; 1:r2=2; 3:r0=2; x=1;
+25    :>1:r0=2; 1:r2=2; 3:r0=2; x=1;
+2     :>1:r0=0; 1:r2=0; 3:r0=0; x=2;
+1     :>1:r0=0; 1:r2=1; 3:r0=0; x=2;
+17657 :>1:r0=0; 1:r2=0; 3:r0=0; x=3;
+6911  :>1:r0=0; 1:r2=1; 3:r0=0; x=3;
+4065  :>1:r0=1; 1:r2=1; 3:r0=0; x=3;
+2918  :>1:r0=2; 1:r2=1; 3:r0=0; x=3;
+7918  :>1:r0=0; 1:r2=2; 3:r0=0; x=3;
+2470  :>1:r0=1; 1:r2=2; 3:r0=0; x=3;
+4814  :>1:r0=2; 1:r2=2; 3:r0=0; x=3;
+5     :>1:r0=1; 1:r2=3; 3:r0=0; x=3;
+5     :>1:r0=2; 1:r2=3; 3:r0=0; x=3;
+3582  :>1:r0=0; 1:r2=0; 3:r0=1; x=3;
+3629  :>1:r0=0; 1:r2=1; 3:r0=1; x=3;
+6936  :>1:r0=1; 1:r2=1; 3:r0=1; x=3;
+1567  :>1:r0=2; 1:r2=1; 3:r0=1; x=3;
+2091  :>1:r0=0; 1:r2=2; 3:r0=1; x=3;
+3549  :>1:r0=1; 1:r2=2; 3:r0=1; x=3;
+3373  :>1:r0=2; 1:r2=2; 3:r0=1; x=3;
+3     :>1:r0=2; 1:r2=3; 3:r0=1; x=3;
+4155  :>1:r0=0; 1:r2=0; 3:r0=2; x=3;
+2120  :>1:r0=0; 1:r2=1; 3:r0=2; x=3;
+3398  :>1:r0=1; 1:r2=1; 3:r0=2; x=3;
+3924  :>1:r0=2; 1:r2=1; 3:r0=2; x=3;
+4744  :>1:r0=0; 1:r2=2; 3:r0=2; x=3;
+1625  :>1:r0=1; 1:r2=2; 3:r0=2; x=3;
+8436  :>1:r0=2; 1:r2=2; 3:r0=2; x=3;
+2     :>1:r0=1; 1:r2=3; 3:r0=2; x=3;
+No
+
+Witnesses
+Positive: 0, Negative: 100002
+Condition exists (1:r0=1 /\ 1:r2=0 /\ x=1 /\ 3:r0=2) is NOT validated
+Observation CoRR Never 0 100002
+Time CoRR 8.86
+
+  -- device info --
+Name:                           GeForce GTX TITAN
+Major revision number:          3
+Minor revision number:          5
+Total global memory:            6442123264
+Total shared memory per block:  49152
+Number of multiprocessors:      14
+
+Machine: formal
+Revision 1951, version 5.01 GPU_PTX experimental backend
+Command line: ./litmus 3.CORR.litmus -mach GTXTitan.cfg
+Parameters
+#ifndef SIZE_OF_TEST
+#define SIZE_OF_TEST 100000
+#endif
+#ifndef NUMBER_OF_RUN
+#define NUMBER_OF_RUN 1
+#endif
+/* cc options: -arch=sm_35 -lOpenCL */
+/* barrier: user */
+/* speedcheck: no */
+/* gpu_general_bc: true */
+/* gpu_mem_stress: true */
+/* gpu-rand-threads: true */
+/* gpu_cuda: true */
+/* gpu_ptx: true */
+/* gpu_gen_addr: true */
+/* gpu_cvt_global_to_gen: true */
+/* gpu_cvt_shared_to_gen: true */
+/* gpu_max_ctas: 14 */
+/* gpu_min_ctas: 10 */
+/* gpu_max_threads: 512 */
+/* gpu_min_threads: 128 */
+/* gpu_mem_stress_iterations: 0 */
+/* gpu_busy_wait_atomics: true */

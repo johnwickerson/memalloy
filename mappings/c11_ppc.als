@@ -3,7 +3,7 @@ A C11-to-Power mapping.
 */
 
 open ../sw/exec_C[SE] as SW
-open ../hw/cpu/exec_ppc[HE] as HW
+open ../hw/exec_ppc[HE] as HW
 
 module c11_ppc[SE,HE]
 
