@@ -4,7 +4,6 @@ open ../exec[E]
 sig Exec_C extends Exec {
   A : set E,            // atomic events
   acq, rel, sc : set E, // acquire, release, sc events
-  failedCAS : set E,    // reads corresponding to failed CAS instructions
 }{
 
   A in ev
@@ -35,9 +34,6 @@ sig Exec_C extends Exec {
 
   // non-atomic reads do not access atomic locations
   R-A in naL
-
-  // failedCAS events are reads
-  failedCAS in R
 
 }
 

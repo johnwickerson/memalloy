@@ -26,7 +26,7 @@ pred apply_map[X : SW/Exec_C, X' : HW/Exec_X86, map : SE -> HE] {
   (X.(R-W)).map in X'.R
 
   // CAS's and SC writes compile to locked events
-  (X.(failedCAS + (R&W) + (W&sc))).map = X'.locked
+  (X.((R&W) + (W&sc))).map = X'.locked
 
   // Non-SC writes compile to non-locked writes
   (X.((W-R)-sc)).map = X'.(W-locked)

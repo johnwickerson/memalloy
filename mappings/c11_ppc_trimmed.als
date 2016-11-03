@@ -1,11 +1,11 @@
 /*
-A C11-to-Power mapping.
+A C11-to-Power mapping, but avoiding fences at the start/end of threads
 */
 
 open ../sw/exec_C[SE] as SW
 open ../hw/exec_ppc[HE] as HW
 
-module c11_ppc[SE,HE]
+module c11_ppc_trimmed[SE,HE]
 
 pred apply_map[
   X : SW/Exec_C, X' : HW/Exec_PPC, 
@@ -30,7 +30,14 @@ pred apply_map[
   // an acquire read compiles to a read followed by
   // a control fence, with control dependencies inserted between the read and 
   // every event that is sequenced after it.
-  all e : X.((R - W) & acq - sc) | some disj e1,e2 : X'.ev { 
+  // NEW 6-Oct-2016: if the acquire read is *last* in its thread, forget the 
+  // fence and dependencies.
+  all e : X.((R - W) & acq - sc) | no e.(X.sb) => {
+    // Case: e is last
+    one e.map
+    e.map in X'.R
+  } else some disj e1,e2 : X'.ev { 
+    // Case: e is not last
     e.map = e1+e2
     e1 in X'.R
     e2 in X'.isync
@@ -38,26 +45,43 @@ pred apply_map[
     all e' : X'.sb[e1] | (e1 -> e') in X'.cd
   }
 
-/* DELIBERATELY WRONG MAPPING FOR ACQUIRE READS:
-  all e : X.((R - W) & acq - sc) {
-    one e.map
-    e.map in X'.R
-  }
-*/
-  
-
   // an SC read compiles to a full fence followed by a read 
   // followed by a control fence, with control dependencies inserted 
   // between the read and every event that is sequenced after it
-  all e : X.((R - W) & sc) | some disj e1,e2,e3 : X'.ev {
-    e.map = e1+e2+e3
-    e1 in X'.sync
-    e2 in X'.R
-    e3 in X'.isync 
-    (e1 -> e2) in imm[X'.sb]
-    (e2 -> e3) in imm[X'.sb] & X'.(cd - (ad + dd))
-    all e' : X'.sb[e2] | (e2 -> e') in X'.cd
-  }
+  // NEW 6-Oct-2016: if the SC read is *first* in its thread, forget the
+  // first fence, and if the SC read is *last* in its thread, forget the 
+  // second fence and dependencies.
+  all e : X.((R - W) & sc) | no e.(X.sb) => (
+    no (X.sb).e => {
+      // Case: e is both first and last
+      one e.map
+      e.map in X'.R
+    } else some disj e1,e2 : X'.ev {
+      // Case: e is last but not first
+      e.map = e1+e2
+      e1 in X'.sync
+      e2 in X'.R
+      (e1 -> e2) in imm[X'.sb]
+    }
+  ) else (
+    no (X.sb).e => (some disj e1,e2 : X'.ev {
+      // Case: e is first but not last
+      e.map = e1+e2
+      e1 in X'.R
+      e2 in X'.isync
+      (e1 -> e2) in imm[X'.sb] & X'.(cd - (ad + dd))
+      all e' : X'.sb[e1] | (e1 -> e') in X'.cd
+    }) else some disj e1,e2,e3 : X'.ev {
+      // Case: e is neither first nor last
+      e.map = e1+e2+e3
+      e1 in X'.sync
+      e2 in X'.R
+      e3 in X'.isync 
+      (e1 -> e2) in imm[X'.sb]
+      (e2 -> e3) in imm[X'.sb] & X'.(cd - (ad + dd))
+      all e' : X'.sb[e2] | (e2 -> e') in X'.cd
+    }
+  )
   
   // a non-atomic or relaxed write compiles to a single write
   all e : X.((W - R) - rel) {
@@ -67,7 +91,14 @@ pred apply_map[
 
   // a release write compiles to a lightweight fence followed 
   // by a write
-  all e : X.((W - R) & rel - sc) | some disj e1,e2 : X'.ev {
+  // NEW 6-Oct-2016: if the release write is *first* in its thread, forget the
+  // fence.
+  all e : X.((W - R) & rel - sc) | no (X.sb).e => {
+    // Case: e is first
+    one e.map
+    e.map in X'.W
+  } else some disj e1,e2 : X'.ev {
+    // Case: e is not first
     e.map = e1+e2
     e1 in X'.lwsync
     e2 in X'.W 
@@ -75,7 +106,14 @@ pred apply_map[
   }
   
   // an SC write compiles to a full fence followed by a write
-  all e : X.((W - R) & sc) | some disj e1,e2 : X'.ev {
+  // NEW 6-Oct-2016: if the SC write is *first* in its thread, forget the
+  // fence.
+  all e : X.((W - R) & sc) | no (X.sb).e => {
+    // Case: e is first
+    one e.map
+    e.map in X'.W
+  } else some disj e1,e2 : X'.ev {
+    // Case: e is not first
     e.map = e1+e2
     e1 in X'.sync
     e2 in X'.W
@@ -163,7 +201,7 @@ pred apply_map[
     one e.map
     e.map in X'.lwsync
   }
-      
+     
   // SC fences compile to full fences
   all e : X.(F & sc) {
     one e.map 
