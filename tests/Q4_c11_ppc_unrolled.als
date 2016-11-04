@@ -110,5 +110,5 @@ pred hint2_hw[X:Exec_PPC] {
 run gp for
 exactly 1 c11_ppc_trimmed/SW/exec/Exec,
 exactly 1 c11_ppc_trimmed/HW/exec_H/exec/Exec,
-12 HE, 
+8 HE, 
 6 SE
