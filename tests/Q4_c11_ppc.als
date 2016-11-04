@@ -24,6 +24,5 @@ pred gp [
 run gp for
 exactly 1 c11_ppc/SW/exec/Exec,
 exactly 1 c11_ppc/HW/exec_H/exec/Exec,
-7 HE, 
-4 SE
-// no instance found (61 mins, plingeling, babillion)
+13 HE, 
+6 SE
