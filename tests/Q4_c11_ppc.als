@@ -1,6 +1,6 @@
 open ../mappings/c11_ppc[SE,HE]
-open ../sw/c11_simp[SE] as M1
-open ../hw/ppc[HE] as M2
+open ../sw/c11_partial[SE] as M1
+open ../hw/ppc_unrolled[HE] as M2
 
 sig SE, HE {}
 
