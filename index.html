@@ -32,10 +32,9 @@ src="https://maxcdn.bootstrapcdn.com/bootstrap/3.2.0/js/bootstrap.min.js"></scri
     </div>
     <div class="collapse navbar-collapse" id="myNavbar">
       <ul class="nav navbar-nav">
-	<li><a href="#pubs">Publications</a></li>
-	<li><a href="#drafts">Drafts</a></li>
-	<li><a href="#talks">Talks</a></li>
-	<li><a href="#lectures">Teaching</a></li>
+	<li><a href="#GettingStarted">Getting Started</a></li>
+	<li><a href="#Reproducing">Reproducing Results</a></li>
+	<li><a href="#PTX">PTX Testing</a></li>
       </ul>
     </div>
   </div>
@@ -56,14 +55,14 @@ Proc. <em>Principles of Programming Languages (POPL)</em>, 2017. To
 appear. <a href="http://johnwickerson.github.io/papers/memalloy.pdf">[Preprint]</a>.</li>
 </ul>
 <p>The main results are summarised in Table 2 on
-<a href="http://johnwickerson.github.io/papers/memalloy.pdf#page=11">page 11 of the paper</a>. The
-primary aim of this page is to provide instructions for reproducing
-the results in that table.</p>
+<a href="http://johnwickerson.github.io/papers/memalloy.pdf#page=11">page 11</a>, and this page (<a href="#Reproducing">Section 2</a>) provides instructions for reproducing
+them. We also provide the data underlying the experimental testing of our new PTX MCM (<a href="#PTX">Section 3</a>).</p><p>This repository is maintained on <a href="http://github.com/johnwickerson/memalloy">GitHub</a>.</p>
 </div>
 
 <div class="container">
-
-<h2><a id="Installation_18"></a>Installation</h2>
+  
+  <h1><a name="GettingStarted"></a>1. Getting Started</h1>
+  <h2>Installation</h2>
 <p>Most of our models rely only on
 <a href="http://alloy.csail.mit.edu/alloy/">the basic Alloy tool</a>, but some
 depend on the higher-order quantification that is only supported in
@@ -71,8 +70,7 @@ depend on the higher-order quantification that is only supported in
 copy of AlloyStar (incorporating a couple of minor tweaks) can be
 downloaded from
 <a href="https://github.com/johnwickerson/AlloyStar">our GitHub repository</a>.</p>
-<p>The files in this repository can be downloaded and then opened individually
-in Alloy. This repository is structured into four subdirectories:</p>
+<p>The Alloy models in this repository are divided into four subdirectories:</p>
 <ul>
 <li>
 <p><code>hw</code>: architecture-level memory consistency models</p>
@@ -88,7 +86,7 @@ in Alloy. This repository is structured into four subdirectories:</p>
 relationships between them</p>
 </li>
 </ul>
-<h2><a id="Running_Alloy_40"></a>Running Alloy</h2>
+<h2>Running Alloy</h2>
 <ul>
 <li>
 <p>Set the solver to <em>Glucose</em> or <em>Plingeling</em> (via <code>Options → Solver</code>). Set the maximum memory usage and stack size as high as possible,
@@ -121,7 +119,16 @@ readability.</p>
 to be hidden or restyled according to their type.</p>
 </li>
 </ul>
-<h2><a id="Reproducing_Results_71"></a>Reproducing Results</h2>
+
+<h2>Going Further</h2>
+<ul>
+<li>For learning more about the Alloy language, the definitive reference
+is <a href="http://softwareabstractions.org/">Daniel Jackson’s book</a>. There
+is also a good
+<a href="http://alloy.mit.edu/alloy/tutorials/online/">online tutorial</a>.</li>
+</ul>
+
+<h1><a name="Reproducing"></a>2. Reproducing Results</h1>
 <p>In the table below, the <strong>Task</strong> column refers to the row in Table 2
 on
 <a href="http://johnwickerson.github.io/papers/memalloy.pdf#page=11">page 11 of the paper</a>.
@@ -150,7 +157,7 @@ instance is found or not.</p>
 <tbody>
 <tr>
 <td>1</td>
-<td><code>tests/Q2_c11_sra_simp.als</code></td>
+<td><a href="tests/Q2_c11_sra_simp.als"><code>tests/Q2_c11_sra_simp.als</code></a></td>
 <td>2nd</td>
 <td><em>Glucose</em></td>
 <td>0.7+0.6</td>
@@ -158,7 +165,7 @@ instance is found or not.</p>
 </tr>
 <tr>
 <td>2</td>
-<td><code>tests/Q2_c11_swrf_simp.als</code></td>
+<td><a href="tests/Q2_c11_swrf_simp.als"><code>tests/Q2_c11_swrf_simp.als</code></td>
 <td>3rd</td>
 <td><em>Glucose</em></td>
 <td>0.8+625</td>
@@ -166,7 +173,7 @@ instance is found or not.</p>
 </tr>
 <tr>
 <td>3</td>
-<td><code>tests/Q2_c11_swrf_simp.als</code></td>
+<td><a href="tests/Q2_c11_swrf_simp.als"><code>tests/Q2_c11_swrf_simp.als</code></td>
 <td>1st</td>
 <td><em>Plingeling</em></td>
 <td>2+214</td>
@@ -174,7 +181,7 @@ instance is found or not.</p>
 </tr>
 <tr>
 <td>4</td>
-<td><code>tests/Q2_c11_simp_orig.als</code></td>
+<td><a href="tests/Q2_c11_simp_orig.als"><code>tests/Q2_c11_simp_orig.als</code></td>
 <td>2nd</td>
 <td><em>Glucose</em></td>
 <td>0.4+0.3</td>
@@ -182,7 +189,7 @@ instance is found or not.</p>
 </tr>
 <tr>
 <td>5</td>
-<td><code>tests/Q2_x86_mca.als</code></td>
+<td><a href="tests/Q2_x86_mca.als"><code>tests/Q2_x86_mca.als</code></td>
 <td>2nd</td>
 <td><em>Plingeling</em></td>
 <td>0.8+607</td>
@@ -190,7 +197,7 @@ instance is found or not.</p>
 </tr>
 <tr>
 <td>6</td>
-<td><code>tests/Q2_ppc_mca.als</code></td>
+<td><a href="tests/Q2_ppc_mca.als"><code>tests/Q2_ppc_mca.als</code></td>
 <td>2nd</td>
 <td><em>Glucose</em></td>
 <td>1.5+0.06</td>
@@ -198,7 +205,7 @@ instance is found or not.</p>
 </tr>
 <tr>
 <td>7</td>
-<td><code>tests/Q2_sc_c11nodrf.als</code></td>
+<td><a href="tests/Q2_sc_c11nodrf.als"><code>tests/Q2_sc_c11nodrf.als</code></td>
 <td>1st</td>
 <td><em>Glucose</em></td>
 <td>0.4+0.04</td>
@@ -206,7 +213,7 @@ instance is found or not.</p>
 </tr>
 <tr>
 <td>8</td>
-<td><code>tests/Q2_ptx.als</code></td>
+<td><a href="tests/Q2_ptx.als"><code>tests/Q2_ptx.als</code></td>
 <td>2nd</td>
 <td><em>Glucose</em></td>
 <td>0.7+4</td>
@@ -214,7 +221,7 @@ instance is found or not.</p>
 </tr>
 <tr>
 <td>9</td>
-<td><code>tests/Q3_c11_seq.als</code></td>
+<td><a href="tests/Q3_c11_seq.als"><code>tests/Q3_c11_seq.als</code></td>
 <td>1st</td>
 <td><em>MiniSat</em></td>
 <td>0.5+163</td>
@@ -222,7 +229,7 @@ instance is found or not.</p>
 </tr>
 <tr>
 <td>10</td>
-<td><code>tests/Q3_c11_seq.als</code></td>
+<td><a href="tests/Q3_c11_seq.als"><code>tests/Q3_c11_seq.als</code></td>
 <td>2nd</td>
 <td><em>Plingeling</em></td>
 <td>0.7+5</td>
@@ -230,7 +237,7 @@ instance is found or not.</p>
 </tr>
 <tr>
 <td>11</td>
-<td><code>tests/Q3_c11_mo.als</code></td>
+<td><a href="tests/Q3_c11_mo.als"><code>tests/Q3_c11_mo.als</code></td>
 <td>2nd</td>
 <td><em>Glucose</em></td>
 <td>0.9+51</td>
@@ -238,7 +245,7 @@ instance is found or not.</p>
 </tr>
 <tr>
 <td>12</td>
-<td><code>tests/Q4_c11_x86a.als</code></td>
+<td><a href="tests/Q4_c11_x86a.als"><code>tests/Q4_c11_x86a.als</code></td>
 <td>1st</td>
 <td><em>Plingeling</em></td>
 <td>0.7+13029</td>
@@ -246,7 +253,7 @@ instance is found or not.</p>
 </tr>
 <tr>
 <td>13</td>
-<td><code>tests/Q4_c11_ppc_trimmed.als</code></td>
+<td><a href="tests/Q4_c11_ppc_trimmed.als"><code>tests/Q4_c11_ppc_trimmed.als</code></td>
 <td>1st</td>
 <td><em>Plingeling</em></td>
 <td>8+91</td>
@@ -254,7 +261,7 @@ instance is found or not.</p>
 </tr>
 <tr>
 <td>14</td>
-<td><code>tests/Q4_opencl_amd.als</code></td>
+<td><a href="tests/Q4_opencl_amd.als"><code>tests/Q4_opencl_amd.als</code></td>
 <td>2nd</td>
 <td><em>Glucose</em></td>
 <td>6+1355</td>
@@ -262,7 +269,7 @@ instance is found or not.</p>
 </tr>
 <tr>
 <td>15</td>
-<td><code>tests/Q4_opencl_amd.als</code></td>
+<td><a href="tests/Q4_opencl_amd.als"><code>tests/Q4_opencl_amd.als</code></td>
 <td>1st</td>
 <td><em>Plingeling</em></td>
 <td>16+4743</td>
@@ -270,7 +277,7 @@ instance is found or not.</p>
 </tr>
 <tr>
 <td>16</td>
-<td><code>tests/Q4_opencl_ptx_orig.als</code></td>
+<td><a href="tests/Q4_opencl_ptx_orig.als"><code>tests/Q4_opencl_ptx_orig.als</code></td>
 <td>2nd</td>
 <td><em>Plingeling</em></td>
 <td>2+11</td>
@@ -278,7 +285,7 @@ instance is found or not.</p>
 </tr>
 <tr>
 <td>17</td>
-<td><code>tests/Q4_opencl_ptx_cumul.als</code></td>
+<td><a href="tests/Q4_opencl_ptx_cumul.als"><code>tests/Q4_opencl_ptx_cumul.als</code></td>
 <td>1st</td>
 <td><em>Plingeling</em></td>
 <td>4+9719</td>
@@ -286,13 +293,559 @@ instance is found or not.</p>
 </tr>
 </tbody>
 </table>
-<h2><a id="Going_Further_108"></a>Going Further</h2>
-<ul>
-<li>For learning more about the Alloy language, the definitive reference
-is <a href="http://softwareabstractions.org/">Daniel Jackson’s book</a>. There
-is also a good
-<a href="http://alloy.mit.edu/alloy/tutorials/online/">online tutorial</a>.</li>
-</ul>
+
+
+<h1><a name="PTX"></a>3. Testing our stronger PTX MCM</h1> This
+    section shows tests that differentiate the <a
+    href="hw/ptx_orig.als">PTX1</a> model against the <a
+    href="hw/ptx_cumul.als">PTX2</a> model. That is,
+    tests that can pass under PTX1, but not under PTX2. The test names
+    refer to Sarkar et al.'s <a
+    href="https://www.cl.cam.ac.uk/~pes20/ppc-supplemental/test6.pdf">periodic
+    table of litmus tests</a>.  <br> <br> In order to show that PTX2
+    remains empirically sound, we must show that these tests are not
+    observable on Nvidia chips. Many of the tests are available from
+    Alglave et al.'s <a
+    href="http://multicore.doc.ic.ac.uk/gpu-litmus/flat.html">publicly-available
+    experimental data</a>. For these tests, we link to the
+    existing results. Some tests are not included in Alglave et al.'s
+    set. These tests are all single-address tests. Alglave et al. only
+    consider the 4 traditional single-address tests (CoRR, CoRW, CoWR,
+    CoWW). However, due to a combination of the PTX model not
+    providing full coherence, and GPU scopes, we obtain larger
+    single-address tests that do not reduce to any of those tests. For
+    tests that are unavailable in Alglave et al.'s set, we run new
+    tests on a GTX Titan chip.  </p>
+
+  <h2>7-event executions</h2>
+
+  <p>
+  <b>Existing test results</b>&nbsp;&nbsp;&nbsp;There are a total of 12 tests with 7 events that are allowed under
+  PTX1 but disallowed under PTX2 and for which Alglave et al. provide
+  testing results. In no case is the weak behaviour observed.
+  </p>
+
+  <div class="table-responsive">
+  <table class="table table-striped table-bordered">
+    <thead>
+    <tr>
+      
+      <th>Test shape</th>
+
+      <th>GPU config</th>
+
+      <th>GTX 540</th>
+
+      <th>GTX 660</th>
+
+      <th>GTX 750 Ti</th>
+
+      <th>GTX Titan</th>
+
+      <th>Tesla C2075</th>
+      
+    </tr>
+    </thead>
+<tr>
+
+      <td> <a href="ptx_testing/RWC1.txt">RWC + membar.cta + membar.gl</a> </td>
+
+      <td> P<sub>0</sub> |<sub>cta</sub> (P<sub>1</sub> |<sub>warp</sub> P<sub>2</sub>)</td>
+
+      
+
+      <td> <a href="http://multicore.doc.ic.ac.uk/gpu-litmus/entries/gtx540-RWC+membar.cta+membar.gl-p0::p1:p2-xgyg.txt"> 0/50k </a> </td>
+
+      <td> <a href="http://multicore.doc.ic.ac.uk/gpu-litmus/entries/gtx660-RWC+membar.cta+membar.gl-p0::p1:p2-xgyg.txt"> 0/100k </a> </td>
+
+      <td> <a href="http://multicore.doc.ic.ac.uk/gpu-litmus/entries/gtx750ti-RWC+membar.cta+membar.gl-p0::p1:p2-xgyg.txt"> 0/50k </a> </td>
+
+      <td> <a href="http://multicore.doc.ic.ac.uk/gpu-litmus/entries/gtx-titan-RWC+membar.cta+membar.gl-p0::p1:p2-xgyg.txt"> 0/50k </a> </td>
+
+      <td> <a href="http://multicore.doc.ic.ac.uk/gpu-litmus/entries/tesla-c2075-RWC+membar.cta+membar.gl-p0::p1:p2-xgyg.txt"> 0/50k </a> </td>
+
+</tr>
+
+<tr>
+
+      <td> <a href="ptx_testing/RWC2.txt">RWC + membar.gl + membar.cta</a> </td>
+
+      <td> P<sub>0</sub> |<sub>cta</sub> (P<sub>1</sub> |<sub>warp</sub> P<sub>2</sub>)</td>
+
+      
+
+      <td> <a href="http://multicore.doc.ic.ac.uk/gpu-litmus/entries/gtx540-RWC+membar.gl+membar.cta-p0::p1:p2-xgyg.txt"> 0/50k </a> </td>
+
+      <td> <a href="http://multicore.doc.ic.ac.uk/gpu-litmus/entries/gtx660-RWC+membar.gl+membar.cta-p0::p1:p2-xgyg.txt"> 0/100k </a> </td>
+
+      <td> <a href="http://multicore.doc.ic.ac.uk/gpu-litmus/entries/gtx750ti-RWC+membar.gl+membar.cta-p0::p1:p2-xgyg.txt"> 0/50k </a> </td>
+
+      <td> <a href="http://multicore.doc.ic.ac.uk/gpu-litmus/entries/gtx-titan-RWC+membar.gl+membar.cta-p0::p1:p2-xgyg.txt"> 0/50k </a> </td>
+
+      <td> <a href="http://multicore.doc.ic.ac.uk/gpu-litmus/entries/tesla-c2075-RWC+membar.gl+membar.cta-p0::p1:p2-xgyg.txt"> 0/50k </a> </td>
+
+</tr>
+
+<tr>
+
+      <td> <a href="ptx_testing/WRR+2W1.txt">WRR+2W + membar.cta + membar.gl</a> </td>
+
+      <td> P<sub>0</sub> |<sub>cta</sub> (P<sub>1</sub> |<sub>warp</sub> P<sub>2</sub>)</td>
+
+      
+
+      <td> <a href="http://multicore.doc.ic.ac.uk/gpu-litmus/entries/gtx540-WRR+2W+membar.cta+membar.gl-p0::p1:p2-xgyg.txt"> 0/50k </a> </td>
+
+      <td> <a href="http://multicore.doc.ic.ac.uk/gpu-litmus/entries/gtx660-WRR+2W+membar.cta+membar.gl-p0::p1:p2-xgyg.txt"> 0/100k </a> </td>
+
+      <td> <a href="http://multicore.doc.ic.ac.uk/gpu-litmus/entries/gtx750ti-WRR+2W+membar.cta+membar.gl-p0::p1:p2-xgyg.txt"> 0/50k </a> </td>
+
+      <td> <a href="http://multicore.doc.ic.ac.uk/gpu-litmus/entries/gtx-titan-WRR+2W+membar.cta+membar.gl-p0::p1:p2-xgyg.txt"> 0/50k </a> </td>
+
+      <td> <a href="http://multicore.doc.ic.ac.uk/gpu-litmus/entries/tesla-c2075-WRR+2W+membar.cta+membar.gl-p0::p1:p2-xgyg.txt"> 0/50k </a> </td>
+
+</tr>
+
+<tr>
+
+      <td> <a href="ptx_testing/WRR+2W2.txt">WRR+2W + membar.gl + membar.cta</a> </td>
+
+      <td> P<sub>0</sub> |<sub>cta</sub> (P<sub>1</sub> |<sub>warp</sub> P<sub>2</sub>)</td>
+
+      
+
+      <td> <a href="http://multicore.doc.ic.ac.uk/gpu-litmus/entries/gtx540-WRR+2W+membar.gl+membar.cta-p0::p1:p2-xgyg.txt"> 0/50k </a> </td>
+
+      <td> <a href="http://multicore.doc.ic.ac.uk/gpu-litmus/entries/gtx660-WRR+2W+membar.gl+membar.cta-p0::p1:p2-xgyg.txt"> 0/100k </a> </td>
+
+      <td> <a href="http://multicore.doc.ic.ac.uk/gpu-litmus/entries/gtx750ti-WRR+2W+membar.gl+membar.cta-p0::p1:p2-xgyg.txt"> 0/50k </a> </td>
+
+      <td> <a href="http://multicore.doc.ic.ac.uk/gpu-litmus/entries/gtx-titan-WRR+2W+membar.gl+membar.cta-p0::p1:p2-xgyg.txt"> 0/50k </a> </td>
+
+      <td> <a href="http://multicore.doc.ic.ac.uk/gpu-litmus/entries/tesla-c2075-WRR+2W+membar.gl+membar.cta-p0::p1:p2-xgyg.txt"> 0/50k </a> </td>
+
+</tr>
+
+<tr>
+
+      <td> <a href="ptx_testing/WRC1.txt">WRC + membar.cta + membar.gl</a> </td>
+
+      <td> P<sub>0</sub> |<sub>cta</sub> (P<sub>1</sub> |<sub>warp</sub> P<sub>2</sub>)</td>
+
+      
+
+      <td> <a href="http://multicore.doc.ic.ac.uk/gpu-litmus/entries/gtx540-WRC+membar.cta+membar.gl-p0::p1:p2-xgyg.txt"> 0/50k </a> </td>
+
+      <td> <a href="http://multicore.doc.ic.ac.uk/gpu-litmus/entries/gtx660-WRC+membar.cta+membar.gl-p0::p1:p2-xgyg.txt"> 0/100k </a> </td>
+
+      <td> <a href="http://multicore.doc.ic.ac.uk/gpu-litmus/entries/gtx750ti-WRC+membar.cta+membar.gl-p0::p1:p2-xgyg.txt"> 0/50k </a> </td>
+
+      <td> <a href="http://multicore.doc.ic.ac.uk/gpu-litmus/entries/gtx-titan-WRC+membar.cta+membar.gl-p0::p1:p2-xgyg.txt"> 0/50k </a> </td>
+
+      <td> <a href="http://multicore.doc.ic.ac.uk/gpu-litmus/entries/tesla-c2075-WRC+membar.cta+membar.gl-p0::p1:p2-xgyg.txt"> 0/50k </a> </td>
+
+</tr>
+
+<tr>
+
+      <td> <a href="ptx_testing/WRC2.txt">WRC + membar.gl + membar.cta</a> </td>
+
+      <td> P<sub>0</sub> |<sub>cta</sub> (P<sub>1</sub> |<sub>warp</sub> P<sub>2</sub>)</td>
+
+      
+
+      <td> <a href="http://multicore.doc.ic.ac.uk/gpu-litmus/entries/gtx540-WRC+membar.gl+membar.cta-p0::p1:p2-xgyg.txt"> 0/50k </a> </td>
+
+      <td> <a href="http://multicore.doc.ic.ac.uk/gpu-litmus/entries/gtx660-WRC+membar.gl+membar.cta-p0::p1:p2-xgyg.txt"> 0/100k </a> </td>
+
+      <td> <a href="http://multicore.doc.ic.ac.uk/gpu-litmus/entries/gtx750ti-WRC+membar.gl+membar.cta-p0::p1:p2-xgyg.txt"> 0/50k </a> </td>
+
+      <td> <a href="http://multicore.doc.ic.ac.uk/gpu-litmus/entries/gtx-titan-WRC+membar.gl+membar.cta-p0::p1:p2-xgyg.txt"> 0/50k </a> </td>
+
+      <td> <a href="http://multicore.doc.ic.ac.uk/gpu-litmus/entries/tesla-c2075-WRC+membar.gl+membar.cta-p0::p1:p2-xgyg.txt"> 0/50k </a> </td>
+
+</tr>
+
+<tr>
+
+      <td> <a href="ptx_testing/WWC1.txt">WWC + membar.cta + membar.gl</a> </td>
+
+      <td> P<sub>0</sub> |<sub>cta</sub> (P<sub>1</sub> |<sub>warp</sub> P<sub>2</sub>)</td>
+
+      
+
+      <td> <a href="http://multicore.doc.ic.ac.uk/gpu-litmus/entries/gtx540-WWC+membar.cta+membar.gl-p0::p1:p2-xgyg.txt"> 0/50k </a> </td>
+
+      <td> <a href="http://multicore.doc.ic.ac.uk/gpu-litmus/entries/gtx660-WWC+membar.cta+membar.gl-p0::p1:p2-xgyg.txt"> 0/100k </a> </td>
+
+      <td> <a href="http://multicore.doc.ic.ac.uk/gpu-litmus/entries/gtx750ti-WWC+membar.cta+membar.gl-p0::p1:p2-xgyg.txt"> 0/50k </a> </td>
+
+      <td> <a href="http://multicore.doc.ic.ac.uk/gpu-litmus/entries/gtx-titan-WWC+membar.cta+membar.gl-p0::p1:p2-xgyg.txt"> 0/50k </a> </td>
+
+      <td> <a href="http://multicore.doc.ic.ac.uk/gpu-litmus/entries/tesla-c2075-WWC+membar.cta+membar.gl-p0::p1:p2-xgyg.txt"> 0/50k </a> </td>
+
+</tr>
+
+<tr>
+
+      <td> <a href="ptx_testing/WWC2.txt">WWC + membar.gl + membar.cta</a> </td>
+
+      <td> P<sub>0</sub> |<sub>cta</sub> (P<sub>1</sub> |<sub>warp</sub> P<sub>2</sub>)</td>
+
+      
+
+      <td> <a href="http://multicore.doc.ic.ac.uk/gpu-litmus/entries/gtx540-WWC+membar.gl+membar.cta-p0::p1:p2-xgyg.txt"> 0/50k </a> </td>
+
+      <td> <a href="http://multicore.doc.ic.ac.uk/gpu-litmus/entries/gtx660-WWC+membar.gl+membar.cta-p0::p1:p2-xgyg.txt"> 0/100k </a> </td>
+
+      <td> <a href="http://multicore.doc.ic.ac.uk/gpu-litmus/entries/gtx750ti-WWC+membar.gl+membar.cta-p0::p1:p2-xgyg.txt"> 0/50k </a> </td>
+
+      <td> <a href="http://multicore.doc.ic.ac.uk/gpu-litmus/entries/gtx-titan-WWC+membar.gl+membar.cta-p0::p1:p2-xgyg.txt"> 0/50k </a> </td>
+
+      <td> <a href="http://multicore.doc.ic.ac.uk/gpu-litmus/entries/tesla-c2075-WWC+membar.gl+membar.cta-p0::p1:p2-xgyg.txt"> 0/50k </a> </td>
+
+</tr>
+
+
+<tr>
+
+      <td> <a href="ptx_testing/WRW+WR1.txt">WRW+WR + membar.cta + membar.gl</a> </td>
+
+      <td> P<sub>0</sub> |<sub>cta</sub> (P<sub>1</sub> |<sub>warp</sub> P<sub>2</sub>)</td>
+
+      
+
+      <td> <a href="http://multicore.doc.ic.ac.uk/gpu-litmus/entries/gtx540-WRW+WR+membar.cta+membar.gl-p0::p1:p2-xgyg.txt"> 0/50k </a> </td>
+
+      <td> <a href="http://multicore.doc.ic.ac.uk/gpu-litmus/entries/gtx660-WRW+WR+membar.cta+membar.gl-p0::p1:p2-xgyg.txt"> 0/100k </a> </td>
+
+      <td> <a href="http://multicore.doc.ic.ac.uk/gpu-litmus/entries/gtx750ti-WRW+WR+membar.cta+membar.gl-p0::p1:p2-xgyg.txt"> 0/50k </a> </td>
+
+      <td> <a href="http://multicore.doc.ic.ac.uk/gpu-litmus/entries/gtx-titan-WRW+WR+membar.cta+membar.gl-p0::p1:p2-xgyg.txt"> 0/50k </a> </td>
+
+      <td> <a href="http://multicore.doc.ic.ac.uk/gpu-litmus/entries/tesla-c2075-WRW+WR+membar.cta+membar.gl-p0::p1:p2-xgyg.txt"> 0/50k </a> </td>
+
+</tr>
+
+<tr>
+
+      <td> <a href="ptx_testing/WRW+WR2.txt">WRW+WR + membar.gl + membar.cta</a> </td>
+
+      <td> P<sub>0</sub> |<sub>cta</sub> (P<sub>1</sub> |<sub>warp</sub> P<sub>2</sub>)</td>
+
+      
+
+      <td> <a href="http://multicore.doc.ic.ac.uk/gpu-litmus/entries/gtx540-WRW+WR+membar.gl+membar.cta-p0::p1:p2-xgyg.txt"> 0/50k </a> </td>
+
+      <td> <a href="http://multicore.doc.ic.ac.uk/gpu-litmus/entries/gtx660-WRW+WR+membar.gl+membar.cta-p0::p1:p2-xgyg.txt"> 0/100k </a> </td>
+
+      <td> <a href="http://multicore.doc.ic.ac.uk/gpu-litmus/entries/gtx750ti-WRW+WR+membar.gl+membar.cta-p0::p1:p2-xgyg.txt"> 0/50k </a> </td>
+
+      <td> <a href="http://multicore.doc.ic.ac.uk/gpu-litmus/entries/gtx-titan-WRW+WR+membar.gl+membar.cta-p0::p1:p2-xgyg.txt"> 0/50k </a> </td>
+
+      <td> <a href="http://multicore.doc.ic.ac.uk/gpu-litmus/entries/tesla-c2075-WRW+WR+membar.gl+membar.cta-p0::p1:p2-xgyg.txt"> 0/50k </a> </td>
+
+</tr>
+
+<tr>
+
+      <td> <a href="ptx_testing/WRW+2W1.txt">WRW+2W + membar.cta + membar.gl</a> </td>
+
+      <td> P<sub>0</sub> |<sub>cta</sub> (P<sub>1</sub> |<sub>warp</sub> P<sub>2</sub>)</td>
+
+      
+
+      <td> <a href="http://multicore.doc.ic.ac.uk/gpu-litmus/entries/gtx540-WRW+2W+membar.cta+membar.gl-p0::p1:p2-xgyg.txt"> 0/50k </a> </td>
+
+      <td> <a href="http://multicore.doc.ic.ac.uk/gpu-litmus/entries/gtx660-WRW+2W+membar.cta+membar.gl-p0::p1:p2-xgyg.txt"> 0/100k </a> </td>
+
+      <td> <a href="http://multicore.doc.ic.ac.uk/gpu-litmus/entries/gtx750ti-WRW+2W+membar.cta+membar.gl-p0::p1:p2-xgyg.txt"> 0/50k </a> </td>
+
+      <td> <a href="http://multicore.doc.ic.ac.uk/gpu-litmus/entries/gtx-titan-WRW+2W+membar.cta+membar.gl-p0::p1:p2-xgyg.txt"> 0/50k </a> </td>
+
+      <td> <a href="http://multicore.doc.ic.ac.uk/gpu-litmus/entries/tesla-c2075-WRW+2W+membar.cta+membar.gl-p0::p1:p2-xgyg.txt"> 0/50k </a> </td>
+
+</tr>
+
+<tr>
+
+      <td> <a href="ptx_testing/WRW+2W2.txt">WRW+2W + membar.gl + membar.cta</a> </td>
+
+      <td> P<sub>0</sub> |<sub>cta</sub> (P<sub>1</sub> |<sub>warp</sub> P<sub>2</sub>)</td>
+
+      
+
+      <td> <a href="http://multicore.doc.ic.ac.uk/gpu-litmus/entries/gtx540-WRW+2W+membar.gl+membar.cta-p0::p1:p2-xgyg.txt"> 0/50k </a> </td>
+
+      <td> <a href="http://multicore.doc.ic.ac.uk/gpu-litmus/entries/gtx660-WRW+2W+membar.gl+membar.cta-p0::p1:p2-xgyg.txt"> 0/100k </a> </td>
+
+      <td> <a href="http://multicore.doc.ic.ac.uk/gpu-litmus/entries/gtx750ti-WRW+2W+membar.gl+membar.cta-p0::p1:p2-xgyg.txt"> 0/50k </a> </td>
+
+      <td> <a href="http://multicore.doc.ic.ac.uk/gpu-litmus/entries/gtx-titan-WRW+2W+membar.gl+membar.cta-p0::p1:p2-xgyg.txt"> 0/50k </a> </td>
+
+      <td> <a href="http://multicore.doc.ic.ac.uk/gpu-litmus/entries/tesla-c2075-WRW+2W+membar.gl+membar.cta-p0::p1:p2-xgyg.txt"> 0/50k </a> </td>
+
+</tr>
+
+    
+  </table>
+  </div>
+
+  <p> <b>New test results</b>&nbsp;&nbsp;&nbsp; There are a total of 2
+  tests with 7 events that are allowed under PTX1 but disallowed under
+  PTX2, and for which Alglave et al.  do not provide testing results.
+  We ran these two tests on a GTX Titan using Alglave et al.'s
+  GPU-litmus tool. We do not observe the weak behaviour.  </p>
+
+
+  <div class="table-responsive">
+  <table class="table table-striped table-bordered">
+    <thead>
+    <tr>
+      
+      <th>Test shape</th>
+
+      <th>GPU config</th>
+
+      <th>GTX Titan</th>
+      
+    </tr>        
+    </thead>
+<tr>
+
+      <td> <a href="ptx_testing/RWC_uniproc.txt">RWC + membar.cta + membar.gl (single-address)</a> </td>
+
+      <td> P<sub>0</sub> |<sub>cta</sub> (P<sub>1</sub> |<sub>warp</sub> P<sub>2</sub>)</td>
+
+      <td> <a href="ptx_testing/RWC_uniproc/RWC_uniproc.txt"> 0/100k </a> </td>
+
+</tr>
+
+<tr>
+
+      <td> <a href="ptx_testing/WRR+2W_uniproc.txt">WRR+2W + membar.cta + membar.gl (single-address)</a> </td>
+
+      <td> P<sub>0</sub> |<sub>cta</sub> (P<sub>1</sub> |<sub>warp</sub> P<sub>2</sub>)</td>
+
+      <td> <a href="ptx_testing/WRR+2W_uniproc/WRR+2W_uniproc.txt"> 0/100k </a> </td>
+
+</tr>
+
+  </table>
+  </div>
+
+  <h2>8-event executions</h2> <p><b>Existing test
+  results</b>&nbsp;&nbsp;&nbsp;Alloy found 10 tests with 8 events that
+  are allowed under PTX1 but disallowed under PTX2 and for which
+  Alglave et al. provide testing results. In no case do we observe the
+  weak behaviour.
+
+  </p> <div class="table-responsive"> <table
+  class="table table-striped table-bordered">
+    <thead>
+    <tr>
+
+      <th>Test shape</th>
+
+      <th>GPU config</th>
+
+      <th>GTX 540</th>
+
+      <th>GTX 660</th>
+
+      <th>GTX 750 Ti</th>
+
+      <th>GTX Titan</th>
+
+      <th>Tesla C2075</th>
+
+    </tr>
+    </thead>
+    <tr>
+
+      <td> <a href="ptx_testing/IRIW1.txt">IRIW + membar.cta + membar.gl</a> </td>
+
+      <td> P<sub>0</sub> |<sub>cta</sub> (P<sub>1</sub> |<sub>warp</sub> P<sub>2</sub> |<sub>warp</sub> P<sub>3</sub>)</td>
+
+      <td> <a href="http://multicore.doc.ic.ac.uk/gpu-litmus/entries/gtx540-IRIW+membar.cta+membar.gl-p0::p1:p2:p3-xgyg.txt"> 0/50k </a> </td>
+
+      <td> <a href="http://multicore.doc.ic.ac.uk/gpu-litmus/entries/gtx660-IRIW+membar.cta+membar.gl-p0::p1:p2:p3-xgyg.txt"> 0/100k </a> </td>
+
+      <td> <a href="http://multicore.doc.ic.ac.uk/gpu-litmus/entries/gtx750ti-IRIW+membar.cta+membar.gl-p0::p1:p2:p3-xgyg.txt"> 0/50k </a> </td>
+
+      <td> <a href="http://multicore.doc.ic.ac.uk/gpu-litmus/entries/gtx-titan-IRIW+membar.cta+membar.gl-p0::p1:p2:p3-xgyg.txt"> 0/50k </a> </td>
+
+      <td> <a href="http://multicore.doc.ic.ac.uk/gpu-litmus/entries/tesla-c2075-IRIW+membar.cta+membar.gl-p0::p1:p2:p3-xgyg.txt"> 0/50k </a> </td>
+
+    </tr>
+
+    <tr>
+
+      <td> <a href="ptx_testing/IRIW2.txt">IRIW + membar.gl + membar.cta</a> </td>
+
+      <td> P<sub>0</sub> |<sub>cta</sub> (P<sub>1</sub> |<sub>warp</sub> P<sub>2</sub> |<sub>warp</sub> P<sub>3</sub>)</td>
+
+      <td> <a href="http://multicore.doc.ic.ac.uk/gpu-litmus/entries/gtx540-IRIW+membar.cta+membar.gl-p0:p1:p3::p2-xgyg.txt"> 0/50k </a> </td>
+      <td> <a href="http://multicore.doc.ic.ac.uk/gpu-litmus/entries/gtx660-IRIW+membar.cta+membar.gl-p0:p1:p3::p2-xgyg.txt"> 0/100k </a> </td>
+      <td> <a href="http://multicore.doc.ic.ac.uk/gpu-litmus/entries/gtx750ti-IRIW+membar.cta+membar.gl-p0:p1:p3::p2-xgyg.txt"> 0/50k </a> </td>
+      <td> <a href="http://multicore.doc.ic.ac.uk/gpu-litmus/entries/gtx-titan-IRIW+membar.cta+membar.gl-p0:p1:p3::p2-xgyg.txt"> 0/50k </a> </td>
+      <td> <a href="http://multicore.doc.ic.ac.uk/gpu-litmus/entries/tesla-c2075-IRIW+membar.cta+membar.gl-p0:p1:p3::p2-xgyg.txt"> 0/50k </a> </td>
+
+    </tr>
+
+
+    <tr>
+
+      <td> <a href="ptx_testing/IRRWIW1.txt">IRRWIW + membar.cta + membar.gl</a> </td>
+
+      <td> P<sub>0</sub> |<sub>cta</sub> (P<sub>1</sub> |<sub>warp</sub> P<sub>2</sub> |<sub>warp</sub> P<sub>3</sub>)</td>
+
+      <td> <a href="http://multicore.doc.ic.ac.uk/gpu-litmus/entries/gtx540-IRRWIW+membar.cta+membar.gl-p0::p1:p2:p3-xgyg.txt"> 0/50k </a> </td>
+
+      <td> <a href="http://multicore.doc.ic.ac.uk/gpu-litmus/entries/gtx660-IRRWIW+membar.cta+membar.gl-p0::p1:p2:p3-xgyg.txt"> 0/100k </a> </td>
+
+      <td> <a href="http://multicore.doc.ic.ac.uk/gpu-litmus/entries/gtx750ti-IRRWIW+membar.cta+membar.gl-p0::p1:p2:p3-xgyg.txt"> 0/50k </a> </td>
+
+      <td> <a href="http://multicore.doc.ic.ac.uk/gpu-litmus/entries/gtx-titan-IRRWIW+membar.cta+membar.gl-p0::p1:p2:p3-xgyg.txt"> 0/50k </a> </td>
+
+      <td> <a href="http://multicore.doc.ic.ac.uk/gpu-litmus/entries/tesla-c2075-IRRWIW+membar.cta+membar.gl-p0::p1:p2:p3-xgyg.txt"> 0/50k </a> </td>
+
+    </tr>
+
+    <tr>
+
+      <td> <a href="ptx_testing/IRRWIW2.txt">IRRWIW + membar.gl + membar.cta</a> </td>
+
+      <td> P<sub>0</sub> |<sub>cta</sub> (P<sub>1</sub> |<sub>warp</sub> P<sub>2</sub> |<sub>warp</sub> P<sub>3</sub>)</td>
+
+      <td> <a href="http://multicore.doc.ic.ac.uk/gpu-litmus/entries/gtx540-IRRWIW+membar.gl+membar.cta-p0::p1:p2:p3-xgyg.txt"> 0/50k </a> </td>
+
+      <td> <a href="http://multicore.doc.ic.ac.uk/gpu-litmus/entries/gtx660-IRRWIW+membar.gl+membar.cta-p0::p1:p2:p3-xgyg.txt"> 0/100k </a> </td>
+
+      <td> <a href="http://multicore.doc.ic.ac.uk/gpu-litmus/entries/gtx750ti-IRRWIW+membar.gl+membar.cta-p0::p1:p2:p3-xgyg.txt"> 0/50k </a> </td>
+
+      <td> <a href="http://multicore.doc.ic.ac.uk/gpu-litmus/entries/gtx-titan-IRRWIW+membar.gl+membar.cta-p0::p1:p2:p3-xgyg.txt"> 0/50k </a> </td>
+
+      <td> <a href="http://multicore.doc.ic.ac.uk/gpu-litmus/entries/tesla-c2075-IRRWIW+membar.gl+membar.cta-p0::p1:p2:p3-xgyg.txt"> 0/50k </a> </td>
+
+    </tr>
+
+    <tr>
+
+      <td> <a href="ptx_testing/IRRWIW3.txt">IRRWIW + membar.gl + membar.cta</a> </td>
+
+      <td> P<sub>2</sub> |<sub>cta</sub> (P<sub>0</sub> |<sub>warp</sub> P<sub>1</sub> |<sub>warp</sub> P<sub>3</sub>)</td>
+
+      <td> <a href="http://multicore.doc.ic.ac.uk/gpu-litmus/entries/gtx540-IRRWIW+membar.gl+membar.cta-p0:p1:p3::p2-xsyg.txt"> 0/50k </a> </td>
+
+      <td> <a href="http://multicore.doc.ic.ac.uk/gpu-litmus/entries/gtx660-IRRWIW+membar.gl+membar.cta-p0:p1:p3::p2-xsyg.txt"> 0/100k </a> </td>
+
+      <td> <a href="http://multicore.doc.ic.ac.uk/gpu-litmus/entries/gtx750ti-IRRWIW+membar.gl+membar.cta-p0:p1:p3::p2-xsyg.txt"> 0/50k </a> </td>
+
+      <td> <a href="http://multicore.doc.ic.ac.uk/gpu-litmus/entries/gtx-titan-IRRWIW+membar.gl+membar.cta-p0:p1:p3::p2-xsyg.txt"> 0/50k </a> </td>
+
+      <td> <a href="http://multicore.doc.ic.ac.uk/gpu-litmus/entries/tesla-c2075-IRRWIW+membar.gl+membar.cta-p0:p1:p3::p2-xsyg.txt"> 0/50k </a> </td>
+
+    </tr>
+
+    <tr>
+
+      <td> <a href="ptx_testing/IRRWIW4.txt">IRRWIW + membar.cta + membar.gl</a> </td>
+
+      <td> P<sub>2</sub> |<sub>cta</sub> (P<sub>0</sub> |<sub>warp</sub> P<sub>1</sub> |<sub>warp</sub> P<sub>3</sub>)</td>
+
+      <td> <a href="http://multicore.doc.ic.ac.uk/gpu-litmus/entries/gtx540-IRRWIW+membar.cta+membar.gl-p0:p1:p3::p2-xsyg.txt"> 0/50k </a> </td>
+
+      <td> <a href="http://multicore.doc.ic.ac.uk/gpu-litmus/entries/gtx660-IRRWIW+membar.cta+membar.gl-p0:p1:p3::p2-xsyg.txt"> 0/100k </a> </td>
+
+      <td> <a href="http://multicore.doc.ic.ac.uk/gpu-litmus/entries/gtx750ti-IRRWIW+membar.cta+membar.gl-p0:p1:p3::p2-xsyg.txt"> 0/50k </a> </td>
+
+      <td> <a href="http://multicore.doc.ic.ac.uk/gpu-litmus/entries/gtx-titan-IRRWIW+membar.cta+membar.gl-p0:p1:p3::p2-xsyg.txt"> 0/50k </a> </td>
+
+      <td> <a href="http://multicore.doc.ic.ac.uk/gpu-litmus/entries/tesla-c2075-IRRWIW+membar.cta+membar.gl-p0:p1:p3::p2-xsyg.txt"> 0/50k </a> </td>
+
+    </tr>
+
+    <tr>
+
+      <td> <a href="ptx_testing/IRWIW2.txt">IRWIW + membar.cta + membar.gl</a> </td>
+
+      <td> P<sub>0</sub> |<sub>cta</sub> (P<sub>1</sub> |<sub>warp</sub> P<sub>2</sub> |<sub>warp</sub> P<sub>3</sub>)</td>
+
+      <td> <a href="http://multicore.doc.ic.ac.uk/gpu-litmus/entries/gtx540-IRWIW+membar.cta+membar.gl-p0::p1:p2:p3-xgyg.txt"> 0/50k </a> </td>
+
+      <td> <a href="http://multicore.doc.ic.ac.uk/gpu-litmus/entries/gtx660-IRWIW+membar.cta+membar.gl-p0::p1:p2:p3-xgyg.txt"> 0/100k </a> </td>
+
+      <td> <a href="http://multicore.doc.ic.ac.uk/gpu-litmus/entries/gtx750ti-IRWIW+membar.cta+membar.gl-p0::p1:p2:p3-xgyg.txt"> 0/50k </a> </td>
+
+      <td> <a href="http://multicore.doc.ic.ac.uk/gpu-litmus/entries/gtx-titan-IRWIW+membar.cta+membar.gl-p0::p1:p2:p3-xgyg.txt"> 0/50k </a> </td>
+
+      <td> <a href="http://multicore.doc.ic.ac.uk/gpu-litmus/entries/tesla-c2075-IRWIW+membar.cta+membar.gl-p0::p1:p2:p3-xgyg.txt"> 0/50k </a> </td>
+
+    </tr>
+
+    <tr>
+
+      <td> <a href="ptx_testing/IRWIW1.txt">IRWIW + membar.gl + membar.cta</a> </td>
+
+      <td> P<sub>0</sub> |<sub>cta</sub> (P<sub>1</sub> |<sub>warp</sub> P<sub>2</sub> |<sub>warp</sub> P<sub>3</sub>)</td>
+
+      <td> <a href="http://multicore.doc.ic.ac.uk/gpu-litmus/entries/gtx540-IRWIW+membar.cta+membar.gl-p0:p1:p3::p2-xgyg.txt"> 0/50k </a> </td>
+      <td> <a href="http://multicore.doc.ic.ac.uk/gpu-litmus/entries/gtx660-IRWIW+membar.cta+membar.gl-p0:p1:p3::p2-xgyg.txt"> 0/100k </a> </td>
+      <td> <a href="http://multicore.doc.ic.ac.uk/gpu-litmus/entries/gtx750ti-IRWIW+membar.cta+membar.gl-p0:p1:p3::p2-xgyg.txt"> 0/50k </a> </td>
+      <td> <a href="http://multicore.doc.ic.ac.uk/gpu-litmus/entries/gtx-titan-IRWIW+membar.cta+membar.gl-p0:p1:p3::p2-xgyg.txt"> 0/50k </a> </td>
+      <td> <a href="http://multicore.doc.ic.ac.uk/gpu-litmus/entries/tesla-c2075-IRWIW+membar.cta+membar.gl-p0:p1:p3::p2-xgyg.txt"> 0/50k </a> </td>
+
+    </tr>
+
+
+
+  </table>
+  </div>
+
+  <p><b>New test results</b>&nbsp;&nbsp;&nbsp;There are a total of 2
+  tests with 8 events that are allowed under PTX1 but disallowed under
+  PTX2, and for which Alglave et al.  do not provide testing results.
+  We ran these two tests on a GTX Titan using Alglave et al.'s
+  GPU-litmus tool. We do not observe the weak behaviour.</p>
+
+  <div class="table-responsive">
+  <table class="table table-striped table-bordered">
+    <thead>
+    <tr>
+      
+      <th>Test shape</th>
+
+      <th>GPU config</th>
+
+      <th>GTX Titan</th>
+      
+    </tr>  
+</thead>
+    <tr>
+
+      <td> <a href="ptx_testing/IRIW_uniproc.txt">IRIW + membar.cta + membar.gl (single-address)</a> </td>
+
+      <td> P<sub>0</sub> |<sub>cta</sub> (P<sub>1</sub> |<sub>warp</sub> P<sub>2</sub> |<sub>warp</sub> P<sub>3</sub>)</td>
+
+      <td> <a href="ptx_testing/IRIW_uniproc/IRIW_uniproc.txt"> 0/100k </a> </td>
+
+    </tr>
+
+    <tr>
+
+      <td> <a href="ptx_testing/IRRWIW_uniproc.txt">IRRWIW + membar.cta + membar.gl (single-address)</a></td>
+
+      <td> P<sub>0</sub> |<sub>cta</sub> (P<sub>1</sub> |<sub>warp</sub> P<sub>2</sub> |<sub>warp</sub> P<sub>3</sub>)</td>
+
+      <td> <a href="ptx_testing/IRRWIW_uniproc/IRRWIW_uniproc.txt">
+	0/100k
+	</a> </td>
+
+    </tr>
+
+  </table>
+  </div>
 
 </div>
 
