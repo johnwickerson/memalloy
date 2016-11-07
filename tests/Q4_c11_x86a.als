@@ -1,6 +1,6 @@
 open ../mappings/c11_x86a[SE,HE]
 open ../sw/c11_simp[SE] as M1
-open ../hw/x86tso[HE] as M2
+open ../hw/x86tso_fixed[HE] as M2
 
 sig SE, HE {}
 
@@ -15,17 +15,13 @@ pred gp [X : Exec_C, X' : Exec_X86, map: SE -> HE] {
 
   // ... but can nonetheless be observed on the hardware.
   M2/consistent[X']
-
-  //hint_sw[X]
-  //hint_hw[X']
- 
-  // simplifying the solution (optional)
-  no_RMWs[X]
-
+  
 }
 
 run gp for
 exactly 1 c11_x86a/SW/exec/Exec,
 exactly 1 c11_x86a/HW/exec_H/exec/Exec,
 6 HE, 
-4 SE expect 0
+4 SE
+
+
