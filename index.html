@@ -61,17 +61,7 @@ them. We also provide the data underlying the experimental testing of our new PT
 </div>
 
 <div class="container">
-  
-  <h1><a name="GettingStarted"></a>1. Getting Started</h1>
-  <h2>Installation</h2>
-<p>Most of our models rely only on
-<a href="http://alloy.csail.mit.edu/alloy/">the basic Alloy tool</a>, but some
-depend on the higher-order quantification that is only supported in
-<a href="http://alloy.mit.edu/alloy/hola/">the AlloyStar tool</a>. An unofficial
-copy of AlloyStar (incorporating a couple of minor tweaks) can be
-downloaded from
-<a href="https://github.com/johnwickerson/AlloyStar">our GitHub repository</a>.</p>
-<p>The Alloy models in this repository are divided into four subdirectories:</p>
+  <p>The Alloy models in this repository are divided into four subdirectories:</p>
 <ul>
 <li>
 <p><code>hw</code>: architecture-level memory consistency models</p>
@@ -87,6 +77,20 @@ downloaded from
 relationships between them</p>
 </li>
 </ul>
+<p>The diagram below depicts how the models build on one another (an arrow from model <i>A</i> to model <i>B</i> indicates that <i>A</i> imports model <i>B</i>):
+<img class="img-responsive" src="hierarchy.png" alt="Model dependencies"/>
+</p>
+
+  <h1><a class="anchor" name="GettingStarted"></a>1. Getting Started</h1>
+  <h2>Installation</h2>
+<p>Most of our models rely only on
+<a href="http://alloy.csail.mit.edu/alloy/">the basic Alloy tool</a>, but some
+depend on the higher-order quantification that is only supported in
+<a href="http://alloy.mit.edu/alloy/hola/">the AlloyStar tool</a>. An unofficial
+copy of AlloyStar (incorporating a couple of minor tweaks) can be
+downloaded from
+<a href="https://github.com/johnwickerson/AlloyStar">our GitHub repository</a>.</p>
+
 <h2>Running Alloy</h2>
 <ul>
 <li>
@@ -129,7 +133,7 @@ is also a good
 <a href="http://alloy.mit.edu/alloy/tutorials/online/">online tutorial</a>.</li>
 </ul>
 
-<h1><a name="Reproducing"></a>2. Reproducing Results</h1>
+<h1><a class="anchor" name="Reproducing"></a>2. Reproducing Results</h1>
 <p>In the table below, the <strong>Task</strong> column refers to the row in Table 2
 on
 <a href="http://johnwickerson.github.io/papers/memalloy.pdf#page=11">page 11 of the paper</a>.
@@ -296,7 +300,7 @@ instance is found or not.</p>
 </table>
 
 
-<h1><a name="PTX"></a>3. Testing our stronger PTX MCM</h1> This
+<h1><a class="anchor" name="PTX"></a>3. Testing our stronger PTX MCM</h1> This
     section shows tests that differentiate the <a
     href="hw/ptx_orig.als">PTX1</a> model against the <a
     href="hw/ptx_cumul.als">PTX2</a> model. That is,
