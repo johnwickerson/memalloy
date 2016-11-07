@@ -20,6 +20,10 @@ pred GHB[x : Exec_X86] {
   is_acyclic[ghb]
 }
 
+fun ppo[x : Exec_H] : E->E {
+  (x.W -> x.W) & x.sb + (x.R -> x.(R+W)) & x.sb
+}
+
 pred consistent[x : Exec_X86] {
   Uniproc[x]
   Atomic[x]
