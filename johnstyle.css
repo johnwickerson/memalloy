@@ -1,0 +1,102 @@
+
+
+
+body {
+    background-color:#FFFFCC;
+    font-family: 'Computer Modern Serif', Times, serif;
+    font-size: 18px;
+    padding-top: 20px;
+}
+
+.jumbotron {
+    background-color:#E9E7BA;
+}
+
+h1,h2,h3,dt {
+    font-family: 'Computer Modern Sans', Helvetica, sans-serif;
+}
+
+/*h1 {
+    color: #660000;
+}*/
+h2 {
+    color: #665500;
+}
+h3 {
+    color: #668800;
+}
+
+/* http://stackoverflow.com/q/10732690 */
+a.anchor{
+    display: block;
+    position: relative;
+    top: -70px;
+    visibility: hidden;
+}
+ 
+/*a { 
+    font-weight: bold; 
+}*/
+/*
+a:link { 
+    color: #3366FF;
+}
+*/
+a:visited { 
+    color: #339999; 
+}
+/*
+a:active {
+    color: #FF0000;
+}
+*/
+
+pre,code {
+    background: none;
+    font-family: 'Computer Modern Typewriter', monospace;
+}
+
+/*
+a[href $='.pdf'] { 
+   padding-right: 16px;
+   background: transparent url(pdf.gif) no-repeat center right;
+}
+*/
+
+
+/*
+  dt {
+    float: left;
+    clear: left;
+    width: 100px;
+    text-align: right;
+    color: green;
+  }
+
+*/
+
+  dt:after {
+    content: ":";
+  }
+
+  /*
+  dd {
+    margin: 0 0 0 110px;
+    padding: 0 0 0.5em 0;
+  }
+ */
+
+  /* FOR BIB-BASE */
+.bibbase_group {
+  background-color: #E9E7BA;
+}
+
+span.bibbase_icon_text {
+  display: inline;
+}
+
+.nav-pills > li.dropdown > a:hover,
+.nav-pills > li.dropdown > a:focus
+{
+  background-color: #E9E7BA;
+}
