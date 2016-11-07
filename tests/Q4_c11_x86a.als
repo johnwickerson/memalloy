@@ -21,7 +21,6 @@ pred gp [X : Exec_C, X' : Exec_X86, map: SE -> HE] {
 run gp for
 exactly 1 c11_x86a/SW/exec/Exec,
 exactly 1 c11_x86a/HW/exec_H/exec/Exec,
-6 HE, 
-4 SE
-
-
+5 HE, 
+5 SE
+expect 0
