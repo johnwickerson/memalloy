@@ -11,4 +11,4 @@ published in the following paper:
   Proc. *Principles of Programming Languages (POPL)*, 2017. To
   appear. [[Preprint]](http://johnwickerson.github.io/papers/memalloy.pdf).
 
-Please see [[the online guide]](http://johnwickerson.github.io/memalloy/) for more information.
+Please see [the online guide](http://johnwickerson.github.io/memalloy/) for more information.
