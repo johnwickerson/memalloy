@@ -7,16 +7,8 @@ fun ctrlisb_[x : Exec_H] : E -> E {
   ^(x.cd) . (stor[x.isb]) . (x.sb)
 }
 
-fun dsb_[x : Exec_H] : E -> E {
-  (x.sb) . (stor[x.dsb]) . (x.sb)
-}
-
 fun dmb_[x : Exec_H] : E -> E {
   (x.sb) . (stor[x.dmb]) . (x.sb)
-}
-
-fun dsbst_[x : Exec_H] : E -> E {
-  (x.sb) . (stor[x.dsbst]) . (x.sb)
 }
 
 fun dmbst_[x : Exec_H] : E -> E {
@@ -54,7 +46,7 @@ pred valid_ppo[x : Exec_H, ppo : E -> E] {
 }
 
 fun strong[x : Exec_H] : E -> E {
-  dsb_[x] + dmb_[x] + dsbst_[x] + dmbst_[x]
+  dmb_[x] + dmbst_[x]
 }
 
 fun light[x : Exec_H] : E -> E {

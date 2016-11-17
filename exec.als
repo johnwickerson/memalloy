@@ -88,9 +88,12 @@ fun poloc[x : Exec] : E -> E {
   x.sb & x.sloc
 }
 
+fun com[x:Exec] : E->E {
+  x.rf + fr[x] + x.co
+}
+
 pred Uniproc[x : Exec] {
-  let com = x.rf + fr[x] + x.co |
-  is_acyclic[poloc[x] + com]
+  is_acyclic[poloc[x] + com[x]]
 }
 
 pred no_RMWs[x : Exec] {
