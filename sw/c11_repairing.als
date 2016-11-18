@@ -62,3 +62,17 @@ pred consistent4[x:Exec_C]{
   let psc = Esc . (rc[Fhb]) . ((x.sb) + shsb + eco) . (rc[hbF]) . Esc |
   is_acyclic[psc]
 }
+
+// Allowing further elimination of SC accesses:
+pred consistent5[x:Exec_C]{
+  HbCom[x]
+  NaRf[x]
+  let Esc = stor[x.sc] |
+  let shsb = (x.sb - (x.sloc & (x.W -> x.W))) . (hb[x]) .
+             (x.sb - (x.sloc & (x.R -> x.R))) |
+  let eco = ^(x.rf + x.co + rb[x]) |
+  let Fhb = (stor[x.F]) . (hb[x]) |
+  let hbF = (hb[x]) . (stor[x.F]) |
+  let psc = Esc . (rc[Fhb]) . ((x.sb) + shsb + eco) . (rc[hbF]) . Esc |
+  is_acyclic[psc]
+}
