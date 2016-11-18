@@ -83,3 +83,19 @@ run t4 { some X:Exec_C {
   irreflexive[cycle3[X]]
 }} for 1 Exec, 4 E, 3 Int expect 1
 // Gives.......
+
+
+
+////////////////////////////////////
+
+run t0 { some X:Exec_C {
+  distinguishes[X]
+  some disj e0,e1,e2:E {
+    e0 in X.(W-sc)
+    e1 in X.(W&sc)
+    e2 in X.(R-sc)
+    (e0->e2) in X.rf
+    (e0->e1) in M1/hb[X] 
+    (e0->e1) in X.sloc
+  }
+}} for 1 Exec, 5 E, 3 Int
