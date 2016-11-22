@@ -82,7 +82,31 @@ run t4 { some X:Exec_C {
   irreflexive[cycle2[X]]
   irreflexive[cycle3[X]]
 }} for 1 Exec, 4 E, 3 Int expect 1
-// Gives.......
+// Gives:
+// store(x,1,SC); || store(y,2,RLX);
+// store(y,1,SC); || r0 = load(x,SC);
+// { y==2 && r0==0 }
+
+fun cycle4[X:Exec_C] : E->E {
+  (stor[X.W & X.sc]) .
+  (X.sb - X.sloc) .
+  (stor[X.W & X.sc]) .
+  (X.co) .
+  (stor[X.W & X.(A - rel)]) .
+  (X.sb - X.sloc) .
+  (stor[X.R & X.sc]) .
+  (X.fr)
+}
+
+run t5 { some X:Exec_C {
+  distinguishes[X]
+  irreflexive[cycle1[X]]
+  irreflexive[cycle2[X]]
+  irreflexive[cycle3[X]]
+  irreflexive[cycle4[X]]
+}} for 1 Exec, 4 E, 3 Int expect 1
+// Gives: ...........
+
 
 
 
