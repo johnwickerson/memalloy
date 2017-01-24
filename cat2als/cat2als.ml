@@ -23,7 +23,7 @@ OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION
 WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 *)
 
-open Printf
+open Format
 open General_purpose
 open Cat_syntax
 
@@ -123,8 +123,7 @@ let pp_env oc =
 	    
 let type_of_var env x =
   try List.assoc x env with Not_found ->
-    fail (fun () ->
-      eprintf "Variable %s is unbound in [\n%a]" x pp_env env)
+    failwith (asprintf "Variable %s is unbound in [\n%a]" x pp_env env)
      
 let rec type_list env e = function
   | [] -> type_of env e
@@ -133,9 +132,9 @@ let rec type_list env e = function
      if t = t' then
        type_list env e es
      else
-       fail (fun () ->
-	 eprintf "%a has type %s but %a has type %s"
-		 pp_expr e (pp_typ t) pp_expr e' (pp_typ t'))
+       failwith (asprintf
+		   "%a has type %s but %a has type %s"
+		   pp_expr e (pp_typ t) pp_expr e' (pp_typ t'))
 	     
 and type_of env = function
   | Empty_rln -> Rel
@@ -143,7 +142,7 @@ and type_of env = function
       match type_of_var env x with
       | [], ret_type -> ret_type
       | _, _ ->
-	 fail (fun () -> eprintf "Missing argument for %s." x)
+	 failwith (asprintf "Missing argument for %s." x)
     end
   | App (f, args) ->
      let (args_type, ret_type) = type_of_var env f in
@@ -242,15 +241,17 @@ let rec als_of_instrs env class_name ax_list oc = function
      in
      als_of_instrs env' class_name ax_list oc instrs
   | LetRec xes :: instrs ->
-     fail (fun () ->
-       eprintf "Recursive definition should have been removed.")
+     failwith
+       (asprintf "Recursive definition should have been removed.")
   | Test (t,e,n) :: instrs ->
      fprintf oc "pred %s [e:E, X:%s] {\n" n class_name; 
      fprintf oc "  %s[%a]\n" (pp_test_type t) als_of_expr e;
      fprintf oc "}\n";
      als_of_instrs env class_name (n :: ax_list) oc instrs
 
-let pp_preamble model_name class_path oc =
+let pp_preamble cat_path model_name class_path oc =
+  fprintf oc "/* Automatically generated from %s on %s at %s */\n\n"
+	  cat_path (today ()) (now ());
   fprintf oc "module %s[E]\n" model_name;
   fprintf oc "open %s[E]\n\n" class_path
 
@@ -259,8 +260,8 @@ let pp_postamble class_name axiom_list oc =
   List.iter (fprintf oc "  %s[e,X]\n") axiom_list;
   fprintf oc "}\n"
 			
-let als_of_model env model_name class_path class_name oc instrs =
-  pp_preamble model_name class_path oc;
+let als_of_model env cat_path model_name class_path class_name oc instrs =
+  pp_preamble cat_path model_name class_path oc;
   let axiom_list = als_of_instrs env class_name [] oc instrs in
   pp_postamble class_name axiom_list oc
 
@@ -285,8 +286,7 @@ let parse_exec_class = function
   | "Exec_PPC" -> Power_exec
   | "Exec_Arm7" -> Arm7_exec
   | "Exec_Arm8" -> Arm8_exec
-  | x -> fail (fun () ->
-	   eprintf "Unexpected execution class: %s." x)
+  | x -> failwith (asprintf "Unexpected execution class: %s." x)
 
 let rec class_sets = function
   | Basic_exec ->
@@ -355,7 +355,7 @@ let check_args (cat_path, als_path, class_path, class_name) =
   assert (Filename.check_suffix cat_path ".cat");
   assert (Filename.check_suffix als_path ".als");
   if Sys.file_exists als_path then
-    fail (fun () -> eprintf "Target Alloy file already exists.")
+    failwith (asprintf "Target Alloy file already exists.")
   
 let parse_file cat_path =
   let ic = open_in cat_path in
@@ -368,7 +368,7 @@ let main () =
   let model_name =
     Filename.chop_extension (Filename.basename als_path)
   in
-  let oc = open_out als_path in
+  let oc = formatter_of_out_channel (open_out als_path) in
   let cat_model = parse_file cat_path in
   let exec_class = parse_exec_class class_name in
   let env =
@@ -379,7 +379,7 @@ let main () =
   let cat_model = unfold_instrs cat_model in
   debug "Cat model: %a" pp_instrs cat_model;
   als_of_model
-    env model_name class_path class_name oc cat_model; 
+    env cat_path model_name class_path class_name oc cat_model; 
   exit 0
     
 let _ = main ()     
