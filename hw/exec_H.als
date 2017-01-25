@@ -17,6 +17,8 @@ sig Exec_H extends Exec {
     
 }
 
+fun atom[e:E, X:Exec_H] : E->E { X.atom - (univ -> e) - (e -> univ) }
+
 fun fre[e:E, x : Exec_H] : E -> E {
   fr[e,x] - sthd[e,x]
 }
@@ -41,9 +43,9 @@ fun coi[e:E, x : Exec_H] : E -> E {
   co[e,x] & sthd[e,x]
 }
 
-pred Atomic[e:E, x : Exec_H] {
-  is_empty[atom[e,x] & ((fre[e,x]) . (coe[e,x]))]
-}
+//pred Atomic[e:E, x : Exec_H] {
+//  is_empty[atom[e,x] & ((fre[e,x]) . (coe[e,x]))]
+//}
 
 pred storebuffering_H[x : Exec_H] {
   /*

@@ -76,43 +76,58 @@ sig Exec {
   	
 }
 
-fun fr_init[x:Exec] : E->E {
-  (stor[x.R] - (~(x.rf) . (x.rf))) . (x.sloc) . (stor[x.W])
+fun ev [e:E, X:Exec] : set E { X.ev - e }
+fun W [e:E, X:Exec] : set E { X.W - e }
+fun R [e:E, X:Exec] : set E { X.R - e }
+fun F [e:E, X:Exec] : set E { X.F - e }
+fun naL [e:E, X:Exec] : set E { X.naL - e }
+
+fun sb [e:E, X:Exec] : E->E { X.sb - (univ -> e) - (e -> univ) }
+fun ad [e:E, X:Exec] : E->E { X.ad - (univ -> e) - (e -> univ) }
+fun dd [e:E, X:Exec] : E->E { X.dd - (univ -> e) - (e -> univ) }
+fun cd [e:E, X:Exec] : E->E { X.cd - (univ -> e) - (e -> univ) }
+fun sthd [e:E, X:Exec] : E->E { X.sthd - (univ -> e) - (e -> univ) }
+fun sloc [e:E, X:Exec] : E->E { X.sloc - (univ -> e) - (e -> univ) }
+fun rf [e:E, X:Exec] : E->E { X.rf - (univ -> e) - (e -> univ) }
+fun co [e:E, X:Exec] : E->E { X.co - (univ -> e) - (e -> univ) }
+
+fun fr_init[e:E, x:Exec] : E->E {
+  (stor[R[e,x]] - (~(rf[e,x]) . (rf[e,x]))) . (sloc[e,x]) . (stor[W[e,x]])
 }
 
-fun fr[x : Exec] : E -> E {
-  (fr_init[x] + (~(x.rf) . (x.co))) - iden
+fun fr[e:E, x : Exec] : E -> E {
+  (fr_init[e,x] + (~(rf[e,x]) . (co[e,x]))) - iden
 }
 
-fun poloc[x : Exec] : E -> E {
-  x.sb & x.sloc
+fun poloc[e:E, x : Exec] : E -> E {
+  sb[e,x] & sloc[e,x]
 }
 
-fun com[x:Exec] : E->E {
-  x.rf + fr[x] + x.co
-}
+//fun com[e:E, x:Exec] : E->E {
+//  rf[e,x] + fr[e,x] + co[e,x]
+//}
 
-pred Uniproc[x : Exec] {
-  is_acyclic[poloc[x] + com[x]]
-}
+//pred Uniproc[e:E, x : Exec] {
+//  is_acyclic[poloc[e,x] + com[e,x]]
+//}
 
-pred no_RMWs[x : Exec] {
-  no x.(R & W)
+pred no_RMWs[e:E, x : Exec] {
+  no (R[e,x] & W[e,x])
 }
 
 // sb, within each thread, is total
-pred total_sb[x : Exec] {
-  x.sthd - iden in x.sb + ~(x.sb)
+pred total_sb[e:E, x : Exec] {
+  sthd[e,x] - iden in sb[e,x] + ~(sb[e,x])
 }
 
-pred forced_co[x : Exec] {
-  (imm[x.co]) . (imm[x.co]) . ~(imm[x.co]) in
-    (rc[x.rf]) . (rc[(x.sb) . (rc[~(x.rf)])])
+pred forced_co[e:E, x : Exec] {
+  (imm[co[e,x]]) . (imm[co[e,x]]) . ~(imm[co[e,x]]) in
+    (rc[rf[e,x]]) . (rc[(sb[e,x]) . (rc[~(rf[e,x])])])
 }
 
-pred no_if_zero[x:Exec] {
+pred no_if_zero[e:E, x:Exec] {
   // avoid "if(r==0)" in generated litmus test
-  dom[x.cd] in ran[x.rf]
+  dom[cd[e,x]] in ran[rf[e,x]]
 }
 
 /*************************/

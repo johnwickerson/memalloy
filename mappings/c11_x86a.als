@@ -42,7 +42,7 @@ pred apply_map[X : SW/Exec_C, X' : HW/Exec_X86, map : SE -> HE] {
     (e2 -> e1) not in ((X'.co) . (X'.rf))
 
     // read does not observe a too-early value
-    (e1 -> e2) not in ((fr[X']) . (X'.co))
+    (e1 -> e2) not in ((fr[none,X']) . (X'.co))
   }
 
   // RMWs compile to locked RMWs

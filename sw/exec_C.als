@@ -38,9 +38,9 @@ sig Exec_C extends Exec {
 }
 
 fun A[e:E, X:Exec_C] : set E { X.A - e }
-fun acq[e:E, X_Exec_C] : set E { X.acq - e }
-fun rel[e:E, X_Exec_C] : set E { X.rel - e }
-fun sc[e:E, X_Exec_C] : set E { X.sc - e }
+fun acq[e:E, X:Exec_C] : set E { X.acq - e }
+fun rel[e:E, X:Exec_C] : set E { X.rel - e }
+fun sc[e:E, X:Exec_C] : set E { X.sc - e }
 
 pred wf_s[x : Exec_C, s : E -> E] { 
 
