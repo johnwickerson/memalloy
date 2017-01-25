@@ -1,32 +1,32 @@
 module ppc_unrolled[E]
 open exec_ppc[E]
 
-fun ctrlisync_[x : Exec_PPC] : E -> E {
-  ^(x.cd) . (stor[x.isync]) . (x.sb)
+fun ctrlisync_[e:E, x : Exec_PPC] : E -> E {
+  ^(cd[e,x]) . (stor[isync[e,x]]) . (sb[e,x])
 }
 
-fun lwsync_[x : Exec_PPC] : E -> E {
-  (x.sb) . (stor[x.lwsync]) . (x.sb)
+fun lwsync_[e:E, x : Exec_PPC] : E -> E {
+  (sb[e,x]) . (stor[lwsync[e,x]]) . (sb[e,x])
 }
 
-fun sync_[x : Exec_PPC] : E -> E {
-  (x.sb) . (stor[x.sync]) . (x.sb)
+fun sync_[e:E, x : Exec_PPC] : E -> E {
+  (sb[e,x]) . (stor[sync[e,x]]) . (sb[e,x])
 }
 
-fun eieio_[x : Exec_PPC] : E -> E {
-  (x.sb) . (stor[x.eieio]) . (x.sb)
+fun eieio_[e:E, x : Exec_PPC] : E -> E {
+  (sb[e,x]) . (stor[eieio[e,x]]) . (sb[e,x])
 }
 
-fun ppo[x : Exec_PPC] : E->E {
-  let dep = x.ad + x.dd |
-  let rdw = poloc[x] & ((fre[x]) . (rfe[x])) |
-  let detour = poloc[x] & ((coe[x]) . (rfe[x])) |
-  let addrpo = (x.ad) . (x.sb) |
+fun ppo[e:E, x : Exec_PPC] : E->E {
+  let dep = ad[e,x] + dd[e,x] |
+  let rdw = poloc[e,x] & ((fre[e,x]) . (rfe[e,x])) |
+  let detour = poloc[e,x] & ((coe[e,x]) . (rfe[e,x])) |
+  let addrpo = (ad[e,x]) . (sb[e,x]) |
 
   /* Initial value */  
-  let ci0 = (ctrlisync_[x]) + detour |
-  let ii0 = dep + rfi[x] + rdw |
-  let cc0 = dep + poloc[x] + ^(x.cd) + addrpo |
+  let ci0 = (ctrlisync_[e,x]) + detour |
+  let ii0 = dep + rfi[e,x] + rdw |
+  let cc0 = dep + poloc[e,x] + ^(cd[e,x]) + addrpo |
   let ic0 = none -> none |
 
   let ci1 = ci0 + ci0.ii0 + cc0.ci0 |
@@ -44,89 +44,88 @@ fun ppo[x : Exec_PPC] : E->E {
   let cc = cc0 + ci2 + ci2.ic2 + cc2.cc2 |
   let ic = ic0 + ii2 + cc2 + ic2.cc2 + ii2.ic2 |
 
-  let ppoR = (x.R -> x.R) & ii |
-  let ppoW = (x.R -> x.W) & ic |
+  let ppoR = (R[e,x] -> R[e,x]) & ii |
+  let ppoW = (R[e,x] -> W[e,x]) & ic |
   ppoR + ppoW
   
 }
 
-
-fun strong[x : Exec_PPC] : E -> E {
-  sync_[x]
+fun strong[e:E, x : Exec_PPC] : E -> E {
+  sync_[e,x]
 }
 
-fun light[x : Exec_PPC] : E -> E {
-  let lwsync = lwsync_[x] - (x.W -> x.R) |
-  let eieio = eieio_[x] & (x.W -> x.W)  |
+fun light[e:E, x : Exec_PPC] : E -> E {
+  let lwsync = lwsync_[e,x] - (W[e,x] -> R[e,x]) |
+  let eieio = eieio_[e,x] & (W[e,x] -> W[e,x])  |
   lwsync + eieio
 }
 
-fun fence[x : Exec_PPC] : E -> E {
-  strong[x] + light[x]
+fun fence[e:E, x : Exec_PPC] : E -> E {
+  strong[e,x] + light[e,x]
 }
 
-fun ppoext[x : Exec_PPC] : E -> E {
-  ((rfe[x]) . (ppo[x])) + 
-             ((ppo[x]) . (rfe[x])) + 
-  ((rfe[x]) . (ppo[x]) . (rfe[x]))
+fun ppoext[e:E, x : Exec_PPC] : E -> E {
+  ((rfe[e,x]) . (ppo[e,x])) + 
+               ((ppo[e,x]) . (rfe[e,x])) + 
+  ((rfe[e,x]) . (ppo[e,x]) . (rfe[e,x]))
 }
 
-fun fenceext[x : Exec_PPC] : E -> E {
-  ((rfe[x]) . (fence[x])) + 
-             ((fence[x]) . (rfe[x])) + 
-  ((rfe[x]) . (fence[x]) . (rfe[x]))
+fun fenceext[e:E, x : Exec_PPC] : E -> E {
+  ((rfe[e,x]) . (fence[e,x])) + 
+               ((fence[e,x]) . (rfe[e,x])) + 
+  ((rfe[e,x]) . (fence[e,x]) . (rfe[e,x]))
 }
 
-fun hb[x : Exec_PPC] : E -> E {
-   ppo[x] + fence[x] + rfe[x]
+fun hb[e:E, x : Exec_PPC] : E -> E {
+   ppo[e,x] + fence[e,x] + rfe[e,x]
 }
 
-pred No_thin_air[x : Exec_PPC] {
-  is_acyclic[hb[x]]
+pred No_thin_air[e:E, x : Exec_PPC] {
+  is_acyclic[hb[e,x]]
 }
 
-fun prop[x : Exec_PPC] : E -> E {
-  let propbase = (fence[x] + ((rfe[x]) . (fence[x]))) . *(hb[x]) |		
-  let chapo = rfe[x] + fre[x] + coe[x] + 
-     ((fre[x]) . (rfe[x])) + ((coe[x]) . (rfe[x])) |
-  (x.W -> x.W) & propbase + 
-  (rc[chapo] . *propbase . (strong[x]) . *(hb[x]))
+fun prop[e:E, x : Exec_PPC] : E -> E {
+  let propbase = (fence[e,x] + ((rfe[e,x]) . (fence[e,x]))) . *(hb[e,x]) |		
+  let chapo = rfe[e,x] + fre[e,x] + coe[e,x] + 
+     ((fre[e,x]) . (rfe[e,x])) + ((coe[e,x]) . (rfe[e,x])) |
+  (W[e,x] -> W[e,x]) & propbase + 
+  (rc[chapo] . *propbase . (strong[e,x]) . *(hb[e,x]))
 }
 
-pred Propagation[x : Exec_PPC] {
-  is_acyclic[x.co + prop[x]]
+pred Propagation[e:E, x : Exec_PPC] {
+  is_acyclic[co[e,x] + prop[e,x]]
 }
 
-pred Observation[x : Exec_PPC] {
-  irreflexive[(fre[x]) . (prop[x]) . *(hb[x])]
+pred Observation[e:E, x : Exec_PPC] {
+  irreflexive[(fre[e,x]) . (prop[e,x]) . *(hb[e,x])]
 }
 
-pred ScXX[x:Exec_PPC] {
+pred ScXX[e:E, x:Exec_PPC] {
   // the Herd model defines "X" as the set of atomic events
   // but we just derive "X" (aka "atomic") as those events that 
   // are attached to an "atom" edge. 
-  let atomic = dom[x.atom] + ran[x.atom] |
-  let xx = (x.sb) & (atomic -> atomic) |
-  is_acyclic[x.co + xx]
+  let atomic = dom[atom[e,x]] + ran[atom[e,x]] |
+  let xx = (sb[e,x]) & (atomic -> atomic) |
+  is_acyclic[co[e,x] + xx[e,x]]
 }
 
-pred consistent[x : Exec_PPC] {     
-  Uniproc[x]	
-  Atomic[x]
-  No_thin_air[x]
-  Propagation[x]
-  Observation[x]
-  ScXX[x]
+pred consistent[e:E, x : Exec_PPC] {     
+  Uniproc[e,x]	
+  Atomic[e,x]
+  No_thin_air[e,x]
+  Propagation[e,x]
+  Observation[e,x]
+  ScXX[e,x]
 }
 
 run {
-  some x : Exec_PPC | loadbuffering_H[x] && consistent[x] 
+  some x : Exec_PPC | loadbuffering_H[x] && consistent[none,x] 
 } for exactly 1 Exec, 4 E
 
 run {
-  some x : Exec_PPC | storebuffering_H[x] && consistent[x] 
+  some x : Exec_PPC | storebuffering_H[x] && consistent[none,x] 
 } for exactly 1 Exec, 4 E
 
 run {
-  some x : Exec_PPC | iriw_H1[x] && consistent[x]
+  some x : Exec_PPC | iriw_H1[x] && consistent[none,x]
 } for exactly 1 Exec, 6 E

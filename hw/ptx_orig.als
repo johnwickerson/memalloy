@@ -6,53 +6,53 @@ open exec_ptx[E]
 //  is_empty[x.atom & ((fre[x]) . (coe[x]))]
 //}
 
-pred ScPerLocLLH[x:Exec_PTX] {
-  let com = x.rf + fr[x] + x.co |
-  let polocLLH = poloc[x] & ((x.(R+W) -> x.W) + (x.W -> x.(R+W))) |
+pred ScPerLocLLH[e:E, x:Exec_PTX] {
+  let com = rf[e,x] + fr[e,x] + co[e,x] |
+  let polocLLH = poloc[e,x] & (((R[e,x] + W[e,x]) -> W[e,x]) + (W[e,x] -> (R[e,x] + W[e,x]))) |
   is_acyclic[polocLLH + com]
 }
 
-fun dp[x:Exec_PTX] : E->E{
-  x.ad + x.dd + x.cd
+fun dp[e:E, x:Exec_PTX] : E->E{
+  ad[e,x] + dd[e,x] + cd[e,x]
 }
 
-pred NoThinAir[x:Exec_PTX] {
-  is_acyclic[dp[x] + x.rf]
+pred NoThinAir[e:E, x:Exec_PTX] {
+  is_acyclic[dp[e,x] + rf[e,x]]
 }
 
-fun sys_fence[x:Exec_PTX] : E->E {
-  (x.sb) . (stor[x.membar_sys]) . (x.sb)
+fun sys_fence[e:E, x:Exec_PTX] : E->E {
+  (sb[e,x]) . (stor[membar_sys[e,x]]) . (sb[e,x])
 } 
 
-fun gl_fence[x:Exec_PTX] : E->E {
-  ((x.sb) . (stor[x.membar_gl]) . (x.sb)) + sys_fence[x]
+fun gl_fence[e:E, x:Exec_PTX] : E->E {
+  ((sb[e,x]) . (stor[membar_gl[e,x]]) . (sb[e,x])) + sys_fence[e,x]
 } 
 
-fun cta_fence[x:Exec_PTX] : E->E {
-  ((x.sb) . (stor[x.membar_cta]) . (x.sb)) + gl_fence[x]
+fun cta_fence[e:E, x:Exec_PTX] : E->E {
+  ((sb[e,x]) . (stor[membar_cta[e,x]]) . (sb[e,x])) + gl_fence[e,x]
 } 
 
-fun rmo[x:Exec_PTX, f:E->E] : E->E {
-  dp[x] + rfe[x] + x.co + fr[x] + f
+fun rmo[e:E, x:Exec_PTX, f:E->E] : E->E {
+  dp[e,x] + rfe[e,x] + co[e,x] + fr[e,x] + f
 }
 
-pred CTAconstraint[x:Exec_PTX] {
-  is_acyclic[rmo[x,cta_fence[x]] & x.scta]
+pred CTAconstraint[e:E, x:Exec_PTX] {
+  is_acyclic[rmo[e,x,cta_fence[e,x]] & scta[e,x]]
 }
 
-pred GLconstraint[x:Exec_PTX] {
-  is_acyclic[rmo[x,gl_fence[x]] & x.sgl]
+pred GLconstraint[e:E, x:Exec_PTX] {
+  is_acyclic[rmo[e,x,gl_fence[e,x]] & sgl[e,x]]
 }
 
-pred SYSconstraint[x:Exec_PTX] {
-  is_acyclic[rmo[x,sys_fence[x]]]
+pred SYSconstraint[e:E, x:Exec_PTX] {
+  is_acyclic[rmo[e,x,sys_fence[e,x]]]
 }
 
-pred consistent[x:Exec_PTX] {
-  Atomic[x]
-  ScPerLocLLH[x]
-  NoThinAir[x]
-  CTAconstraint[x]
-  GLconstraint[x]
-  SYSconstraint[x]
+pred consistent[e:E, x:Exec_PTX] {
+  Atomic[e,x]
+  ScPerLocLLH[e,x]
+  NoThinAir[e,x]
+  CTAconstraint[e,x]
+  GLconstraint[e,x]
+  SYSconstraint[e,x]
 }

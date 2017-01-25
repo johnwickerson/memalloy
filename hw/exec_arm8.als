@@ -17,3 +17,7 @@ sig Exec_Arm8 extends Exec_Arm7 {
   screl in (W & A)
     
 }
+
+fun A[e:E, X:Exec_Arm8] : set E { X.A - e }
+fun screl[e:E, X:Exec_Arm8] : set E { X.screl - e }
+fun scacq[e:E, X:Exec_Arm8] : set E { X.scacq - e }

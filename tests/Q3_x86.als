@@ -17,11 +17,11 @@ pred gp [X, X' : Exec_X86, map : E->E] {
   apply_map_x86[X, X']
 
   // The "weak" execution is inconsistent ...
-  not(M1/consistent[X])
-  M1/dead[X]
+  not(M1/consistent[none,X])
+  M1/dead[none,X]
 
   // But the "strong" execution is consistent (and not faulty)...
-  M1/consistent[X']
+  M1/consistent[none,X']
 }
 
 run gp for exactly 2 Exec, 6 E, 3 Int expect 0 // 3 mins with Glucose

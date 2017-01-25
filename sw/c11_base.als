@@ -3,99 +3,99 @@
 module c11_base[E]
 open exec_C[E]
 
-fun Fsb[x : Exec_C] : E -> E {
-  (stor[x.F]) . (x.sb)
+fun Fsb[e:E, x : Exec_C] : E -> E {
+  (stor[F[e,x]]) . (sb[e,x])
 }
 
-fun sbF[x : Exec_C] : E -> E {
-  (x.sb) . (stor[x.F])
+fun sbF[e:E, x : Exec_C] : E -> E {
+  (sb[e,x]) . (stor[F[e,x]])
 }
 
-fun rs[x : Exec_C] : E -> E {
-  *(x.sb & x.sloc) . *(x.rf)
+fun rs[e:E, x : Exec_C] : E -> E {
+  *(sb[e,x] & sloc[e,x]) . *(rf[e,x])
 }
 
-fun sw[x : Exec_C] : E -> E {
-  ((stor[x.rel]) . (rc[Fsb[x]]) . (stor[x.(A & W)]) . (rs[x]) .
-       (x.rf) . (stor[x.(R & A)]) . (rc[sbF[x]]) . (stor[x.acq])) - (x.sthd)
+fun sw[e:E, x : Exec_C] : E -> E {
+  ((stor[rel[e,x]]) . (rc[Fsb[e,x]]) . (stor[A[e,x] & W[e,x]]) . (rs[e,x]) .
+       (rf[e,x]) . (stor[R[e,x] & A[e,x]]) . (rc[sbF[e,x]]) . (stor[acq[e,x]])) - (sthd[e,x])
 }
 
-fun hb[x : Exec_C] : E -> E {
-  ^(x.sb + sw[x])   
+fun hb[e:E, x : Exec_C] : E -> E {
+  ^(sb[e,x] + sw[e,x])   
 }
 
-fun hbl[x : Exec_C] : E -> E {
-  (hb[x]) & (x.sloc)
+fun hbl[e:E, x : Exec_C] : E -> E {
+  (hb[e,x]) & (sloc[e,x])
 }
 
-pred NaRf[x : Exec_C] {
-  ((x.rf) . (stor[x.naL])) in imm[(stor[x.W]) . (hbl[x])]
+pred NaRf[e:E, x : Exec_C] {
+  ((rf[e,x]) . (stor[naL[e,x]])) in imm[(stor[W[e,x]]) . (hbl[e,x])]
 }
 
-fun cnf[x : Exec_C] : E -> E {
-  ((x.W -> x.W) + (x.W -> x.R) + (x.R -> x.W)) & (x.sloc) - iden
+fun cnf[e:E, x : Exec_C] : E -> E {
+  ((W[e,x] -> W[e,x]) + (W[e,x] -> R[e,x]) + (R[e,x] -> W[e,x])) & (sloc[e,x]) - iden
 }
 
-pred Dr[x : Exec_C] { 
-  cnf[x] - (x.A -> x.A) - (x.sthd) in (hb[x]) + ~(hb[x]) 
+pred Dr[e:E, x : Exec_C] { 
+  cnf[e,x] - (A[e,x] -> A[e,x]) - (sthd[e,x]) in (hb[e,x]) + ~(hb[e,x]) 
 }
 
-pred Ur[x : Exec_C] {
-  cnf[x] & (x.sthd) in (x.sb) + ~(x.sb)    
+pred Ur[e:E, x : Exec_C] {
+  cnf[e,x] & (sthd[e,x]) in (sb[e,x]) + ~(sb[e,x])    
 }
 
-pred HbCom[x:Exec_C] {
-  is_acyclic[ ((hb[x]) & x.sloc) + x.rf + x.co + (fr[x]) ]
+pred HbCom[e:E, x:Exec_C] {
+  is_acyclic[ ((hb[e,x]) & sloc[e,x]) + rf[e,x] + co[e,x] + (fr[e,x]) ]
 }
 
-pred Ssimp[x : Exec_C] {
-  let scb = x.co + fr[x] + (hb[x]) |
-  let FscbF = (rc[Fsb[x]]) . scb . (rc[sbF[x]]) |
-  let scp = FscbF & (x.sc -> x.sc) - iden |
+pred Ssimp[e:E, x : Exec_C] {
+  let scb = co[e,x] + fr[e,x] + (hb[e,x]) |
+  let FscbF = (rc[Fsb[e,x]]) . scb . (rc[sbF[e,x]]) |
+  let scp = FscbF & (sc[e,x] -> sc[e,x]) - iden |
   is_acyclic[scp]
 }
 
-pred racefree[x : Exec_C] {
-  Dr[x]
-  Ur[x]
+pred racefree[e:E, x : Exec_C] {
+  Dr[e,x]
+  Ur[e,x]
 }
 
-pred dead_base[x:Exec_C] {
+pred dead_base[e:E, x:Exec_C] {
 
   // avoid "if(r==0)" in generated litmus test
-  no_if_zero[x]
+  no_if_zero[e,x]
 
   // no unsequenced races
-  Ur[x]
+  Ur[e,x]
  
   // potential data races are avoided, either by
   // separating them with dependable happens-before, or
   // by having the read in a self-satisfying cycle    
   let cde /* external control dependency */ =
-    *((x.rf - x.sthd) + (x.cd)) . (x.cd) |
-  let not_cde = (x.ev -> x.ev) - cde |
+    *((rf[e,x] - sthd[e,x]) + (cd[e,x])) . (cd[e,x]) |
+  let not_cde = (ev[e,x] -> ev[e,x]) - cde |
   let drs /* dependable release sequence */ =
-    (rs[x]) - ((stor[x.R]) . not_cde) |
+    (rs[e,x]) - ((stor[R[e,x]]) . not_cde) |
   let dsw /* dependable synchronises-with */ =
-    sw[x] & (((rc[Fsb[x]]) . (stor[x.rel]) . 
-      (rc[drs]) - (~(x.cd) . not_cde)) . (x.rf)) |
+    sw[e,x] & (((rc[Fsb[e,x]]) . (stor[rel[e,x]]) . 
+      (rc[drs]) - (~(cd[e,x]) . not_cde)) . (rf[e,x])) |
   let dhb /* dependable happens-before */ =
-    (rc[x.sb]) . *(dsw . (x.cd)) |
+    (rc[sb[e,x]]) . *(dsw . (cd[e,x])) |
   let ssc /* self-satisfying cycle */ =
     iden & cde |
   let pdr /* potential data race */ =
-    cnf[x] - (x.A -> x.A) |
+    cnf[e,x] - (A[e,x] -> A[e,x]) |
   let narf /* reads-from on non-atomic location */ =
-    x.rf & (x.naL -> x.naL) |      
+    rf[e,x] & (naL[e,x] -> naL[e,x]) |      
   pdr in dhb + ~dhb + narf.ssc + ssc.~narf
 
 }
 
-pred dead[x : Exec_C] {
+pred dead[e:E, x : Exec_C] {
 
-  dead_base[x]
+  dead_base[e,x]
 
   // co edges can't be changed to make consistent exec
-  forced_co[x]
+  forced_co[e,x]
     
 }

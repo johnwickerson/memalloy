@@ -6,25 +6,26 @@ sig E {}
 pred gp [X : Exec_C] {
   
   // Prefer solutions without RMWs
-  no_RMWs[X]  
+  no_RMWs[none,X]  
 
   // Prefer solutions with total sb per thread
-  total_sb[X]  
+  total_sb[none,X]  
 
   // The execution is forbidden in SRA
-  not(M1/consistent[X])
-  M1/dead[X]
+  not(M1/consistent[none,X])
+  M1/dead[none,X]
 
   // The execution is allowed (and not faulty) in the Simp model
-  M2/consistent[X]
+  M2/consistent[none,X]
 
   // avoid executions where the postcondition must read shared locations
-  X.co in (rc[X.rf]) . (rc[(X.sb) . (rc[~(X.rf)])])
+  co[none,X] in
+    (rc[rf[none,X]]) . (rc[(sb[none,X]) . (rc[~(rf[none,X])])])
 
   // stay within the release/acquire fragment
-  X.R in X.acq
-  X.W in X.rel
-  no X.sc
+  R[none,X] in acq[none,X]
+  W[none,X] in rel[none,X]
+  no sc[none,X]
 }
 
 pred hint2[X:Exec_C] {

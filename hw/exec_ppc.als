@@ -11,3 +11,8 @@ sig Exec_PPC extends Exec_H {
   isync + sync + lwsync + eieio = F
   disj [isync, sync, lwsync, eieio]
 }
+
+fun isync[e:E, X:Exec_PPC] : set E { X.isync - e }
+fun sync[e:E, X:Exec_PPC] : set E { X.sync - e }
+fun lwsync[e:E, X:Exec_PPC] : set E { X.lwsync - e }
+fun eieio[e:E, X:Exec_PPC] : set E { X.eieio - e }

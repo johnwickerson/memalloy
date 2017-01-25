@@ -6,19 +6,19 @@ sig E {}
 pred gp [X : Exec_C] {
 
   // no atomic that aren't memory_order_seq_cst   
-  X.A in X.sc
+  A[none,X] in sc[none,X]
 
   // the execution is race-free in C11
-  M2/dead[X]
+  M2/dead[none,X]
 
   // The execution is not SC
-  not (M1/consistent[X])
+  not (M1/consistent[none,X])
 
   // The execution is allowed by C11
-  M2/consistent[X]
+  M2/consistent[none,X]
        
   // Prefer solutions without RMWs
-  no_RMWs[X] 
+  no_RMWs[none,X] 
 
 }
 

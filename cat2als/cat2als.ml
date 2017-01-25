@@ -27,7 +27,7 @@ open Format
 open General_purpose
 open Cat_syntax
 
-let debug = debug true
+let debug = debug false
 				
 (*************************************)
 (* Renaming a few built-in variables *)
@@ -282,7 +282,7 @@ let parse_exec_class = function
   | "Exec" -> Basic_exec
   | "Exec_C" -> C_exec
   | "Exec_H" -> Basic_HW_exec
-  | "Exec_x86" -> X86_exec
+  | "Exec_X86" -> X86_exec
   | "Exec_PPC" -> Power_exec
   | "Exec_Arm7" -> Arm7_exec
   | "Exec_Arm8" -> Arm8_exec

@@ -12,9 +12,9 @@ pred gp [X : Exec_PTX] {
   no X.atom
 
   // The execution is forbidden in M1
-  not(M1/consistent[X])
+  not(M1/consistent[none,X])
     
-  //M1/dead[X]
+  //M1/dead[none,X]
   // We don't need the deadness constraint when comparing
   // two equi-coherent architecture-level MCMs. The fact that
   // X is consistent under M2 ensures that its inconsistency
@@ -22,7 +22,7 @@ pred gp [X : Exec_PTX] {
   // deadness would rule out.
 
   // The execution is allowed (and not faulty) in M2
-  M2/consistent[X]
+  M2/consistent[none,X]
 
 }
 

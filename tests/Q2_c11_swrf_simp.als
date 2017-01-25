@@ -6,17 +6,17 @@ sig E {}
 pred gp [X : Exec_C] {
   
   // Prefer solutions without RMWs
-  //no_RMWs[X]  
+  //no_RMWs[none,X]  
 
   // Prefer solutions with total sb per thread
-  total_sb[X]  
+  total_sb[none,X]  
 
   // The execution is forbidden in SRA
-  not(M1/consistent[X])
-  M1/dead[X]
+  not(M1/consistent[none,X])
+  M1/dead[none,X]
 
   // The execution is allowed (and not faulty) in the Simp model
-  M2/consistent[X]
+  M2/consistent[none,X]
 }
 
 pred hint[X:Exec_C] {

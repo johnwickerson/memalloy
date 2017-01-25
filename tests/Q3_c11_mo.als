@@ -13,20 +13,20 @@ pred gp [
   map = (X.ev <: iden)
 
   // The "weak" execution is inconsistent ...
-  not(M1/consistent[X])
-  M1/dead[X]
+  not(M1/consistent[none,X])
+  M1/dead[none,X]
   // consider using "dead_efficient" here instead
 
   // But the "strong" execution is consistent (and not faulty)...
-  M1/consistent[X']
+  M1/consistent[none,X']
 
   //hint[X]
 
   // Prefer solutions without RMWs
-  no_RMWs[X]
+  no_RMWs[none,X]
 
   // Prefer solutions with total sb per thread
-  total_sb[X]
+  total_sb[none,X]
 }
 
 pred hint[x : Exec_C] {

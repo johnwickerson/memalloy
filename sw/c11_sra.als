@@ -4,14 +4,14 @@
 module c11_sra[E]
 open c11_base[E]
 
-pred SRA[x:Exec_C] {
-  is_acyclic[x.co + x.sb + x.sw]
+pred SRA[e:E, x:Exec_C] {
+  is_acyclic[co[e,x] + sb[e,x] + sw[e,x]]
 }
 
-pred consistent[x : Exec_C] {
-  HbCom[x]
-  SRA[x]
-  NaRf[x]
-  Ssimp[x]
+pred consistent[e:E, x : Exec_C] {
+  HbCom[e,x]
+  SRA[e,x]
+  NaRf[e,x]
+  Ssimp[e,x]
 }		      		      
 

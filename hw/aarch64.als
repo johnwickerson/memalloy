@@ -3,26 +3,26 @@
 module aarch64[E]
 open exec_arm8[E]
 
-fun ctrlisb_[x:Exec_Arm8] : E->E {
-  ^(x.cd) . (stor[x.isb]) . (x.sb)
+fun ctrlisb_[e:E, x:Exec_Arm8] : E->E {
+  ^(cd[e,x]) . (stor[isb[e,x]]) . (sb[e,x])
 }
 
-fun dep[x:Exec_Arm8] : E->E {
-  x.ad + x.dd
+fun dep[e:E, x:Exec_Arm8] : E->E {
+  ad[e,x] + dd[e,x]
 }
 
-fun rdw[x:Exec_Arm8] : E->E {
-  poloc[x] & (fre[x]) . (rfe[x])
+fun rdw[e:E, x:Exec_Arm8] : E->E {
+  poloc[e,x] & (fre[e,x]) . (rfe[e,x])
 }
 
-fun detour[x:Exec_Arm8] : E->E {
-  poloc[x] & (coe[x]) . (rfe[x])
+fun detour[e:E, x:Exec_Arm8] : E->E {
+  poloc[e,x] & (coe[e,x]) . (rfe[e,x])
 } 
 
-fun ppo[x:Exec_Arm8] : E->E {
-  let ci0 = ctrlisb_[x] + detour[x] |
-  let ii0 = dep[x] + rfi[x] + rdw[x] |
-  let cc0 = dep[x] + x.cd + (x.ad) . (x.sb) |
+fun ppo[e:E, x:Exec_Arm8] : E->E {
+  let ci0 = ctrlisb_[e,x] + detour[e,x] |
+  let ii0 = dep[e,x] + rfi[e,x] + rdw[e,x] |
+  let cc0 = dep[e,x] + cd[e,x] + (ad[e,x]) . (sb[e,x]) |
   let ic0 = none -> none |
           
   let ci1 = ci0 + ci0.ii0 + cc0.ci0 |
@@ -40,74 +40,74 @@ fun ppo[x:Exec_Arm8] : E->E {
   let cc  = cc0 + ci2 + ci2.ic2 + cc2.cc2 |
   let ic  = ic0 + ii2 + cc2 + ic2.cc2 + ii1.ic2 |
 
-  let ppoR = ii & (x.R -> x.R) |
-  let ppoW = ic & (x.R -> x.W) |
+  let ppoR = ii & (R[e,x] -> R[e,x]) |
+  let ppoW = ic & (R[e,x] -> W[e,x]) |
   ppoR + ppoW                          
 }
 
-fun acq_[x:Exec_Arm8] : E->E {
-  (x.scacq -> x.ev) & x.sb
+fun acq_[e:E, x:Exec_Arm8] : E->E {
+  (scacq[e,x] -> ev[e,x]) & sb[e,x]
 }
 
-fun rel_[x:Exec_Arm8] : E->E {
-  (x.ev -> x.screl) & x.sb
+fun rel_[e:E, x:Exec_Arm8] : E->E {
+  (ev[e,x] -> screl[e,x]) & sb[e,x]
 }
 
-fun syf[x:Exec_Arm8] : E->E {
-  (x.sb) . (stor[x.dmb]) . (x.sb)
+fun syf[e:E, x:Exec_Arm8] : E->E {
+  (sb[e,x]) . (stor[dmb[e,x]]) . (sb[e,x])
 }
 
-fun stf[x:Exec_Arm8] : E->E {
-  (stor[x.W]) . (x.sb) . (stor[x.dmbst]) . (x.sb) . (stor[x.W])
+fun stf[e:E, x:Exec_Arm8] : E->E {
+  (stor[W[e,x]]) . (sb[e,x]) . (stor[dmbst[e,x]]) . (sb[e,x]) . (stor[W[e,x]])
 }
 
-fun ldf[x:Exec_Arm8] : E->E {
-  (stor[x.R]) . (x.sb) . (stor[x.dmbst]) . (x.sb)
+fun ldf[e:E, x:Exec_Arm8] : E->E {
+  (stor[R[e,x]]) . (sb[e,x]) . (stor[dmbst[e,x]]) . (sb[e,x])
 }
 
-fun fence[x:Exec_Arm8] : E->E {
-  syf[x] + stf[x] + ldf[x] + acq_[x] + rel_[x]
+fun fence[e:E, x:Exec_Arm8] : E->E {
+  syf[e,x] + stf[e,x] + ldf[e,x] + acq_[e,x] + rel_[e,x]
 }
 
-fun hb[x:Exec_Arm8] : E->E {
-  (stor[x.R]) . (fence[x]) + rfe[x] + ppo[x]
+fun hb[e:E, x:Exec_Arm8] : E->E {
+  (stor[R[e,x]]) . (fence[e,x]) + rfe[e,x] + ppo[e,x]
 }
 
-pred Thin_air[x:Exec_Arm8] {
-  is_acyclic[hb[x]]
+pred Thin_air[e:E, x:Exec_Arm8] {
+  is_acyclic[hb[e,x]]
 }
 
-fun prop[x:Exec_Arm8] : E->E {
-  *(com[x]) . (syf[x]) + stf[x] + (rc[rfe[x]]) . (rel_[x])
+fun prop[e:E, x:Exec_Arm8] : E->E {
+  *(com[e,x]) . (syf[e,x]) + stf[e,x] + (rc[rfe[e,x]]) . (rel_[e,x])
 }
 
-fun prop_al[x:Exec_Arm8] : E->E {
-  ((x.screl -> x.scacq) & (x.rf + x.sb)) +
-  ((x.scacq -> x.screl) & (fr[x]))
+fun prop_al[e:E, x:Exec_Arm8] : E->E {
+  ((screl[e,x] -> scacq[e,x]) & (rf[e,x] + sb[e,x])) +
+  ((scacq[e,x] -> screl[e,x]) & (fr[e,x]))
 }
 
-fun xx[x:Exec_Arm8] : E->E {
-  (x.W -> x.W) & (x.A -> x.A) & x.sb
+fun xx[e:E, x:Exec_Arm8] : E->E {
+  (W[e,x] -> W[e,x]) & (A[e,x] -> A[e,x]) & sb[e,x]
 }
 
-pred Observation[x:Exec_Arm8] {
-  irreflexive[ (prop[x]) . (rfe[x]) . (fence[x] + ppo[x]) . (fre[x]) ]
+pred Observation[e:E, x:Exec_Arm8] {
+  irreflexive[ (prop[e,x]) . (rfe[e,x]) . (fence[e,x] + ppo[e,x]) . (fre[e,x]) ]
 }
 
-pred Propagation[x:Exec_Arm8] {
+pred Propagation[e:E, x:Exec_Arm8] {
   is_acyclic[
-    x.co + (prop[x]) . *(hb[x]) +
-    xx[x] . (prop_al[x]) . *(hb[x])
+    co[e,x] + (prop[e,x]) . *(hb[e,x]) +
+    xx[e,x] . (prop_al[e,x]) . *(hb[e,x])
   ]
 }
 
-pred consistent[x:Exec_Arm8] {
-  Uniproc[x]
-  Atomic[x]
-  Thin_air[x]
-  Observation[x]
-  Propagation[x]
+pred consistent[e:E, x:Exec_Arm8] {
+  Uniproc[e,x]
+  Atomic[e,x]
+  Thin_air[e,x]
+  Observation[e,x]
+  Propagation[e,x]
 }
 
 // sanity check
-run { some x:Exec_Arm8 | consistent[x] } for 1 Exec, 4 E
+run { some x:Exec_Arm8 | consistent[none,x] } for 1 Exec, 4 E

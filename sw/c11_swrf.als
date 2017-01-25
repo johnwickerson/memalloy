@@ -4,15 +4,15 @@
 module c11_simp_swrf[E]
 open c11_base[E]
 
-pred SwRf[x:Exec_C] {
-  is_acyclic[sw[x] + x.rf]
+pred SwRf[e:E, x:Exec_C] {
+  is_acyclic[sw[e,x] + rf[e,x]]
 }
 
-pred consistent[x : Exec_C] {
-  SwRf[x]
-  HbCom[x]
-  NaRf[x]
-  Ssimp[x]
+pred consistent[e:E, x : Exec_C] {
+  SwRf[e,x]
+  HbCom[e,x]
+  NaRf[e,x]
+  Ssimp[e,x]
 }		      		      
 
 

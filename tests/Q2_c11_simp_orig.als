@@ -6,18 +6,18 @@ sig E {}
 pred gp [X : Exec_C] {     
 
   // The execution is forbidden in M1
-  not(M1/consistent[X])
-  M1/dead[X]
+  not(M1/consistent[none,X])
+  M1/dead[none,X]
 
   // The execution is allowed (and not faulty) in M2
-  M2/consistent[X]
+  M2/consistent[none,X]
 
   // Prefer fewer RMWs
   //no_RMWs[X]
-  lone (X.(R&W)) 
+  lone (R[none,X] & W[none,X]) 
 
   // Prefer solutions with total sb per thread
-  //total_sb[X]  
+  //total_sb[none,X]  
     
 }
 

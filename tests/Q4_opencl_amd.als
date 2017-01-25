@@ -9,16 +9,16 @@ pred gp [X : M1/Exec_OpenCL, map: E -> M2/Inst] {
   apply_map[X, map]
 
   // Sequenced-before is total within each thread
-  total_sb[X]
+  total_sb[none,X]
 
   // the AMD model doesn't include local memory
   no X.L
 
   // The execution is not consistent in software
-  not (M1/consistent[X])
+  not (M1/consistent[none,X])
   
   // Execution is dead
-  M1/dead[X]
+  M1/dead[none,X]
 
   // The execution is observable on hardware
   M2/consistent

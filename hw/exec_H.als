@@ -17,32 +17,32 @@ sig Exec_H extends Exec {
     
 }
 
-fun fre[x : Exec_H] : E -> E {
-  fr[x] - x.sthd
+fun fre[e:E, x : Exec_H] : E -> E {
+  fr[e,x] - sthd[e,x]
 }
 
-fun fri[x : Exec_H] : E -> E {
-  fr[x] & x.sthd
+fun fri[e:E, x : Exec_H] : E -> E {
+  fr[e,x] & sthd[e,x]
 }
 
-fun rfe[x : Exec_H] : E -> E {
-  x.rf - x.sthd
+fun rfe[e:E, x : Exec_H] : E -> E {
+  rf[e,x] - sthd[e,x]
 }
 
-fun rfi[x : Exec_H] : E -> E {
-  x.rf & x.sthd
+fun rfi[e:E, x : Exec_H] : E -> E {
+  rf[e,x] & sthd[e,x]
 }
 
-fun coe[x : Exec_H] : E -> E {
-  x.co - x.sthd
+fun coe[e:E, x : Exec_H] : E -> E {
+  co[e,x] - sthd[e,x]
 }
 
-fun coi[x : Exec_H] : E -> E {
-  x.co & x.sthd
+fun coi[e:E, x : Exec_H] : E -> E {
+  co[e,x] & sthd[e,x]
 }
 
-pred Atomic[x : Exec_H] {
-  is_empty[x.atom & ((fre[x]) . (coe[x]))]
+pred Atomic[e:E, x : Exec_H] {
+  is_empty[atom[e,x] & ((fre[e,x]) . (coe[e,x]))]
 }
 
 pred storebuffering_H[x : Exec_H] {
@@ -111,17 +111,17 @@ pred iriw_H1 [x : Exec_H] {
   }
 }
 
-pred racefree[x: Exec_H] {
+pred racefree[e:E, x: Exec_H] {
   no none
 }
 
-pred dead[x : Exec_H] {
+pred dead[e:E, x : Exec_H] {
 
   // co edges can't be changed to make consistent exec
-  forced_co[x]
+  forced_co[e,x]
 
   // avoid "if(r==0)" in generated litmus test
-  no_if_zero[x]
+  no_if_zero[e,x]
 
 }
 

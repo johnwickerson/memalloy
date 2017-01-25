@@ -11,3 +11,8 @@ sig Exec_Arm7 extends Exec_H {
   disj [isb, dmb, dmbst, dmbld]
     
 }
+
+fun isb[e:E, X:Exec_Arm7] : set E { X.isb - e }
+fun dmb[e:E, X:Exec_Arm7] : set E { X.dmb - e }
+fun dmbst[e:E, X:Exec_Arm7] : set E { X.dmbst - e }
+fun dmbld[e:E, X:Exec_Arm7] : set E { X.dmbld - e }

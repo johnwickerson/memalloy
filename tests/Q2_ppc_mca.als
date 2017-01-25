@@ -2,19 +2,19 @@ open ../hw/ppc_unrolled[E] as M1
 
 sig E {}
 
-pred mca_consistent[x:Exec] {
-  is_acyclic[(x.sb & x.sloc) + x.co]
-  is_acyclic[wo[x]]
+pred mca_consistent[e:E,x:Exec] {
+  is_acyclic[(sb[e,x] & sloc[e,x]) + co[e,x]]
+  is_acyclic[wo[e,x]]
 }
 
-fun wo[x:Exec] : E->E {
-  ((((rfe[x]) . (M1/ppo[x]) . ~(rfe[x])) - iden) . (x.co))
-  + ((rfe[x]) . (M1/ppo[x]) . (fr_init[x]))
+fun wo[e:E, x:Exec] : E->E {
+  ((((rfe[e,x]) . (M1/ppo[e,x]) . ~(rfe[e,x])) - iden) . (co[e,x]))
+  + ((rfe[e,x]) . (M1/ppo[e,x]) . (fr_init[e,x]))
 }
 
 pred gp [X:Exec_H] { 
-  M1/consistent[X]
-  not (mca_consistent[X])
+  M1/consistent[e,X]
+  not (mca_consistent[e,X])
 }
 
 run gp for 1 Exec, 5 E, 5 Int expect 0 // 2s (glucose, babillion)

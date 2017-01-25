@@ -13,17 +13,17 @@ pred gp [
   map = (iden :> X.ev)
 
   // The "weak" execution is inconsistent ...
-  not(M1/consistent[X])
-  M1/dead[X]
+  not(M1/consistent[none,X])
+  M1/dead[none,X]
 
   // The "strong" execution is consistent...
-  M1/consistent[X']
+  M1/consistent[none,X']
   
   // optional extra
-  M1/racefree[X']
+  M1/racefree[none,X']
 
   // Prefer solutions without RMWs
-  no_RMWs[X]
+  no_RMWs[none,X]
 
 }
 

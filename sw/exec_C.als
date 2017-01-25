@@ -37,10 +37,15 @@ sig Exec_C extends Exec {
 
 }
 
+fun A[e:E, X:Exec_C] : set E { X.A - e }
+fun acq[e:E, X_Exec_C] : set E { X.acq - e }
+fun rel[e:E, X_Exec_C] : set E { X.rel - e }
+fun sc[e:E, X_Exec_C] : set E { X.sc - e }
+
 pred wf_s[x : Exec_C, s : E -> E] { 
 
   // s is restricted to sc events
-  s in x.sc -> x.sc
+  s in sc[none,x] -> sc[none,x]
     
   // s is acylic
   is_acyclic[s]
@@ -49,7 +54,7 @@ pred wf_s[x : Exec_C, s : E -> E] {
   transitive[s]
 
   // s is a strict total relation on sc events
-  (all e, e' : (x.sc) | (e != e') iff (e -> e' in (s + ~s)))
+  (all e, e' : (sc[none,x]) | (e != e') iff (e -> e' in (s + ~s)))
 }
 
 /*************************/

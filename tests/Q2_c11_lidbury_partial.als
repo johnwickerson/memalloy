@@ -4,15 +4,15 @@ open ../sw/c11_partial[E] as M2
 sig E {}
 
 pred distinguishes[X:Exec_C] {
-  not (M1/consistent[X])
-  dead[X]
-  M2/consistent[X]
+  not (M1/consistent[none,X])
+  dead[none,X]
+  M2/consistent[none,X]
 
   // For now, omit dependencies
-  no X.(ad+cd+dd)
+  no ad[none,X] + cd[none,X] + dd[none,X]
 
   // For now, omit RMWs
-  no X.(R&W)
+  no R[none,X] & W[none,X]
 }
 
 run t1 { some X:Exec_C {

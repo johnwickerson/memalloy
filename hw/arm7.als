@@ -3,28 +3,28 @@
 module arm7[E]
 open exec_arm7[E]
 
-fun ctrlisb_[x : Exec_H] : E -> E {
-  ^(x.cd) . (stor[x.isb]) . (x.sb)
+fun ctrlisb_[e:E, x : Exec_H] : E -> E {
+  ^(cd[e,x]) . (stor[isb[e,x]]) . (sb[e,x])
 }
 
-fun dmb_[x : Exec_H] : E -> E {
-  (x.sb) . (stor[x.dmb]) . (x.sb)
+fun dmb_[e:E, x : Exec_H] : E -> E {
+  (sb[e,x]) . (stor[dmb[e,x]]) . (sb[e,x])
 }
 
-fun dmbst_[x : Exec_H] : E -> E {
-  (x.sb) . (stor[x.dmbst]) . (x.sb)
+fun dmbst_[e:E, x : Exec_H] : E -> E {
+  (sb[e,x]) . (stor[dmbst[e,x]]) . (sb[e,x])
 }
 
-pred valid_ppo[x : Exec_H, ppo : E -> E] {
-  let dep = x.ad + x.dd |
-  let rdw = poloc[x] & ((fre[x]) . (rfe[x])) |
-  let detour = poloc[x] & ((coe[x]) . (rfe[x])) |
-  let addrpo = (x.ad) . (x.sb) |
+pred valid_ppo[e:E, x : Exec_H, ppo : E -> E] {
+  let dep = ad[e,x] + dd[e,x] |
+  let rdw = poloc[e,x] & ((fre[e,x]) . (rfe[e,x])) |
+  let detour = poloc[e,x] & ((coe[e,x]) . (rfe[e,x])) |
+  let addrpo = (ad[e,x]) . (sb[e,x]) |
 
   /* Initial value */  
-  let ci0 = (ctrlisb_[x]) + detour |
-  let ii0 = dep + rfi[x] + rdw |
-  let cc0 = dep /*+ poloc[x]*/ + ^(x.cd) + addrpo |
+  let ci0 = (ctrlisb_[e,x]) + detour |
+  let ii0 = dep + rfi[e,x] + rdw |
+  let cc0 = dep /*+ poloc[x]*/ + ^(cd[e,x]) + addrpo |
   let ic0 = none -> none |
 
   some ci,ii,cc,ic : E -> E {
@@ -39,56 +39,56 @@ pred valid_ppo[x : Exec_H, ppo : E -> E] {
       ic0 + ii' + cc' + ic'.cc' + ii.ic' in ic') 
     implies
       (ci in ci' && ii in ii' && cc in cc' && ic in ic')
-    let ppoR = (x.R -> x.R) & ii |
-    let ppoW = (x.R -> x.W) & ic |
+    let ppoR = (R[e,x] -> R[e,x]) & ii |
+    let ppoW = (R[e,x] -> W[e,x]) & ic |
     ppo = ppoR + ppoW
   }
 }
 
-fun strong[x : Exec_H] : E -> E {
-  dmb_[x] + dmbst_[x]
+fun strong[e:E, x : Exec_H] : E -> E {
+  dmb_[e,x] + dmbst_[e,x]
 }
 
-fun light[x : Exec_H] : E -> E {
+fun light[e:E, x : Exec_H] : E -> E {
   none -> none
 }
 
-fun fence[x : Exec_H] : E -> E {
-  strong[x] + light[x]
+fun fence[e:E, x : Exec_H] : E -> E {
+  strong[e,x] + light[e,x]
 }
 
-fun hb[x : Exec_H, ppo : E -> E] : E -> E {
-   ppo + fence[x] + rfe[x]
+fun hb[e:E, x : Exec_H, ppo : E -> E] : E -> E {
+   ppo + fence[e,x] + rfe[e,x]
 }
 
-pred No_thin_air[x : Exec_H, ppo : E -> E] {
-  is_acyclic[hb[x,ppo]]
+pred No_thin_air[e:E, x : Exec_H, ppo : E -> E] {
+  is_acyclic[hb[e,x,ppo]]
 }
 
-fun prop[x : Exec_H, ppo: E -> E] : E -> E {
-  let propbase = (fence[x] + (rfe[x]) . (fence[x])) . 
-     *(hb[x,ppo]) |		
-  let chapo = rfe[x] + fre[x] + coe[x] + 
-     ((fre[x]) . (rfe[x])) + ((coe[x]) . (rfe[x])) |
-  (x.W -> x.W) & propbase + 
-  (rc[chapo] . *propbase . (strong[x]) . *(hb[x,ppo]))
+fun prop[e:E, x : Exec_H, ppo: E -> E] : E -> E {
+  let propbase = (fence[e,x] + (rfe[e,x]) . (fence[e,x])) . 
+     *(hb[e,x,ppo]) |		
+  let chapo = rfe[e,x] + fre[e,x] + coe[e,x] + 
+     ((fre[e,x]) . (rfe[e,x])) + ((coe[e,x]) . (rfe[e,x])) |
+  (W[e,x] -> W[e,x]) & propbase + 
+  (rc[chapo] . *propbase . (strong[e,x]) . *(hb[e,x,ppo]))
 }
 
-pred Propagation[x : Exec_H, ppo : E -> E] {
-  is_acyclic[co + prop[x,ppo]]
+pred Propagation[e:E, x : Exec_H, ppo : E -> E] {
+  is_acyclic[co[e,x] + prop[e,x,ppo]]
 }
 
-pred Causality[x : Exec_H, ppo : E -> E] {
-  irreflexive[(fre[x]) . (prop[x,ppo]) . *(hb[x,ppo])]
+pred Causality[e:E, x : Exec_H, ppo : E -> E] {
+  irreflexive[(fre[e,x]) . (prop[e,x,ppo]) . *(hb[e,x,ppo])]
 }
 
 
-pred consistent[x : Exec_H] {     
-  Uniproc[x]	
+pred consistent[e:E, x : Exec_H] {     
+  Uniproc[e,x]	
   some ppo : E -> E {
-    valid_ppo[x,ppo]
-    No_thin_air[x,ppo]
-    Propagation[x,ppo]
-    Causality[x,ppo]
+    valid_ppo[e,x,ppo]
+    No_thin_air[e,x,ppo]
+    Propagation[e,x,ppo]
+    Causality[e,x,ppo]
   }
 }

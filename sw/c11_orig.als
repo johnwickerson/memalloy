@@ -5,24 +5,24 @@
 module c11_orig[E]
 open c11_base[E]
 
-pred consistentS[x : Exec_C, s : E -> E] {
-  let s_imm = s - ((x.co) . s) {
-    irreflexive[s . (hb[x])]                                          // S1
-    irreflexive[s . (rc[Fsb[x]]) . (x.co) . (rc[sbF[x]])]             // S2
-    irreflexive[s . ~(x.rf) . (stor[x.sc]) . (x.co)]                  // S3
-    irreflexive[s_imm . ~(x.rf) . (hbl[x]) . (stor[x.W])]             // S4
-    irreflexive[s_imm . ((stor[x.R]) - (~(x.rf) . (x.rf))) . (fr[x])] // S44
-    irreflexive[s . (Fsb[x]) . (fr[x])]                               // S5
-    irreflexive[s . (fr[x]) . (sbF[x])]                               // S6
-    irreflexive[s . (Fsb[x]) . (fr[x]). (sbF[x])]                     // S7  
+pred consistentS[e:E, x : Exec_C, s : E -> E] {
+  let s_imm = s - ((co[e,x]) . s) {
+    irreflexive[s . (hb[e,x])]                                       // S1
+    irreflexive[s . (rc[Fsb[e,x]]) . (co[e,x]) . (rc[sbF[e,x]])]     // S2
+    irreflexive[s . ~(rf[e,x]) . (stor[sc[e,x]]) . (co[e,x])]        // S3
+    irreflexive[s_imm . ~(rf[e,x]) . (hbl[e,x]) . (stor[W[e,x]])]    // S4
+    irreflexive[s_imm . ((stor[R[e,x]]) - (~(rf[e,x]) . (rf[e,x]))) . (fr[e,x])] // S44
+    irreflexive[s . (Fsb[e,x]) . (fr[e,x])]                          // S5
+    irreflexive[s . (fr[e,x]) . (sbF[e,x])]                          // S6
+    irreflexive[s . (Fsb[e,x]) . (fr[e,x]). (sbF[e,x])]              // S7  
   }
 }
 
-pred consistent[x : Exec_C] {
+pred consistent[e:E, x : Exec_C] {
   some s : E -> E {
-    wf_s[x,s]
-    consistentS[x,s]
+    wf_s[e,x,s]
+    consistentS[e,x,s]
   }
-  HbCom[x]
-  NaRf[x]
+  HbCom[e,x]
+  NaRf[e,x]
 }

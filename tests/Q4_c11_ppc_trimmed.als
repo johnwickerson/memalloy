@@ -13,11 +13,11 @@ pred gp [
   apply_map[X, X', map]
 
   // The execution is forbidden in software ...
-  not(M1/consistent[X])
-  M1/dead[X]
+  not(M1/consistent[none,X])
+  M1/dead[none,X]
       
   // ... but can nonetheless be observed on the hardware.
-  M2/consistent[X']
+  M2/consistent[none,X']
     
 }
 

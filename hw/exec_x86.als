@@ -10,3 +10,5 @@ sig Exec_X86 extends Exec_H {
   // the atom relation only relates locked instructions
   atom in (locked -> locked)
 }
+
+fun locked[e:E, x:Exec_X86] : set E { x.locked - e }

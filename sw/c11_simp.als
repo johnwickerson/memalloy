@@ -3,9 +3,9 @@
 module c11_simp[E]
 open c11_base[E]
 
-pred consistent[x : Exec_C] {
-  HbCom[x]
-  NaRf[x]
-  Ssimp[x]
+pred consistent[e:E, x : Exec_C] {
+  HbCom[e,x]
+  NaRf[e,x]
+  Ssimp[e,x]
 }
 
