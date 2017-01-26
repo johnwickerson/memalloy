@@ -1,5 +1,5 @@
-open ../sw/opencl/opencl_scoped[E] as M1
-open ../hw/amd_gpu as M2
+open ../models_als/opencl_scoped[E] as M1
+open ../archs/amd_gpu as M2
 open ../mappings/opencl_amd[E]
 
 sig E {}

@@ -46,3 +46,10 @@ let now() =
   let open Unix in
   let t = localtime (time ()) in
   sprintf "%02d:%02d:%02d" t.tm_hour t.tm_min t.tm_sec
+
+let chop_extension extn path =
+  if Filename.check_suffix path extn then
+    Filename.chop_extension path
+  else
+    failwith
+      (asprintf "File %s does not have extension \"%s\"." path extn)

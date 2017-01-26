@@ -6,7 +6,7 @@ A x86-to-x86 mapping that allows:
 - non-locked operations to become locked
 */
 
-open ../hw/exec_x86[E]
+open ../archs/exec_x86[E]
 open strengthening[E]
 module x86_strengthening[E]
 

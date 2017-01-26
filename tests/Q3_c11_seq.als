@@ -1,5 +1,5 @@
 open ../mappings/c11_strengthening_seq[E]
-open ../sw/c11_simp[E] as M1
+open ../models_als/c11_simp[E] as M1
 
 sig E {}
 

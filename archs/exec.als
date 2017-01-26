@@ -91,6 +91,12 @@ fun sloc [e:E, X:Exec] : E->E { X.sloc - (univ -> e) - (e -> univ) }
 fun rf [e:E, X:Exec] : E->E { X.rf - (univ -> e) - (e -> univ) }
 fun co [e:E, X:Exec] : E->E { X.co - (univ -> e) - (e -> univ) }
 
+// Some synonyms
+fun po [e:E, X:Exec] : E->E { sb[e,X] }
+fun addr [e:E, X:Exec] : E->E { ad[e,X] }
+fun ctrl [e:E, X:Exec] : E->E { cd[e,X] }
+fun data [e:E, X:Exec] : E->E { dd[e,X] }
+
 fun fr_init[e:E, x:Exec] : E->E {
   (stor[R[e,x]] - (~(rf[e,x]) . (rf[e,x]))) . (sloc[e,x]) . (stor[W[e,x]])
 }
@@ -98,18 +104,6 @@ fun fr_init[e:E, x:Exec] : E->E {
 fun fr[e:E, x : Exec] : E -> E {
   (fr_init[e,x] + (~(rf[e,x]) . (co[e,x]))) - iden
 }
-
-fun poloc[e:E, x : Exec] : E -> E {
-  sb[e,x] & sloc[e,x]
-}
-
-//fun com[e:E, x:Exec] : E->E {
-//  rf[e,x] + fr[e,x] + co[e,x]
-//}
-
-//pred Uniproc[e:E, x : Exec] {
-//  is_acyclic[poloc[e,x] + com[e,x]]
-//}
 
 pred no_RMWs[e:E, x : Exec] {
   no (R[e,x] & W[e,x])

@@ -27,7 +27,7 @@ pred consistent1[e:E, x:Exec_C]{
 }
 
 // Stronger SC fences:
-pred consistent2[x:Exec_C]{
+pred consistent2[e:E, x:Exec_C]{
   HbCom[e,x]
   NaRf[e,x]
   let Esc = stor[sc[e,x]] |

@@ -1,5 +1,5 @@
 module exec_C[E]
-open ../exec[E]
+open exec[E]
 
 sig Exec_C extends Exec {
   A : set E,            // atomic events
@@ -42,10 +42,10 @@ fun acq[e:E, X:Exec_C] : set E { X.acq - e }
 fun rel[e:E, X:Exec_C] : set E { X.rel - e }
 fun sc[e:E, X:Exec_C] : set E { X.sc - e }
 
-pred wf_s[x : Exec_C, s : E -> E] { 
+pred wf_s[e:E, x : Exec_C, s : E -> E] { 
 
   // s is restricted to sc events
-  s in sc[none,x] -> sc[none,x]
+  s in sc[e,x] -> sc[e,x]
     
   // s is acylic
   is_acyclic[s]
@@ -54,7 +54,7 @@ pred wf_s[x : Exec_C, s : E -> E] {
   transitive[s]
 
   // s is a strict total relation on sc events
-  (all e, e' : (sc[none,x]) | (e != e') iff (e -> e' in (s + ~s)))
+  (all e1, e2 : (sc[e,x]) | (e1 != e2) iff (e1 -> e2 in (s + ~s)))
 }
 
 /*************************/

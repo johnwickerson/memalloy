@@ -2,7 +2,7 @@
 A C11-to-C11 mapping that (only) allows memory orders to be strengthened.
 */
 
-open ../sw/exec_C[E]
+open ../archs/exec_C[E]
 open strengthening[E]
 module c11_strengthening_mo[E]
 

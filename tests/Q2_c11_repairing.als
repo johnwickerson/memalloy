@@ -1,4 +1,4 @@
-open ../sw/c11_repairing[E]
+open ../models_als/c11_repairing[E]
 
 sig E {}
 

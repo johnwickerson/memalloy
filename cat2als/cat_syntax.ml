@@ -91,6 +91,7 @@ type cat_instr =
   | Let of string * string list * cat_expr
   | LetRec of (string * cat_expr) list
   | Test of test_type * cat_expr * string
+  | Include of string
 
 let rec pp_morebinds oc = function
   | [] -> fprintf oc ""
@@ -103,18 +104,18 @@ let rec pp_varlist oc = function
   | [x] -> fprintf oc "%s" x
   | x :: xs -> fprintf oc "%s," x; pp_varlist oc xs
 		  
-let rec pp_instrs oc = function
-  | [] -> ()
-  | Let (x,args,e) :: instrs ->
-     fprintf oc "let %s%a = %a\n\n" x pp_varlist args pp_expr e;
-     pp_instrs oc instrs
-  | LetRec ((x,e) :: xes) :: instrs ->
+let pp_instr oc = function
+  | Let (x,args,e) ->
+     fprintf oc "let %s%a = %a\n\n" x pp_varlist args pp_expr e
+  | LetRec ((x,e) :: xes) ->
      fprintf oc "let %s = %a\n\n" x pp_expr e;
-     pp_morebinds oc xes;
-     pp_instrs oc instrs
-  | LetRec [] :: _ -> assert false
-  | Test (t,e,n) :: instrs ->
-     fprintf oc "%a(%a) as %s\n\n" pp_test_type t pp_expr e n;
-     pp_instrs oc instrs
+     pp_morebinds oc xes
+  | LetRec [] -> assert false
+  | Test (t,e,n) ->
+     fprintf oc "%a(%a) as %s\n\n" pp_test_type t pp_expr e n
+  | Include path ->
+     fprintf oc "include %s\n\n" path
 
+let pp_instrs oc = List.iter (pp_instr oc)
+	     
 type cat_model = cat_instr list

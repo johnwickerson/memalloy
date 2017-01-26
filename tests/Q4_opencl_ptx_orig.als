@@ -1,6 +1,6 @@
 open ../mappings/opencl_ptx[SE,HE]
-open ../sw/opencl/opencl_simp[SE] as M1
-open ../hw/ptx_orig[HE] as M2
+open ../models_als/opencl_simp[SE] as M1
+open ../models_als/ptx_orig[HE] as M2
 
 sig SE, HE {}
 

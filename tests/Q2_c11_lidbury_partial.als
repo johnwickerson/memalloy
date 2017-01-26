@@ -1,5 +1,5 @@
-open ../sw/c11_lidbury[E] as M1
-open ../sw/c11_partial[E] as M2
+open ../models_als/c11_lidbury[E] as M1
+open ../models_als/c11_partial[E] as M2
 
 sig E {}
 
@@ -95,7 +95,7 @@ fun cycle4[X:Exec_C] : E->E {
   (stor[X.W & X.(A - rel)]) .
   (X.sb - X.sloc) .
   (stor[X.R & X.sc]) .
-  (X.fr)
+  (fr[none,X])
 }
 
 run t5 { some X:Exec_C {
@@ -119,7 +119,7 @@ run t0 { some X:Exec_C {
     e1 in X.(W&sc)
     e2 in X.(R-sc)
     (e0->e2) in X.rf
-    (e0->e1) in M1/hb[X] 
+    (e0->e1) in M1/hb[none,X] 
     (e0->e1) in X.sloc
   }
 }} for 1 Exec, 5 E, 3 Int

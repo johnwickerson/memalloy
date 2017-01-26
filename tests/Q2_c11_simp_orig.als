@@ -1,5 +1,5 @@
-open ../sw/c11_simp[E] as M1
-open ../sw/c11_orig[E] as M2
+open ../models_als/c11_simp[E] as M1
+open ../models_als/c11_orig[E] as M2
 
 sig E {}
 

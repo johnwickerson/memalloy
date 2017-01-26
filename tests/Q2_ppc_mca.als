@@ -1,4 +1,4 @@
-open ../hw/ppc_unrolled[E] as M1
+open ../models_als/ppc_unrolled[E] as M1
 
 sig E {}
 
@@ -13,8 +13,8 @@ fun wo[e:E, x:Exec] : E->E {
 }
 
 pred gp [X:Exec_H] { 
-  M1/consistent[e,X]
-  not (mca_consistent[e,X])
+  M1/consistent[none,X]
+  not (mca_consistent[none,X])
 }
 
 run gp for 1 Exec, 5 E, 5 Int expect 0 // 2s (glucose, babillion)

@@ -1,5 +1,5 @@
-open ../hw/ptx_orig[E] as M2
-open ../hw/ptx_cumul[E] as M1
+open ../models_als/ptx_orig[E] as M2
+open ../models_als/ptx_cumul[E] as M1
 
 sig E {}
 

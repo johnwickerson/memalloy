@@ -1,5 +1,5 @@
-open ../sc[E] as M1 // the SC model
-open ../sw/c11_nodrf[E] as M2
+open ../models_als/sc[E] as M1 // the SC model
+open ../models_als/c11_nodrf[E] as M2
 
 sig E {}
 

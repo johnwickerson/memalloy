@@ -1,5 +1,5 @@
 module exec_OpenCL[E]
-open ../exec_C[E]
+open ../archs/exec_C[E]
 
 sig Exec_OpenCL extends Exec_C {
   wg, dv, sy : set E, // workgroup-, device- and system-scoped events
@@ -45,3 +45,16 @@ sig Exec_OpenCL extends Exec_C {
   no entry_fence
   no exit_fence
 }
+
+fun wg [e:E, X:Exec_OpenCL] : set E { X.wg - e }
+fun dv [e:E, X:Exec_OpenCL] : set E { X.dv - e }
+fun sy [e:E, X:Exec_OpenCL] : set E { X.sy - e }
+fun fga [e:E, X:Exec_OpenCL] : set E { X.fga - e }
+fun G [e:E, X:Exec_OpenCL] : set E { X.G - e }
+fun L [e:E, X:Exec_OpenCL] : set E { X.L - e }
+fun entry_fence [e:E, X:Exec_OpenCL] : set E { X.entry_fence - e }
+fun exit_fence [e:E, X:Exec_OpenCL] : set E { X.exit_fence - e }
+fun rem [e:E, X:Exec_OpenCL] : set E { X.rem - e }
+fun swg [e:E, X:Exec_OpenCL] : E -> E { X.swg - (e -> univ) - (univ -> e) }
+fun sdv [e:E, X:Exec_OpenCL] : E -> E { X.sdv - (e -> univ) - (univ -> e) }
+fun sbar [e:E, X:Exec_OpenCL] : E -> E { X.sbar - (e -> univ) - (univ -> e) }

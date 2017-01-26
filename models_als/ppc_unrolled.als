@@ -1,5 +1,6 @@
 module ppc_unrolled[E]
-open exec_ppc[E]
+open basic[E]
+open ../archs/exec_ppc[E]
 
 fun ctrlisync_[e:E, x : Exec_PPC] : E -> E {
   ^(cd[e,x]) . (stor[isync[e,x]]) . (sb[e,x])
@@ -106,7 +107,15 @@ pred ScXX[e:E, x:Exec_PPC] {
   // are attached to an "atom" edge. 
   let atomic = dom[atom[e,x]] + ran[atom[e,x]] |
   let xx = (sb[e,x]) & (atomic -> atomic) |
-  is_acyclic[co[e,x] + xx[e,x]]
+  is_acyclic[co[e,x] + xx]
+}
+
+pred Uniproc [e:E, X:Exec_PPC] {
+  is_acyclic[(poloc[e,X]) + (com[e,X])]
+}
+
+pred Atomic [e:E, X:Exec_PPC] {
+  is_empty[(atom[e,X]) & ((fre[e,X]) . (coe[e,X]))]
 }
 
 pred consistent[e:E, x : Exec_PPC] {     

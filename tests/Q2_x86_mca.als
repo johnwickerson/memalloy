@@ -1,4 +1,4 @@
-open ../hw/x86tso[E] as M1
+open ../models_als/x86tso[E] as M1
 
 sig E {}
 

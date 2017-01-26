@@ -1,7 +1,7 @@
 /* Manually generated from c11_base.cat */
 
 module c11_base[E]
-open exec_C[E]
+open ../archs/exec_C[E]
 
 fun Fsb[e:E, x : Exec_C] : E -> E {
   (stor[F[e,x]]) . (sb[e,x])

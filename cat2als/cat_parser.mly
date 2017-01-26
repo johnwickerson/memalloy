@@ -48,7 +48,7 @@ let do_op op e1 e2 = Op (op, as_op op e1 @ as_op op e2)
 %token AND ACYCLIC AS EQUAL IRREFLEXIVE INCLUDE LET
        REC SHOW TESTEMPTY UNSHOW
        
-%type <Cat_syntax.cat_model> main
+%type <string * Cat_syntax.cat_model> main
 			       
 %start main
 
@@ -62,8 +62,8 @@ let do_op op e1 e2 = Op (op, as_op op e1 @ as_op op e2)
 %%
 
 main:
-| VAR ins_list EOF    { $2 }
-| STRING ins_list EOF { $2 }
+| VAR ins_list EOF    { ($1, $2) }
+| STRING ins_list EOF { ($1, $2) }
 
 ins_list:
 |              { [] }
@@ -77,7 +77,7 @@ ins:
                     { [Let ($2,$4,$7)] }
 | test exp AS VAR   { [Test($1,$2,$4)] }
 | test exp          { failwith "All tests must be named." }
-| INCLUDE STRING    { failwith "Includes not supported." }
+| INCLUDE STRING    { [Include $2] }
 | SHOW exp AS VAR   { [] }
 | SHOW var_list     { [] }
 | UNSHOW var_list   { [] }

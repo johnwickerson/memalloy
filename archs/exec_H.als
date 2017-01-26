@@ -1,5 +1,5 @@
 module exec_H[E]
-open ../exec[E]
+open exec[E]
 
 sig Exec_H extends Exec {
   atom : E -> E // atomicity relation

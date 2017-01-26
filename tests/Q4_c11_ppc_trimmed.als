@@ -1,6 +1,6 @@
 open ../mappings/c11_ppc_trimmed[SE, HE]
-open ../sw/c11_partial[SE] as M1
-open ../hw/ppc_unrolled[HE] as M2
+open ../models_als/c11_partial[SE] as M1
+open ../models_als/ppc_unrolled[HE] as M2
 
 sig SE,HE {}
 

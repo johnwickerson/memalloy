@@ -34,17 +34,13 @@ let debug = debug false
 (*************************************)
 
 let rename_var = function
-  | "addr" -> "ad"
   | "A" -> "scacq"
-  | "ctrl" -> "cd"
-  | "data" -> "dd"
   | "DMBSY" -> "dmb"
   | "DMBST" -> "dmbst"
   | "DMBLD" -> "dmbld"
   | "int" -> "sthd"
   | "ISB" -> "isb"
   | "L" -> "screl"
-  | "po" -> "sb"
   | "rmw" -> "atom"
   | "loc" -> "sloc"
   | x -> x
@@ -67,6 +63,7 @@ let rename_vars_in_instr = function
      in
      LetRec (xes')
   | Test (t,e,n) -> Test (t, rename_vars_in_expr e, n)
+  | Include path -> Include path
 		       
 let rename_vars_in_model = List.map rename_vars_in_instr
 
@@ -111,7 +108,83 @@ let rec unfold_instrs = function
      unfold_defs xes !u @ unfold_instrs instrs
   | other_instr :: instrs ->
      other_instr :: unfold_instrs instrs
-				    
+
+(*******************************************)
+(* The classes of execution that we handle *)
+(*******************************************)
+	       
+type exec_class =
+  | Basic_exec
+  | C_exec
+  | Basic_HW_exec
+  | X86_exec
+  | Power_exec
+  | Arm7_exec
+  | Arm8_exec
+
+let pp_arch oc = function
+  | Basic_exec -> fprintf oc "../archs/exec"
+  | C_exec -> fprintf oc "../archs/exec_C"
+  | Basic_HW_exec -> fprintf oc "../archs/exec_H"
+  | X86_exec -> fprintf oc "../archs/exec_x86"
+  | Power_exec -> fprintf oc "../archs/exec_ppc"
+  | Arm7_exec -> fprintf oc "../archs/exec_arm7"
+  | Arm8_exec -> fprintf oc "../archs/exec_arm8"
+
+let pp_Arch oc = function
+  | Basic_exec -> fprintf oc "Exec"
+  | C_exec -> fprintf oc "Exec_C"
+  | Basic_HW_exec -> fprintf oc "Exec_H"
+  | X86_exec -> fprintf oc "Exec_X86"
+  | Power_exec -> fprintf oc "Exec_PPC"
+  | Arm7_exec -> fprintf oc "Exec_Arm7"
+  | Arm8_exec -> fprintf oc "Exec_Arm8"
+
+let parse_exec_class = function
+  | "BASIC" -> Basic_exec
+  | "Exec_C" -> C_exec
+  | "Exec_H" -> Basic_HW_exec
+  | "X86 TSO" -> X86_exec
+  | "Exec_PPC" -> Power_exec
+  | "Exec_Arm7" -> Arm7_exec
+  | "Exec_Arm8" -> Arm8_exec
+  | x -> failwith (asprintf "Unexpected execution class: %s." x)
+
+let rec class_sets = function
+  | Basic_exec ->
+     ["ev"; "W"; "R"; "F"; "naL"]
+  | C_exec ->
+     class_sets Basic_exec @ ["A"; "acq"; "rel"; "sc"]
+  | Basic_HW_exec ->
+     class_sets Basic_exec @ ["A"; "X"]
+  | X86_exec ->
+     class_sets Basic_HW_exec @ ["MFENCE"]
+  | Power_exec ->
+     class_sets Basic_HW_exec @ ["sync"; "lwsync"]
+  | Arm7_exec ->
+     class_sets Basic_HW_exec @ ["dmb"; "dmbst"; "dmbld"; "isb"]
+  | Arm8_exec ->
+     class_sets Arm7_exec @ ["screl"; "scacq"]
+
+let rec class_rels = function
+  | Basic_exec ->
+     ["ad"; "addr"; "cd"; "co"; "coe"; "coi"; "ctrl"; "data";
+      "dd"; "ext"; "fr"; "fre"; "fri"; "po"; "poloc"; "rf";
+      "rfe"; "rfi"; "sb"; "sloc"; "sthd"]
+  | C_exec ->
+     class_rels Basic_exec
+  | Basic_HW_exec ->
+     class_rels Basic_exec @ ["atom"]
+  | X86_exec
+  | Power_exec
+  | Arm7_exec
+  | Arm8_exec ->
+     class_rels Basic_HW_exec
+
+let build_env exec_class = 
+  (List.map (fun a -> (a,([],Rel))) (class_rels exec_class)) @
+  (List.map (fun a -> (a,([],Set))) (class_sets exec_class))
+				  
 (***************************)
 (* Determining Alloy types *)
 (***************************)
@@ -177,6 +250,28 @@ and type_of env = function
      assert (type_of env (List.nth es 0) = Set);
      assert (type_of env (List.nth es 1) = Set);
      Rel
+       
+let parse_file cat_path =
+  let ic = open_in cat_path in
+  let lexbuf = Lexing.from_channel ic in
+  Cat_parser.main Cat_lexer.token lexbuf
+
+let rec type_instr env = function
+  | Let (x,args,e) ->
+     (* NB we assume all args are relations, not sets *)
+     let env' = (List.map (fun a -> (a,([],Rel))) args) @ env in
+     let def_type = type_of env' e in
+     (x, (List.map (fun _ -> Rel) args, def_type)) :: env
+  | LetRec xes ->
+     (List.map (fun (x,e) -> (x, ([], Rel))) xes) @ env
+  | Test (t,e,n) -> env 
+  | Include path -> type_file path @ env
+		  
+and type_file path =
+  let (model_type, model) = parse_file path in
+  let exec_class = parse_exec_class model_type in
+  let env = build_env exec_class in
+  List.fold_left type_instr env model
 				    
 (*************************)
 (* Generating Alloy code *)
@@ -186,8 +281,8 @@ let pp_access_type = function
   | WriteRead -> Op (Union, [Var "W"; Var "R"])
   | Write -> Var "W"
   | Read -> Var "R"
-  | Plain -> Op (Diff, [Var "ev"; Var "A"])
-  | Atomic -> Var "A"
+  | Plain -> Op (Diff, [Var "ev"; Var "locked"])
+  | Atomic -> Var "locked"
 		  
 let rec als_of_expr oc = function
   | Empty_rln -> fprintf oc "none"
@@ -225,114 +320,59 @@ let pp_test_type = function
   | Irreflexive -> "irreflexive"
   | IsEmpty -> "is_empty"
     
-let rec als_of_instrs env class_name ax_list oc = function
+let rec als_of_instrs env exec_class ax_list oc = function
   | [] -> ax_list
   | Let (x,args,e) :: instrs ->
      (* NB we assume all args are relations, not sets *)
      let env' = (List.map (fun a -> (a,([],Rel))) args) @ env in
      let def_type = type_of env' e in
      let args_str = List.fold_left (sprintf "%s%s:E->E,") "" args in
-     fprintf oc "fun %s [%se:E, X:%s] : %s {\n"
-	     x args_str class_name (alloy_type_of def_type);
+     fprintf oc "fun %s [%se:E, X:%a] : %s {\n"
+	     x args_str pp_Arch exec_class (alloy_type_of def_type);
      fprintf oc "  %a\n" als_of_expr e;
-     fprintf oc "}\n";
+     fprintf oc "}\n\n";
      let env' =
        (x, (List.map (fun _ -> Rel) args, def_type)) :: env
      in
-     als_of_instrs env' class_name ax_list oc instrs
-  | LetRec xes :: instrs ->
-     failwith
-       (asprintf "Recursive definition should have been removed.")
+     als_of_instrs env' exec_class ax_list oc instrs
+  | LetRec _ :: _ ->
+     failwith "Recursive definition should have been removed."
   | Test (t,e,n) :: instrs ->
-     fprintf oc "pred %s [e:E, X:%s] {\n" n class_name; 
+     fprintf oc "pred %s [e:E, X:%a] {\n" n pp_Arch exec_class; 
      fprintf oc "  %s[%a]\n" (pp_test_type t) als_of_expr e;
-     fprintf oc "}\n";
-     als_of_instrs env class_name (n :: ax_list) oc instrs
+     fprintf oc "}\n\n";
+     als_of_instrs env exec_class (n :: ax_list) oc instrs
+  | Include path :: instrs ->
+     let env' = type_file path in
+     fprintf oc "open %s[E]\n\n" (chop_extension ".cat" path);
+     als_of_instrs (env' @ env) exec_class ax_list oc instrs
 
-let pp_preamble cat_path model_name class_path oc =
+let pp_preamble cat_path model_name exec_class oc =
   fprintf oc "/* Automatically generated from %s on %s at %s */\n\n"
 	  cat_path (today ()) (now ());
   fprintf oc "module %s[E]\n" model_name;
-  fprintf oc "open %s[E]\n\n" class_path
+  fprintf oc "open %a[E]\n\n" pp_arch exec_class
 
-let pp_postamble class_name axiom_list oc =
-  fprintf oc "pred consistent[e:E, X:%s] {\n" class_name;
-  List.iter (fprintf oc "  %s[e,X]\n") axiom_list;
-  fprintf oc "}\n"
+let pp_postamble exec_class axiom_list oc =
+  if axiom_list != [] then begin
+      fprintf oc "pred consistent[e:E, X:%a] {\n" pp_Arch exec_class;
+      List.iter (fprintf oc "  %s[e,X]\n") axiom_list;
+      fprintf oc "}\n"
+    end
 			
-let als_of_model env cat_path model_name class_path class_name oc instrs =
-  pp_preamble cat_path model_name class_path oc;
-  let axiom_list = als_of_instrs env class_name [] oc instrs in
-  pp_postamble class_name axiom_list oc
-
-(*******************************************)
-(* The classes of execution that we handle *)
-(*******************************************)
-	       
-type exec_class =
-  | Basic_exec
-  | C_exec
-  | Basic_HW_exec
-  | X86_exec
-  | Power_exec
-  | Arm7_exec
-  | Arm8_exec
-
-let parse_exec_class = function
-  | "Exec" -> Basic_exec
-  | "Exec_C" -> C_exec
-  | "Exec_H" -> Basic_HW_exec
-  | "Exec_X86" -> X86_exec
-  | "Exec_PPC" -> Power_exec
-  | "Exec_Arm7" -> Arm7_exec
-  | "Exec_Arm8" -> Arm8_exec
-  | x -> failwith (asprintf "Unexpected execution class: %s." x)
-
-let rec class_sets = function
-  | Basic_exec ->
-     ["ev"; "W"; "R"; "F"; "naL"]
-  | C_exec ->
-     class_sets Basic_exec @ ["A"; "acq"; "rel"; "sc"]
-  | Basic_HW_exec ->
-     class_sets Basic_exec @ ["A"; "X"]
-  | X86_exec ->
-     class_sets Basic_HW_exec @ ["MFENCE"]
-  | Power_exec ->
-     class_sets Basic_HW_exec @ ["sync"; "lwsync"]
-  | Arm7_exec ->
-     class_sets Basic_HW_exec @ ["dmb"; "dmbst"; "dmbld"; "isb"]
-  | Arm8_exec ->
-     class_sets Arm7_exec @ ["screl"; "scacq"]
-
-let rec class_rels = function
-  | Basic_exec ->
-     ["ad"; "cd"; "co"; "coe"; "coi"; "dd"; "ext"; "fr";
-      "fre"; "fri"; "poloc"; "rf"; "rfe"; "rfi";
-      "sb"; "sloc"; "sthd"]
-  | C_exec ->
-     class_rels Basic_exec
-  | Basic_HW_exec ->
-     class_rels Basic_exec @ ["atom"]
-  | X86_exec
-  | Power_exec
-  | Arm7_exec
-  | Arm8_exec ->
-     class_rels Basic_HW_exec
+let als_of_model env cat_path model_name exec_class oc instrs =
+  pp_preamble cat_path model_name exec_class oc;
+  let axiom_list = als_of_instrs env exec_class [] oc instrs in
+  pp_postamble exec_class axiom_list oc
 
 (*********************************)
 (* Processing command-line input *)
 (*********************************)
 	       
 let get_args () =
-  let class_path : string list ref = ref [] in
-  let class_name : string list ref = ref [] in
   let als_path : string list ref = ref [] in
   let cat_path : string list ref = ref [] in
   let speclist = [
-      ("-cn", Arg.String (set_list_ref class_name),
-       "Execution class name (mandatory)");
-      ("-cp", Arg.String (set_list_ref class_path),
-       "Execution class path (mandatory)");
       ("-o", Arg.String (set_list_ref als_path),
        "Output ALS file (mandatory)");
     ]
@@ -345,41 +385,29 @@ let get_args () =
     Arg.usage speclist usage_msg;
     raise (Arg.Bad "Missing or too many arguments.")
   in
-  let class_name = get_only_element bad_arg !class_name in
-  let class_path = get_only_element bad_arg !class_path in
   let cat_path = get_only_element bad_arg !cat_path in
   let als_path = get_only_element bad_arg !als_path in
-  (cat_path, als_path, class_path, class_name)
+  (cat_path, als_path)
 
-let check_args (cat_path, als_path, class_path, class_name) =
-  assert (Filename.check_suffix cat_path ".cat");
+let check_args (cat_path, als_path) =
   assert (Filename.check_suffix als_path ".als");
   if Sys.file_exists als_path then
-    failwith (asprintf "Target Alloy file already exists.")
-  
-let parse_file cat_path =
-  let ic = open_in cat_path in
-  let lexbuf = Lexing.from_channel ic in
-  Cat_parser.main Cat_lexer.token lexbuf
+    failwith "Target Alloy file already exists."
 		  
 let main () =
-  let (cat_path, als_path, class_path, class_name) = get_args () in
-  check_args (cat_path, als_path, class_path, class_name);
+  let (cat_path, als_path) = get_args () in
+  check_args (cat_path, als_path);
   let model_name =
     Filename.chop_extension (Filename.basename als_path)
   in
   let oc = formatter_of_out_channel (open_out als_path) in
-  let cat_model = parse_file cat_path in
-  let exec_class = parse_exec_class class_name in
-  let env =
-    (List.map (fun a -> (a,([],Rel))) (class_rels exec_class)) @
-      (List.map (fun a -> (a,([],Set))) (class_sets exec_class))
-  in
+  let (model_type, cat_model) = parse_file cat_path in
+  let exec_class = parse_exec_class model_type in
+  let env = build_env exec_class in
   let cat_model = rename_vars_in_model cat_model in
   let cat_model = unfold_instrs cat_model in
   debug "Cat model: %a" pp_instrs cat_model;
-  als_of_model
-    env cat_path model_name class_path class_name oc cat_model; 
+  als_of_model env cat_path model_name exec_class oc cat_model; 
   exit 0
     
 let _ = main ()     

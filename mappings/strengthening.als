@@ -1,4 +1,4 @@
-open ../exec[E]
+open ../archs/exec[E]
 module strengthening[E]
 
 pred apply_map[X, X' : Exec] { 

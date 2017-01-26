@@ -1,6 +1,6 @@
 open ../mappings/c11_x86a[SE,HE]
-open ../sw/c11_simp[SE] as M1
-open ../hw/x86tso[HE] as M2
+open ../models_als/c11_simp[SE] as M1
+open ../models_als/x86tso[HE] as M2
 
 sig SE, HE {}
 

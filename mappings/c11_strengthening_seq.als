@@ -5,7 +5,7 @@ A C11-to-C11 mapping that allows:
 - dependencies to be introduced,
 */
 
-open ../sw/exec_C[E]
+open ../archs/exec_C[E]
 open strengthening[E]
 module c11_strengthening_seq[E]
 
