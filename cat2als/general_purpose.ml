@@ -29,6 +29,8 @@ let set_list_ref r v = r := (v :: !r)
 							 
 let get_only_element k = function [x] -> x | _ -> k ()
 
+let get_lone_element k z = function [x] -> x | [] -> z | _ -> k ()
+
 let rec fprintf_iter s f oc = function
   | [] -> ()
   | [x] -> fprintf oc "(%a)" f x

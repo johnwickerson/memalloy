@@ -16,3 +16,9 @@ fun isb[e:E, X:Exec_Arm7] : set E { X.isb - e }
 fun dmb[e:E, X:Exec_Arm7] : set E { X.dmb - e }
 fun dmbst[e:E, X:Exec_Arm7] : set E { X.dmbst - e }
 fun dmbld[e:E, X:Exec_Arm7] : set E { X.dmbld - e }
+
+// Synonyms:
+fun ISB[e:E, X:Exec_Arm7] : set E { isb[e,x] }
+fun DMBSY[e:E, X:Exec_Arm7] : set E { dmb[e,x] }
+fun DMBST[e:E, X:Exec_Arm7] : set E { dmbst[e,x] }
+fun DMBLD[e:E, X:Exec_Arm7] : set E { dmbld[e,x] }

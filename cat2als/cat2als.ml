@@ -35,11 +35,7 @@ let debug = debug false
 
 let rename_var = function
   | "A" -> "scacq"
-  | "DMBSY" -> "dmb"
-  | "DMBST" -> "dmbst"
-  | "DMBLD" -> "dmbld"
   | "int" -> "sthd"
-  | "ISB" -> "isb"
   | "L" -> "screl"
   | "rmw" -> "atom"
   | "loc" -> "sloc"
@@ -71,8 +67,6 @@ let rename_vars_in_model = List.map rename_vars_in_instr
 (* Unfolding recursive definitions *)
 (***********************************)
 
-let u = ref 5
-
 let add_subscript = sprintf "%s_%d"
 
 let rec sub_subscript xs d = function
@@ -88,26 +82,26 @@ let rec unfold_defs' xs d = function
      Let (add_subscript x d, [], sub_subscript xs (d-1) e) ::
        unfold_defs' xs d rest
 	    
-let rec unfold_defs xes d =
+let rec unfold_defs xes d u =
   let xs = List.map fst xes in
   if d = 0 then
     List.map (fun (x,_) -> Let (add_subscript x 0, [], Empty_rln)) xes
   else
     let iter_d =
-      if d = !u then
+      if d = u then
 	List.map
 	  (fun (x,e) -> Let (x, [], sub_subscript xs (d-1) e)) xes
       else
 	unfold_defs' xs d xes
     in
-    unfold_defs xes (d - 1) @ iter_d
+    unfold_defs xes (d - 1) u @ iter_d
 				    
-let rec unfold_instrs = function
+let rec unfold_instrs u = function
   | [] -> []
   | LetRec xes :: instrs ->
-     unfold_defs xes !u @ unfold_instrs instrs
+     unfold_defs xes u u @ unfold_instrs u instrs
   | other_instr :: instrs ->
-     other_instr :: unfold_instrs instrs
+     other_instr :: unfold_instrs u instrs
 
 (*******************************************)
 (* The classes of execution that we handle *)
@@ -145,14 +139,14 @@ let parse_exec_class = function
   | "Exec_C" -> C_exec
   | "Exec_H" -> Basic_HW_exec
   | "X86 TSO" -> X86_exec
-  | "Exec_PPC" -> Power_exec
+  | "PPC" -> Power_exec
   | "Exec_Arm7" -> Arm7_exec
   | "Exec_Arm8" -> Arm8_exec
   | x -> failwith (asprintf "Unexpected execution class: %s." x)
 
 let rec class_sets = function
   | Basic_exec ->
-     ["ev"; "W"; "R"; "F"; "naL"]
+     ["ev"; "W"; "R"; "F"; "naL"; "M"]
   | C_exec ->
      class_sets Basic_exec @ ["A"; "acq"; "rel"; "sc"]
   | Basic_HW_exec ->
@@ -160,9 +154,12 @@ let rec class_sets = function
   | X86_exec ->
      class_sets Basic_HW_exec @ ["MFENCE"]
   | Power_exec ->
-     class_sets Basic_HW_exec @ ["sync"; "lwsync"]
+     class_sets Basic_HW_exec @
+       ["sync"; "lwsync"; "eieio"; "isync";
+	"SYNC"; "LWSYNC"; "EIEIO"; "ISYNC"]
   | Arm7_exec ->
-     class_sets Basic_HW_exec @ ["dmb"; "dmbst"; "dmbld"; "isb"]
+     class_sets Basic_HW_exec @
+       ["dmb"; "DMBSY"; "dmbst"; "DMBST"; "dmbld"; "DMBLD"; "isb"; "ISB"]
   | Arm8_exec ->
      class_sets Arm7_exec @ ["screl"; "scacq"]
 
@@ -285,7 +282,7 @@ let pp_access_type = function
   | Atomic -> Var "locked"
 		  
 let rec als_of_expr oc = function
-  | Empty_rln -> fprintf oc "none"
+  | Empty_rln -> fprintf oc "none -> none"
   | Var x -> fprintf oc "%s[e,X]" x
   | App (f,es) -> fprintf oc "%s[%ae,X]" f als_of_exprs es
   | Op1 (Set_to_rln,e) -> fprintf oc "stor[%a]" als_of_expr e
@@ -372,9 +369,13 @@ let als_of_model env cat_path model_name exec_class oc instrs =
 let get_args () =
   let als_path : string list ref = ref [] in
   let cat_path : string list ref = ref [] in
+  let default_unrolling_factor = 3 in
+  let unrolling_factor : int list ref = ref [] in
   let speclist = [
       ("-o", Arg.String (set_list_ref als_path),
        "Output ALS file (mandatory)");
+      ("-u", Arg.Int (set_list_ref unrolling_factor),
+       sprintf "Number of times to unroll recursive definitions (optional, default=%d)" default_unrolling_factor);
     ]
   in
   let usage_msg =
@@ -387,16 +388,20 @@ let get_args () =
   in
   let cat_path = get_only_element bad_arg !cat_path in
   let als_path = get_only_element bad_arg !als_path in
-  (cat_path, als_path)
+  let unrolling_factor =
+    get_lone_element bad_arg default_unrolling_factor !unrolling_factor
+  in
+  (cat_path, als_path, unrolling_factor)
 
-let check_args (cat_path, als_path) =
+let check_args (cat_path, als_path, unrolling_factor) =
   assert (Filename.check_suffix als_path ".als");
+  assert (unrolling_factor >= 0);
   if Sys.file_exists als_path then
     failwith "Target Alloy file already exists."
 		  
 let main () =
-  let (cat_path, als_path) = get_args () in
-  check_args (cat_path, als_path);
+  let (cat_path, als_path, unrolling_factor) = get_args () in
+  check_args (cat_path, als_path, unrolling_factor);
   let model_name =
     Filename.chop_extension (Filename.basename als_path)
   in
@@ -405,7 +410,7 @@ let main () =
   let exec_class = parse_exec_class model_type in
   let env = build_env exec_class in
   let cat_model = rename_vars_in_model cat_model in
-  let cat_model = unfold_instrs cat_model in
+  let cat_model = unfold_instrs unrolling_factor cat_model in
   debug "Cat model: %a" pp_instrs cat_model;
   als_of_model env cat_path model_name exec_class oc cat_model; 
   exit 0
