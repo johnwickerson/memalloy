@@ -1,0 +1,65 @@
+(* 
+This file is a slightly modified version of one that is distributed with 
+the Herd tool, the licence of which is given below. The original file is
+available online: http://diy.inria.fr/
+*)
+
+(*********************************************************************)
+(*                        Herd                                       *)
+(*                                                                   *)
+(* Luc Maranget, INRIA Paris-Rocquencourt, France.                   *)
+(* Jade Alglave, University College London, UK.                      *)
+(*                                                                   *)
+(*  Copyright 2013 Institut National de Recherche en Informatique et *)
+(*  en Automatique and the authors. All rights reserved.             *)
+(*  This file is distributed  under the terms of the Lesser GNU      *)
+(*  General Public License.                                          *)
+(*********************************************************************)
+
+"ARM8"
+
+include "basic.cat" 
+  
+let ctrlisb = ctrl; [isb]; po
+
+let dep = addr | data
+
+let rdw = poloc & (fre;rfe)
+let detour = poloc & (coe;rfe)
+
+let ci0 = ctrlisb | detour
+let ii0 = dep | rfi | rdw
+let cc0 = dep | ctrl | (addr; po)
+let ic0 = 0
+		       
+let rec ci = ci0 | (ci;ii) | (cc;ci)
+    and ii = ii0 | ci | (ic;ci) | (ii;ii)
+    and cc = cc0 | ci | (ci;ic) | (cc;cc)
+    and ic = ic0 | ii | cc | (ic;cc) | (ii;ic)
+
+let ppoR = RR(ii)
+let ppoW = RW(ic)
+let ppo = ppoR | ppoW
+
+let acq_ = [scacq]; po
+let rel_ = po; [screl]	 
+let syf = po;[dmb];po
+let stf = [W];po;[dmbst];po;[W]
+let ldf = [R];po;[dmbst];po
+let fence = syf | stf | ldf | acq_ | rel_
+
+let hb = ([R]; fence) | rfe | ppo
+acyclic hb as ThinAir
+						
+let prop = com*;syf | stf | rfe?;rel_
+			       
+let prop_al =
+    ((screl * scacq) & (rf | po))
+  | ((scacq * screl) & fr)
+
+let atomics = domain(atom) | range(atom)
+      
+let xx = (W * W) & (atomics * atomics) & po
+
+irreflexive prop; rfe; (fence | ppo); fre as Observation
+									      acyclic co | prop;hb* | xx;prop_al;hb* as Propagation
