@@ -136,12 +136,12 @@ let pp_Arch oc = function
 
 let parse_exec_class = function
   | "BASIC" -> Basic_exec
-  | "Exec_C" -> C_exec
-  | "Exec_H" -> Basic_HW_exec
+  | "C" -> C_exec
+  | "HW" -> Basic_HW_exec
   | "X86 TSO" -> X86_exec
   | "PPC" -> Power_exec
-  | "Exec_Arm7" -> Arm7_exec
-  | "Exec_Arm8" -> Arm8_exec
+  | "ARM7" -> Arm7_exec
+  | "ARM8" -> Arm8_exec
   | x -> failwith (asprintf "Unexpected execution class: %s." x)
 
 let rec class_sets = function
@@ -159,7 +159,8 @@ let rec class_sets = function
 	"SYNC"; "LWSYNC"; "EIEIO"; "ISYNC"]
   | Arm7_exec ->
      class_sets Basic_HW_exec @
-       ["dmb"; "DMBSY"; "dmbst"; "DMBST"; "dmbld"; "DMBLD"; "isb"; "ISB"]
+       ["dmb"; "DMB"; "DSB"; "DMBSY"; "dmbst"; "DMBST";
+	"dmbld"; "DMBLD"; "isb"; "ISB"; "DSBST"]
   | Arm8_exec ->
      class_sets Arm7_exec @ ["screl"; "scacq"]
 
