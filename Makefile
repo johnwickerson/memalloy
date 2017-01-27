@@ -5,7 +5,8 @@ install:
 ALSFILES = \
 models_als/basic.als \
 models_als/x86tso.als \
-models_als/arm7.als
+models_als/arm7.als \
+models_als/ppc.als
 
 all:
 	make $(ALSFILES)
@@ -19,6 +20,7 @@ models_als/%.als : models_cat/%.cat
 models_als/x86tso.als: models_als/basic.als
 models_als/parri.als: models_als/basic.als
 models_als/arm7.als: models_als/basic.als
+models_als/ppc.als: models_als/basic.als
 
 clean:
 	make -C cat2als clean

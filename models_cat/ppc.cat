@@ -2,7 +2,7 @@
 This file is a slightly modified version of one that is distributed with 
 the Herd tool, the licence of which is given below. The original file is
 available online:
-https://github.com/herd/herdtools/blob/master/herd/arm.cat
+https://github.com/herd/herdtools/blob/master/herd/ppc.cat
 *)
 
 (*********************************************************************)
@@ -17,12 +17,12 @@ https://github.com/herd/herdtools/blob/master/herd/arm.cat
 (*  General Public License.                                          *)
 (*********************************************************************)
 
-"ARM7"
-(* Model for ARM, ie with po-loc ommited from ppo *)
+PPC
+(* Model for Power *)
 
 include "basic.cat"
-let ctrlisync = ctrl; [ISB]; po
-	  
+let ctrlisync = ctrl; [isync]; po
+
 (* Uniproc *)
 acyclic po-loc | rf | fr | co as Uniproc
 
@@ -31,16 +31,16 @@ let dep = addr | data
 let rdw = po-loc & (fre;rfe)
 let detour = po-loc & (coe ; rfe)
 let addrpo = addr;po
-#show rdw,detour,dep,addrpo
+
+
 (*******)
 (* ppo *)
 (*******)
 
-
 (* Initial value *)
 let ci0 = ctrlisync | detour
 let ii0 = dep | rfi | rdw
-let cc0 = dep | ctrl | addrpo (* po-loc deleted *)
+let cc0 = dep | po-loc | ctrl | addrpo
 let ic0 = 0
 
 (* Fixpoint from i -> c in instructions and transitivity *)
@@ -49,44 +49,48 @@ and ii = ii0 | ci | (ic;ci) | (ii;ii)
 and cc = cc0 | ci | (ci;ic) | (cc;cc)
 and ic = ic0 | ii | cc | (ic;cc) | (ii ; ic) (* | ci inclus dans ii et cc *)
 
-let ppo = RW(ic) | RR(ii)
+let ppoR = RR(ii)
+let ppoW = RW(ic)
+let ppo = ppoR | ppoW
+show ppo
 
-
-(**********)
 (* fences *)
-(**********)
+let syncREL=po;[sync];po
+let lwsyncREL=WW(po;[lwsync];po)|RR(po;[lwsync];po)|RW(po;[lwsync];po)
+let eieioREL=WW(po;[eieio];po)
+show syncREL, lwsyncREL, eieioREL
 
-let dmbstREL = po; [DMB.ST]; po
-let dsbstREL = po; [DSB.ST]; po
-let dmbREL = po; [DMB]; po
-let dsbREL = po; [DSB]; po
-
-(* ARM *)
-let dmbstW=WW(dmbstREL)
-let dsbstW=WW(dsbstREL)
-show dmbREL,dsbREL,dmbstW,dsbstW
-
-(* Common, all arm barriers are strong *)
-let strong = dmbREL|dsbREL|dmbstREL|dsbstREL
-let light = 0
-
+(* All arm barriers are strong *)
+let strong = syncREL
+let light = lwsyncREL|eieioREL
 let fence = strong|light
 
+(* extensions *)
+let ppoext = (rfe;ppo)|(ppo;rfe)|(rfe;ppo;rfe)
+let fenceext = (rfe;fence)|(fence;rfe)|(rfe;fence;rfe)
 
 (* happens before *)
-let hb = ppo | fence | rfe
+let hb = ppo | ppoext | fence | fenceext
 let GHB = hb
-
-acyclic hb as ThinAir
+show GHB
+acyclic hb as NoThinAir
 
 (* prop *)
 let hbstar = hb*
-let propbase = (fence|(rfe;fence));hbstar
+let propbase = (fence|fenceext);hbstar
+show propbase
 
 let chapo = rfe|fre|coe|(fre;rfe)|(coe;rfe)
 
 let prop = WW(propbase)| (chapo? ; propbase*; strong; hbstar)
 
+#show prop
 acyclic co|prop as Propagation
-irreflexive fre;prop;hbstar as Causality
+irreflexive fre;prop;hbstar as Observation
+
+let atomic = domain(atom) | range(atom)
+let xx = po & (atomic * atomic)
+acyclic co | xx as ScXX
+
+acyclic (atom & (fre;coe)) as Atomic
 

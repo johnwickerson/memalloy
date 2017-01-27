@@ -3,7 +3,7 @@ MIT License
 
 Copyright (c) 2017 by John Wickerson. Some code is inherited from
 Herd, for which the copyright is held by Luc Maranget, Jade Alglave,
-and John Wickerson.
+and John Wickerson. The licence for Herd is given below.
 
 Permission is hereby granted, free of charge, to any person obtaining
 a copy of this software and associated documentation files (the
@@ -24,6 +24,20 @@ LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION
 OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION
 WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 *)
+
+(*********************************************************************)
+(*                        Herd                                       *)
+(*                                                                   *)
+(* Luc Maranget, INRIA Paris-Rocquencourt, France.                   *)
+(* Jade Alglave, University College London, UK.                      *)
+(* John Wickerson, Imperial College London, UK.                      *)
+(*                                                                   *)
+(*  Copyright 2013 Institut National de Recherche en Informatique et *)
+(*  en Automatique and the authors. All rights reserved.             *)
+(*  This file is distributed  under the terms of the Lesser GNU      *)
+(*  General Public License.                                          *)
+(*********************************************************************)
+
 
 {
   open Cat_parser

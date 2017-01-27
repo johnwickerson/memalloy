@@ -1,6 +1,6 @@
 open ../mappings/c11_ppc_trimmed[SE, HE]
 open ../models_als/c11_partial[SE] as M1
-open ../models_als/ppc_unrolled[HE] as M2
+open ../models_als/ppc[HE] as M2
 
 sig SE,HE {}
 
@@ -8,6 +8,8 @@ pred gp [
   X : Exec_C, X' : Exec_PPC, 
   map: SE -> HE
 ] {
+  
+  no_RMWs[none,X]
 
   // we have a valid application of the mapping
   apply_map[X, X', map]
@@ -104,5 +106,9 @@ pred hint2_hw[X:Exec_PPC] {
 run gp for
 exactly 1 c11_ppc_trimmed/SW/exec/Exec,
 exactly 1 c11_ppc_trimmed/HW/exec_H/exec/Exec,
-8 HE, 
+7 HE, 
 6 SE
+expect 1
+// Glucose: about 2 min. This finds essentially the same example
+// as is given by Lahav et al. in Appendix A.1 of
+// http://plv.mpi-sws.org/scfix/paper.pdf#page=15
