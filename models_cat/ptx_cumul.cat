@@ -4,19 +4,7 @@ https://johnwickerson.github.io/papers/memalloy.pdf#page=10
 
 "PTX"
 
-include "basic.cat"
-
-empty atom & (fre;coe) as Atomic
-				      
-let polocLLH = poloc & ((W*M) | (M*W))
-acyclic polocLLH | com as ScPerLocLLH
-
-let dp = addr | data | ctrl
-acyclic dp | rf as NoThinAir
-
-let sys_fence = po; [membar.sys]; po
-let gl_fence = (po; [membar.gl]; po) | sys_fence
-let cta_fence = (po; [membar.cta]; po) | gl_fence
+include "ptx_base.cat"
 
 let rmo(r,f) = dp | rfe | co | fr | (r?; f; r?)
 
@@ -27,5 +15,3 @@ let SYSrmo = rmo(GLrmo+, sys_fence)
 acyclic CTArmo as CTAconstraint
 acyclic GLrmo as GLconstraint
 acyclic SYSrmo as SYSconstraint
-
-

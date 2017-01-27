@@ -279,6 +279,15 @@ and type_file path =
   let exec_class = parse_exec_class model_type in
   let env = build_env exec_class in
   List.fold_left type_instr env model
+
+let rec extract_axioms_instr ax_list = function
+  | Test (_,_,n) -> n :: ax_list
+  | Include path -> extract_axioms path @ ax_list
+  | _ -> ax_list
+
+and extract_axioms path =
+  let (_, model) = parse_file path in
+  List.fold_left extract_axioms_instr [] model
 				    
 (*************************)
 (* Generating Alloy code *)
@@ -360,26 +369,29 @@ let rec als_of_instrs env exec_class ax_list oc = function
      als_of_instrs env exec_class (n :: ax_list) oc instrs
   | Include path :: instrs ->
      let env' = type_file path in
+     let axs = extract_axioms path in
      fprintf oc "open %s[E]\n\n" (chop_extension ".cat" path);
-     als_of_instrs (env' @ env) exec_class ax_list oc instrs
+     als_of_instrs (env' @ env) exec_class (ax_list @ axs) oc instrs
 
-let pp_preamble cat_path model_name exec_class oc =
+let preamble cat_path model_name exec_class oc =
   fprintf oc "/* Automatically generated from %s on %s at %s */\n\n"
 	  cat_path (today ()) (now ());
   fprintf oc "module %s[E]\n" model_name;
   fprintf oc "open %a[E]\n\n" pp_arch exec_class
 
-let pp_postamble exec_class axiom_list oc =
+let postamble exec_class axiom_list oc =
   if axiom_list != [] then begin
       fprintf oc "pred consistent[e:E, X:%a] {\n" pp_Arch exec_class;
-      List.iter (fprintf oc "  %s[e,X]\n") axiom_list;
+      List.iter (fprintf oc "  %s[e,X]\n") (List.rev axiom_list);
       fprintf oc "}\n"
     end
 			
-let als_of_model env cat_path model_name exec_class oc instrs =
-  pp_preamble cat_path model_name exec_class oc;
+let als_of_model
+      intermediate_model env cat_path model_name exec_class oc instrs =
+  preamble cat_path model_name exec_class oc;
   let axiom_list = als_of_instrs env exec_class [] oc instrs in
-  pp_postamble exec_class axiom_list oc
+  if (not intermediate_model) then
+    postamble exec_class axiom_list oc
 
 (*********************************)
 (* Processing command-line input *)
@@ -390,11 +402,14 @@ let get_args () =
   let cat_path : string list ref = ref [] in
   let default_unrolling_factor = 3 in
   let unrolling_factor : int list ref = ref [] in
+  let intermediate_model : bool ref = ref false in
   let speclist = [
       ("-o", Arg.String (set_list_ref als_path),
        "Output ALS file (mandatory)");
       ("-u", Arg.Int (set_list_ref unrolling_factor),
        sprintf "Number of times to unroll recursive definitions (optional, default=%d)" default_unrolling_factor);
+      ("-i", Arg.Set intermediate_model,
+       sprintf "Intermediate model; do not generate `consistent` predicate (optional)");
     ]
   in
   let usage_msg =
@@ -410,17 +425,19 @@ let get_args () =
   let unrolling_factor =
     get_lone_element bad_arg default_unrolling_factor !unrolling_factor
   in
-  (cat_path, als_path, unrolling_factor)
+  (cat_path, als_path, unrolling_factor, !intermediate_model)
 
-let check_args (cat_path, als_path, unrolling_factor) =
+let check_args (cat_path, als_path, unrolling_factor, intermediate_model) =
   assert (Filename.check_suffix als_path ".als");
   assert (unrolling_factor >= 0);
   if Sys.file_exists als_path then
     failwith "Target Alloy file already exists."
 		  
 let main () =
-  let (cat_path, als_path, unrolling_factor) = get_args () in
-  check_args (cat_path, als_path, unrolling_factor);
+  let (cat_path, als_path, unrolling_factor, intermediate_model) =
+    get_args ()
+  in
+  check_args (cat_path, als_path, unrolling_factor, intermediate_model);
   let model_name =
     Filename.chop_extension (Filename.basename als_path)
   in
@@ -431,7 +448,8 @@ let main () =
   let cat_model = rename_vars_in_model cat_model in
   let cat_model = unfold_instrs unrolling_factor cat_model in
   debug "Cat model: %a" pp_instrs cat_model;
-  als_of_model env cat_path model_name exec_class oc cat_model; 
+  als_of_model
+    intermediate_model env cat_path model_name exec_class oc cat_model; 
   exit 0
     
 let _ = main ()     
