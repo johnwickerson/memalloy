@@ -22,6 +22,8 @@ pred gp [X : Exec_C] {
 
 }
 
-run gp for 1 Exec, 4 E
+run gp for 1 Exec, 4 E expect 1
 // <2s, babillion, glucose
 // finds store buffering violation (same as Batty et al. POPL 2011)
+
+run gp for 1 Exec, 3 E expect 0

@@ -1,0 +1,8 @@
+"BASIC"
+
+(* Sequential consistency *)
+
+include "basic.cat"
+
+acyclic po|rf|fr|co as ShashaSnir
+			   
