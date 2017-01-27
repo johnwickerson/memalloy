@@ -44,6 +44,7 @@ let rename_var = function
 let rec rename_vars_in_expr = function
   | Empty_rln -> Empty_rln
   | Var x -> Var (rename_var x)
+  | Arg x -> Arg x
   | App (f,es) -> App (rename_var f, List.map rename_vars_in_expr es)
   | Op1 (o,e) -> Op1 (o, rename_vars_in_expr e)
   | Op (o,es) -> Op (o, List.map rename_vars_in_expr es)
@@ -72,6 +73,7 @@ let add_subscript = sprintf "%s_%d"
 let rec sub_subscript xs d = function
   | Empty_rln -> Empty_rln
   | Var x -> Var (if List.mem x xs then add_subscript x d else x)
+  | Arg x -> failwith "Did not expect parameter within recursive def."
   | App (f, es) -> App (f, List.map (sub_subscript xs d) es)
   | Op1 (o, e) -> Op1 (o, sub_subscript xs d e)
   | Op (o, es) -> Op (o, List.map (sub_subscript xs d) es)
@@ -115,6 +117,7 @@ type exec_class =
   | Power_exec
   | Arm7_exec
   | Arm8_exec
+  | PTX_exec
 
 let pp_arch oc = function
   | Basic_exec -> fprintf oc "../archs/exec"
@@ -124,6 +127,7 @@ let pp_arch oc = function
   | Power_exec -> fprintf oc "../archs/exec_ppc"
   | Arm7_exec -> fprintf oc "../archs/exec_arm7"
   | Arm8_exec -> fprintf oc "../archs/exec_arm8"
+  | PTX_exec -> fprintf oc "../archs/exec_ptx"
 
 let pp_Arch oc = function
   | Basic_exec -> fprintf oc "Exec"
@@ -133,6 +137,7 @@ let pp_Arch oc = function
   | Power_exec -> fprintf oc "Exec_PPC"
   | Arm7_exec -> fprintf oc "Exec_Arm7"
   | Arm8_exec -> fprintf oc "Exec_Arm8"
+  | PTX_exec -> fprintf oc "Exec_PTX"
 
 let parse_exec_class = function
   | "BASIC" -> Basic_exec
@@ -142,6 +147,7 @@ let parse_exec_class = function
   | "PPC" -> Power_exec
   | "ARM7" -> Arm7_exec
   | "ARM8" -> Arm8_exec
+  | "PTX" -> PTX_exec
   | x -> failwith (asprintf "Unexpected execution class: %s." x)
 
 let rec class_sets = function
@@ -163,21 +169,23 @@ let rec class_sets = function
 	"dmbld"; "DMBLD"; "isb"; "ISB"; "DSBST"]
   | Arm8_exec ->
      class_sets Arm7_exec @ ["screl"; "scacq"]
+  | PTX_exec ->
+     class_sets Basic_HW_exec @
+       ["membarcta"; "membargl"; "membarsys"]
 
 let rec class_rels = function
   | Basic_exec ->
      ["ad"; "addr"; "cd"; "co"; "coe"; "coi"; "ctrl"; "data";
       "dd"; "ext"; "fr"; "fre"; "fri"; "po"; "poloc"; "rf";
       "rfe"; "rfi"; "sb"; "sloc"; "sthd"]
-  | C_exec ->
-     class_rels Basic_exec
-  | Basic_HW_exec ->
-     class_rels Basic_exec @ ["atom"]
+  | C_exec -> class_rels Basic_exec
+  | Basic_HW_exec -> class_rels Basic_exec @ ["atom"]
   | X86_exec
   | Power_exec
   | Arm7_exec
-  | Arm8_exec ->
-     class_rels Basic_HW_exec
+  | Arm8_exec -> class_rels Basic_HW_exec
+  | PTX_exec -> class_rels Basic_HW_exec @
+		  ["scta"; "sgl"]
 
 let build_env exec_class = 
   (List.map (fun a -> (a,([],Rel))) (class_rels exec_class)) @
@@ -215,6 +223,7 @@ and type_of env = function
       | _, _ ->
 	 failwith (asprintf "Missing argument for %s." x)
     end
+  | Arg x -> Rel (* assume arguments are relational *)
   | App (f, args) ->
      let (args_type, ret_type) = type_of_var env f in
      assert (List.length args_type = List.length args);
@@ -275,16 +284,22 @@ and type_file path =
 (* Generating Alloy code *)
 (*************************)
 		       
-let pp_access_type = function
-  | WriteRead -> Op (Union, [Var "W"; Var "R"])
+let als_of_access_type = function
+  | WriteRead -> Var "M"
   | Write -> Var "W"
   | Read -> Var "R"
   | Plain -> Op (Diff, [Var "ev"; Var "locked"])
   | Atomic -> Var "locked"
+
+let als_of_test oc = function
+  | Acyclic -> fprintf oc "is_acyclic"
+  | Irreflexive -> fprintf oc "irreflexive"
+  | IsEmpty -> fprintf oc "is_empty"
 		  
 let rec als_of_expr oc = function
   | Empty_rln -> fprintf oc "none -> none"
   | Var x -> fprintf oc "%s[e,X]" x
+  | Arg x -> fprintf oc "%s" x
   | App (f,es) -> fprintf oc "%s[%ae,X]" f als_of_exprs es
   | Op1 (Set_to_rln,e) -> fprintf oc "stor[%a]" als_of_expr e
   | Op1 (Star,e) -> fprintf oc "*(%a)" als_of_expr e
@@ -299,7 +314,7 @@ let rec als_of_expr oc = function
      in
      als_of_expr oc (Op (Diff, [univ; e]))
   | Op1 (Select(t1,t2), e) ->
-     let prod = Op(Cross, List.map pp_access_type [t1;t2]) in
+     let prod = Op(Cross, List.map als_of_access_type [t1;t2]) in
      als_of_expr oc (Op (Inter, [e; prod]))
   | Op1 (Domain, e) -> fprintf oc "(%a).univ" als_of_expr e
   | Op1 (Range, e) -> fprintf oc "univ.(%a)" als_of_expr e
@@ -313,17 +328,20 @@ and als_of_exprs oc = function
   | [] -> fprintf oc ""
   | e :: es -> fprintf oc "%a, %a" als_of_expr e als_of_exprs es
 
-let pp_test_type = function
-  | Acyclic -> "is_acyclic"
-  | Irreflexive -> "irreflexive"
-  | IsEmpty -> "is_empty"
-    
+let rec replace_vars_with_args args = function
+  | Empty_rln -> Empty_rln
+  | Var x -> if List.mem x args then Arg x else Var x
+  | Arg x -> failwith "Did not expect an Arg here."
+  | App (f,es) -> App (f, List.map (replace_vars_with_args args) es)
+  | Op1 (o,e) -> Op1 (o, replace_vars_with_args args e)
+  | Op (o,es) -> Op (o, List.map (replace_vars_with_args args) es)
+		       
 let rec als_of_instrs env exec_class ax_list oc = function
   | [] -> ax_list
   | Let (x,args,e) :: instrs ->
      (* NB we assume all args are relations, not sets *)
-     let env' = (List.map (fun a -> (a,([],Rel))) args) @ env in
-     let def_type = type_of env' e in
+     let e = replace_vars_with_args args e in
+     let def_type = type_of env e in
      let args_str = List.fold_left (sprintf "%s%s:E->E,") "" args in
      fprintf oc "fun %s [%se:E, X:%a] : %s {\n"
 	     x args_str pp_Arch exec_class (alloy_type_of def_type);
@@ -337,7 +355,7 @@ let rec als_of_instrs env exec_class ax_list oc = function
      failwith "Recursive definition should have been removed."
   | Test (t,e,n) :: instrs ->
      fprintf oc "pred %s [e:E, X:%a] {\n" n pp_Arch exec_class; 
-     fprintf oc "  %s[%a]\n" (pp_test_type t) als_of_expr e;
+     fprintf oc "  %a[%a]\n" als_of_test t als_of_expr e;
      fprintf oc "}\n\n";
      als_of_instrs env exec_class (n :: ax_list) oc instrs
   | Include path :: instrs ->

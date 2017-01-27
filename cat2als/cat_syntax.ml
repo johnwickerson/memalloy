@@ -57,6 +57,7 @@ type binop =
 type cat_expr =
   | Empty_rln
   | Var of string
+  | Arg of string (* used internally, when processing function bodies *)
   | App of string * cat_expr list
   | Op1 of unop * cat_expr
   | Op of binop * cat_expr list
@@ -64,6 +65,7 @@ type cat_expr =
 let rec pp_expr oc = function
   | Empty_rln -> fprintf oc "0"
   | Var x -> fprintf oc "%s" x
+  | Arg x -> fprintf oc "%s" x
   | App (f,es) -> fprintf oc "%s(%a)" f pp_exprs es
   | Op1 (o,e) -> fprintf oc "unop(%a)" pp_expr e
   | Op (Seq,es) -> fprintf oc "Seq(%a)" pp_exprs es
@@ -86,7 +88,7 @@ let pp_test_type oc = function
   | Acyclic -> fprintf oc "acyclic"
   | Irreflexive -> fprintf oc "irreflexive"
   | IsEmpty -> fprintf oc "empty"
-  
+		       
 type cat_instr =
   | Let of string * string list * cat_expr
   | LetRec of (string * cat_expr) list

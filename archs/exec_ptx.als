@@ -38,4 +38,9 @@ fun membar_cta[e:E, X:Exec_PTX] : set E { X.membar_cta - e }
 fun scta[e:E, X:Exec_PTX] : E->E { X.scta - (univ -> e) - (e -> univ) }
 fun sgl[e:E, X:Exec_PTX] : E->E { X.sgl - (univ -> e) - (e -> univ) }
 
+// Synonyms
+fun membarsys[e:E, X:Exec_PTX] : set E { membar_sys[e,X] }
+fun membargl[e:E, X:Exec_PTX] : set E { membar_gl[e,X] }
+fun membarcta[e:E, X:Exec_PTX] : set E { membar_cta[e,X] }
+
 run storebuffering_H for exactly 1 Exec, 4 E

@@ -7,7 +7,8 @@ models_als/basic.als \
 models_als/sc.als \
 models_als/x86tso.als \
 models_als/arm7.als \
-models_als/ppc.als
+models_als/ppc.als \
+models_als/ptx_cumul.als
 
 all:
 	make $(ALSFILES)
@@ -23,6 +24,7 @@ models_als/parri.als: models_als/basic.als
 models_als/arm7.als: models_als/basic.als
 models_als/ppc.als: models_als/basic.als
 models_als/sc.als: models_als/basic.als
+models_als/ptx_cumul.als: models_als/basic.als
 
 clean:
 	make -C cat2als clean
