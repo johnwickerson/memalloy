@@ -92,5 +92,5 @@ let atomic = domain(atom) | range(atom)
 let xx = po & (atomic * atomic)
 acyclic co | xx as ScXX
 
-acyclic (atom & (fre;coe)) as Atomic
+empty (atom & (fre;coe)) as Atomic
 

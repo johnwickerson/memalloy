@@ -1,0 +1,44 @@
+(* 
+This file is a slightly modified version of one that is distributed with 
+the Herd tool, the licence of which is given below. The original file is
+available online:
+https://github.com/herd/herdtools/blob/master/herd/ptx.cat
+*)
+
+(*********************************************************************)
+(*                        Herd                                       *)
+(*                                                                   *)
+(* Luc Maranget, INRIA Paris-Rocquencourt, France.                   *)
+(* Jade Alglave, University College London, UK.                      *)
+(*                                                                   *)
+(*  Copyright 2013 Institut National de Recherche en Informatique et *)
+(*  en Automatique and the authors. All rights reserved.             *)
+(*  This file is distributed  under the terms of the Lesser GNU      *)
+(*  General Public License.                                          *)
+(*********************************************************************)
+
+"PTX"
+  
+include "basic.cat"
+
+empty (atom & (fre;coe)) as Atomic
+					
+let polocLLH = poloc & ((W*M) | (M*W))
+acyclic polocLLH | com as ScPerLocLLH
+
+let dp = addr | data | ctrl
+acyclic dp | rf as NoThinAir
+
+let sys_fence = po; [membar.sys]; po
+let gl_fence = (po; [membar.gl]; po) | sys_fence
+let cta_fence = (po; [membar.cta]; po) | gl_fence
+
+let rmo(f) = dp | rfe | co | fr | f
+
+let CTArmo = rmo(cta_fence) & scta
+let GLrmo = rmo(gl_fence) & sgl
+let SYSrmo = rmo(sys_fence)
+
+acyclic CTArmo as CTAconstraint
+acyclic GLrmo as GLconstraint
+acyclic SYSrmo as SYSconstraint
