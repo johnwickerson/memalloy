@@ -51,6 +51,7 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
   let check_keyword = function
     | "AA" -> AA | "acyclic" -> ACYCLIC
     | "and" -> AND | "AP" -> AP | "as" -> AS
+    | "deadness_requires" -> DEADNESS_REQUIRES
     | "domain" -> DOMAIN
     | "empty" -> TESTEMPTY
     | "include" -> INCLUDE
@@ -62,7 +63,9 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
     | "PA" -> PA | "PP" -> PP
     | "range" -> RANGE
     | "show" -> SHOW
+    | "undefined_unless" -> UNDEFINED_UNLESS
     | "unshow" -> UNSHOW
+    | "withsc" -> WITHSC
     | "WM" -> WM | "WR" -> WR | "WW" -> WW
     | x -> VAR (remove_hyphens (remove_dots x))
 }

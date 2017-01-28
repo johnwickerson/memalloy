@@ -79,20 +79,30 @@ and pp_exprs oc = function
   | e :: es -> fprintf oc "%a," pp_expr e; pp_exprs oc es
   | _ -> assert false				 
 
-type test_type =
+type shape =
   | Acyclic
   | Irreflexive
   | IsEmpty
 
-let pp_test_type oc = function
+let pp_shape oc = function
   | Acyclic -> fprintf oc "acyclic"
   | Irreflexive -> fprintf oc "irreflexive"
   | IsEmpty -> fprintf oc "empty"
+
+type cnstrnt =
+  | Provision
+  | UndefUnless
+  | Deadness
+
+let pp_cnstrnt oc = function
+  | Provision -> fprintf oc "provides"
+  | UndefUnless -> fprintf oc "undefined_unless"
+  | Deadness -> fprintf oc "deadness_requires"
 		       
 type cat_instr =
   | Let of string * string list * cat_expr
   | LetRec of (string * cat_expr) list
-  | Test of test_type * cat_expr * string
+  | Axiom of cnstrnt * shape * cat_expr * string
   | Include of string
 
 let rec pp_morebinds oc = function
@@ -113,11 +123,12 @@ let pp_instr oc = function
      fprintf oc "let %s = %a\n\n" x pp_expr e;
      pp_morebinds oc xes
   | LetRec [] -> assert false
-  | Test (t,e,n) ->
-     fprintf oc "%a(%a) as %s\n\n" pp_test_type t pp_expr e n
+  | Axiom (c,t,e,n) ->
+     fprintf oc "%a %a(%a) as %s\n\n"
+       pp_cnstrnt c pp_shape t pp_expr e n
   | Include path ->
      fprintf oc "include %s\n\n" path
 
 let pp_instrs oc = List.iter (pp_instr oc)
-	     
+
 type cat_model = cat_instr list

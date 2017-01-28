@@ -1,0 +1,11 @@
+(* This is a modified version of a file distributed with the paper
+"Overhauling SC atomics in C11 and OpenCL" by Mark Batty,
+Alastair F. Donaldson, and John Wickerson. The original is available online:
+http://multicore.doc.ic.ac.uk/overhauling/
+ *)
+
+"C"
+
+include "c11_base.cat"
+
+acyclic scp as Ssimp

@@ -4,3 +4,9 @@ let poloc = po & sloc
 
 let com = rf | fr | co
 
+let if_zero = ([_] & (ctrl;ctrl^-1)) \ (rf^-1;rf)
+
+let imm(r) = r \ (r;r+)
+
+let unforced_co =
+  (imm(co); imm(co); (imm(co))^-1) \ (rf?; (po; (rf^-1)?)?)

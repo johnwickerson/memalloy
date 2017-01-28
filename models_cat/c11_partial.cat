@@ -1,0 +1,22 @@
+(* This is a modified version of a file distributed with the paper
+"Overhauling SC atomics in C11 and OpenCL" by Mark Batty,
+Alastair F. Donaldson, and John Wickerson. The original is available online:
+http://multicore.doc.ic.ac.uk/overhauling/
+ *)
+
+"C"
+
+include "c11_base.cat"
+
+let S1 = hb
+let S2 = Fsb?; co; sbF?
+let S3 = rf^-1; [sc]; co
+let S4 = rf^-1; hbl; [W]
+let S44 = ([R] \ (rf^-1; rf)); fr
+let S5 = Fsb; fr
+let S6 = fr; sbF
+let S7 = Fsb; fr; sbF
+let Sall = S1|S2|S3|S4|S44|S5|S6|S7
+let Sp = (Sall & (sc*sc)) \ [_]
+
+acyclic Sp as Spartial

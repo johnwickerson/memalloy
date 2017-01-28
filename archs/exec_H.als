@@ -19,6 +19,9 @@ sig Exec_H extends Exec {
 
 fun atom[e:E, X:Exec_H] : E->E { X.atom - (univ -> e) - (e -> univ) }
 
+// Synonyms:
+fun rmw[e:E, X:Exec_H] : E->E { atom[e,X] }
+
 fun fre[e:E, x : Exec_H] : E -> E {
   fr[e,x] - sthd[e,x]
 }
@@ -112,7 +115,7 @@ pred iriw_H1 [x : Exec_H] {
     x.naL = none
   }
 }
-
+/*
 pred racefree[e:E, x: Exec_H] {
   no none
 }
@@ -126,6 +129,7 @@ pred dead[e:E, x : Exec_H] {
   no_if_zero[e,x]
 
 }
+  */
 
 run storebuffering_H for exactly 1 Exec, 4 E
 run iriw_H1 for exactly 1 Exec, 6 E

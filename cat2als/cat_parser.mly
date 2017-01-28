@@ -59,8 +59,8 @@ let do_op op e1 e2 = Op (op, as_op op e1 @ as_op op e2)
 %token AA AP PA PP
 %token ALT SEMI UNION INTER COMMA DIFF
 %token STAR PLUS OPT INV COMP NOT HAT DOMAIN RANGE
-%token AND ACYCLIC AS EQUAL IRREFLEXIVE INCLUDE LET
-       REC SHOW TESTEMPTY UNSHOW
+%token AND ACYCLIC AS DEADNESS_REQUIRES EQUAL IRREFLEXIVE
+INCLUDE LET REC SHOW TESTEMPTY WITHSC UNDEFINED_UNLESS UNSHOW
        
 %type <string * Cat_syntax.cat_model> main
 			       
@@ -76,8 +76,12 @@ let do_op op e1 e2 = Op (op, as_op op e1 @ as_op op e2)
 %%
 
 main:
-| VAR ins_list EOF    { ($1, $2) }
-| STRING ins_list EOF { ($1, $2) }
+| VAR opt_withsc ins_list EOF    { ($1, $3) }
+| STRING opt_withsc ins_list EOF { ($1, $3) }
+
+opt_withsc:
+|        { () }
+| WITHSC { failwith "Option `withsc` not supported." }
 
 ins_list:
 |              { [] }
@@ -89,8 +93,10 @@ ins:
                     { [LetRec (($3,$5) :: $6)] }
 | LET VAR LPAR var_list RPAR EQUAL exp
                     { [Let ($2,$4,$7)] }
-| test exp AS VAR   { [Test($1,$2,$4)] }
-| test exp          { failwith "All tests must be named." }
+| cnstrnt_type test_type exp AS VAR
+                    { [Axiom($1,$2,$3,$5)] }
+| cnstrnt_type test_type exp
+                    { failwith "All tests must be named." }
 | INCLUDE STRING    { [Include $2] }
 | SHOW exp AS VAR   { [] }
 | SHOW var_list     { [] }
@@ -100,7 +106,12 @@ more_bindings:
 |                                 { [] }
 | AND VAR EQUAL exp more_bindings { ($2,$4) :: $5 }
 
-test:
+cnstrnt_type:
+|                   { Provision }
+| UNDEFINED_UNLESS  { UndefUnless }
+| DEADNESS_REQUIRES { Deadness }
+
+test_type:
 | ACYCLIC     { Acyclic }
 | IRREFLEXIVE { Irreflexive }
 | TESTEMPTY   { IsEmpty }

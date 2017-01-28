@@ -1,0 +1,5 @@
+"BASIC_HW"
+  
+deadness_requires empty if_zero as No_If_Zero 
+
+deadness_requires empty unforced_co as Forced_Co

@@ -32,7 +32,8 @@ pred strict_partial_order[r:E->E] {
 fun sq[s : set E] : E -> E {
   s -> s
 }
-
+/*
 fun imm[r : E -> E] : E -> E{
   r - (r.^r)
 }
+*/

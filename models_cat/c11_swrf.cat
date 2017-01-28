@@ -1,0 +1,9 @@
+(* A version of C11 with sw+rf cycles forbidden.
+  (See Nienhuis et al., OOPSLA 2016) *)
+
+"C"
+
+include "c11_base.cat"
+
+acyclic scp as Ssimp
+acyclic sw | rf as SwRf

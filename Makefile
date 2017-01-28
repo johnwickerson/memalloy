@@ -9,11 +9,16 @@ models_als/arm7.als \
 models_als/ppc.als \
 models_als/ptx_orig.als \
 models_als/ptx_cumul.als \
-models_als/aarch64.als
+models_als/aarch64.als \
+models_als/c11_simp.als \
+models_als/c11_partial.als \
+models_als/c11_sra.als \
+models_als/c11_swrf.als
 
 INTERMEDIATE_ALSFILES = \
 models_als/basic.als \
-models_als/ptx_base.als
+models_als/ptx_base.als \
+models_als/c11_base.als
 
 all: $(INTERMEDIATE_ALSFILES) $(ALSFILES)
 
@@ -35,6 +40,10 @@ models_als/ptx_base.als: models_als/basic.als
 models_als/ptx_cumul.als: models_als/ptx_base.als
 models_als/ptx_orig.als: models_als/ptx_base.als
 models_als/aarch64.als: models_als/basic.als
+models_als/c11_simp.als: models_als/c11_base.als
+models_als/c11_partial.als: models_als/c11_base.als
+models_als/c11_sra.als: models_als/c11_base.als
+models_als/c11_swrf.als: models_als/c11_base.als
 
 clean:
 	make -C cat2als clean

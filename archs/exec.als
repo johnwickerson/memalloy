@@ -97,6 +97,8 @@ fun po [e:E, X:Exec] : E->E { sb[e,X] }
 fun addr [e:E, X:Exec] : E->E { ad[e,X] }
 fun ctrl [e:E, X:Exec] : E->E { cd[e,X] }
 fun data [e:E, X:Exec] : E->E { dd[e,X] }
+fun loc [e:E, X:Exec] : E->E { sloc[e,X] }
+fun thd [e:E, X:Exec] : E->E { sthd[e,X] }
 
 fun fr_init[e:E, x:Exec] : E->E {
   (stor[R[e,x]] - (~(rf[e,x]) . (rf[e,x]))) . (sloc[e,x]) . (stor[W[e,x]])
@@ -115,15 +117,19 @@ pred total_sb[e:E, x : Exec] {
   sthd[e,x] - iden in sb[e,x] + ~(sb[e,x])
 }
 
+/*
 pred forced_co[e:E, x : Exec] {
   (imm[co[e,x]]) . (imm[co[e,x]]) . ~(imm[co[e,x]]) in
     (rc[rf[e,x]]) . (rc[(sb[e,x]) . (rc[~(rf[e,x])])])
 }
+*/
 
+/*
 pred no_if_zero[e:E, x:Exec] {
   // avoid "if(r==0)" in generated litmus test
   dom[cd[e,x]] in ran[rf[e,x]]
 }
+*/
 
 /*************************/
 /*      TESTS            */

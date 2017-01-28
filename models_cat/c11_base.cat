@@ -1,0 +1,73 @@
+(* This is a modified version of a file distributed with the paper
+"Overhauling SC atomics in C11 and OpenCL" by Mark Batty,
+Alastair F. Donaldson, and John Wickerson (POPL'16). The original 
+is available online: http://multicore.doc.ic.ac.uk/overhauling/
+
+The deadness predicates come from the paper "Automatically Comparing
+Memory Consistency Models" by John Wickerson, Mark Batty,
+Tyler Sorensen and George A. Constantinides (POPL'17).
+ *)
+
+"C"
+
+include "basic.cat"
+
+let Fsb = [F]; po
+let sbF = po; [F]
+
+(* release sequence *)
+let rs = poloc*; rf*
+
+(* synchronises with *)
+let sw = ([rel]; Fsb?; [A & W]; rs; rf; [R & A]; sbF?; [acq]) \ thd
+
+(* happens before *)
+let hb = (po | sw)+
+
+let hbl = hb & loc
+
+(* non-atomic reads-from *)
+empty (rf ; [naL]) \ imm([W] ; hbl) as NaRf
+
+(* conflict *)
+let cnf = (((W*M) | (M*W)) & loc) \ [_]
+				  
+(* data race *)
+let dr = (cnf \ (A*A)) \ thd \ (hb | hb^-1)
+undefined_unless empty dr as Dr 
+
+(* unsequenced race *)
+let ur = (cnf & thd) \ (po | po^-1)
+undefined_unless empty ur as Ur
+
+(* coherence, etc *)
+acyclic hbl | rf | co | fr as HbCom
+
+(* no "if(r==0)" *)
+deadness_requires empty if_zero as No_If_Zero 
+
+(* no unsequenced races *)
+deadness_requires empty ur as Dead_Ur
+
+(* coherence edges are forced *)
+deadness_requires empty unforced_co as Forced_Co
+
+(* external control dependency *)
+let cde = ((rf \ thd) | ctrl)* ; ctrl
+(* dependable release sequence *)
+let drs = rs \ ([R]; ~cde)
+(* dependable synchronises-with *)
+let dsw = sw & (((Fsb?; [rel]; drs?) \ (~ctrl; ~cde)) ; rf)		 
+(* dependable happens-before *)
+let dhb = po?; (dsw;ctrl)*
+(* self-satisfying cycle *)	    
+let ssc = [_] & cde
+(* potential data race *)
+let pdr = cnf \ (A*A)
+(* reads-from on non-atomic location *)
+let narf = rf & (naL*naL)
+
+deadness_requires empty pdr \ (dhb | dhb^-1 | narf;ssc | ssc;narf^-1) as Dead_Pdr
+
+let scb = Fsb?; (co | fr | hb); sbF?
+let scp = (scb & (sc * sc)) \ [_]
