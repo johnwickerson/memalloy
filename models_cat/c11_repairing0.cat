@@ -1,0 +1,8 @@
+(* Models from paper "Repairing SC in C/C++11" by Lahav et al. *)
+
+"C"
+include "c11_base.cat"
+
+(* Starting point (Batty et al.): *)
+let rb = [R]; rf^-1; co
+acyclic [sc]; Fsb?; (hb | co | rb); sbF?; [sc] as Srepaired0

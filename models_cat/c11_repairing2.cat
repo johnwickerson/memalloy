@@ -1,0 +1,10 @@
+(* Models from paper "Repairing SC in C/C++11" by Lahav et al. *)
+
+"C"
+include "c11_base.cat"
+
+(* Stronger SC fences: *)
+let rb = [R]; rf^-1; co
+let shsb = po;hb;po
+let eco = (rf | co | rb)+
+acyclic [sc]; Fsb?; (po | shsb | eco); sbF?; [sc] as Srepaired2

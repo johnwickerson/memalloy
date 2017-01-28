@@ -14,7 +14,13 @@ models_als/c11_simp.als \
 models_als/c11_partial.als \
 models_als/c11_sra.als \
 models_als/c11_swrf.als \
-models_als/c11_lidbury.als
+models_als/c11_lidbury.als \
+models_als/c11_repairing0.als \
+models_als/c11_repairing1.als \
+models_als/c11_repairing2.als \
+models_als/c11_repairing3.als \
+models_als/c11_repairing4.als \
+models_als/c11_repairing5.als
 
 INTERMEDIATE_ALSFILES = \
 models_als/basic.als \
@@ -46,6 +52,12 @@ models_als/c11_partial.als: models_als/c11_base.als
 models_als/c11_sra.als: models_als/c11_base.als
 models_als/c11_swrf.als: models_als/c11_base.als
 models_als/c11_lidbury.als: models_als/c11_base.als
+models_als/c11_repairing0.als: models_als/c11_base.als
+models_als/c11_repairing1.als: models_als/c11_base.als
+models_als/c11_repairing2.als: models_als/c11_base.als
+models_als/c11_repairing3.als: models_als/c11_base.als
+models_als/c11_repairing4.als: models_als/c11_base.als
+models_als/c11_repairing5.als: models_als/c11_base.als
 
 clean:
 	make -C cat2als clean
