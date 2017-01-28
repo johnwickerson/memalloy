@@ -1,0 +1,20 @@
+(* Based on the Lidbury-Donaldson POPL'17 axiomatic model *)
+
+"C"
+
+include "c11_base.cat"
+
+let S1 = hb
+let S2 = Fsb?; co; sbF?
+let S3 = rf^-1; [sc]; co
+let S4 = rf^-1; hbl; [W]
+let S44 = ([R] \ (rf^-1; rf)); fr
+let S5 = Fsb; fr
+let S6 = fr; sbF
+let S7 = Fsb; fr; sbF
+let Sall = S1|S2|S3|S4|S44|S5|S6|S7
+let Sp = (Sall & (sc*sc)) \ [_]
+
+acyclic Sp as Spartial
+acyclic Sp | po | rf | co as Lidbury
+

@@ -5,7 +5,7 @@ sig E {}
 
 pred distinguishes[X:Exec_C] {
   not (M1/consistent[none,X])
-  dead[none,X]
+  M1/dead[none,X]
   M2/consistent[none,X]
 
   // For now, omit dependencies
