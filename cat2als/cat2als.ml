@@ -69,95 +69,14 @@ let rec unfold_instrs u = function
      unfold_defs xes u u @ unfold_instrs u instrs
   | other_instr :: instrs ->
      other_instr :: unfold_instrs u instrs
-
-(************************************)
-(* The architectures that we handle *)
-(************************************)
-	       
-type architecture =
-  | Basic
-  | C
-  | Basic_HW
-  | X86
-  | Power
-  | Arm7
-  | Arm8
-  | PTX
-
-let pp_arch oc = function
-  | Basic -> fprintf oc "../archs/exec"
-  | C -> fprintf oc "../archs/exec_C"
-  | Basic_HW -> fprintf oc "../archs/exec_H"
-  | X86 -> fprintf oc "../archs/exec_x86"
-  | Power -> fprintf oc "../archs/exec_ppc"
-  | Arm7 -> fprintf oc "../archs/exec_arm7"
-  | Arm8 -> fprintf oc "../archs/exec_arm8"
-  | PTX -> fprintf oc "../archs/exec_ptx"
-
-let pp_Arch oc = function
-  | Basic -> fprintf oc "Exec"
-  | C -> fprintf oc "Exec_C"
-  | Basic_HW -> fprintf oc "Exec_H"
-  | X86 -> fprintf oc "Exec_X86"
-  | Power -> fprintf oc "Exec_PPC"
-  | Arm7 -> fprintf oc "Exec_Arm7"
-  | Arm8 -> fprintf oc "Exec_Arm8"
-  | PTX -> fprintf oc "Exec_PTX"
-
-let parse_arch = function
-  | "BASIC" -> Basic
-  | "C" -> C
-  | "HW" -> Basic_HW
-  | "X86 TSO" -> X86
-  | "PPC" -> Power
-  | "ARM7" -> Arm7
-  | "ARM8" -> Arm8
-  | "PTX" -> PTX
-  | x -> failwith (asprintf "Unexpected architecture: %s." x)
-
-let rec arch_sets = function
-  | Basic ->
-     ["ev"; "W"; "R"; "F"; "naL"; "M"]
-  | C ->
-     arch_sets Basic @ ["A"; "acq"; "rel"; "sc"]
-  | Basic_HW ->
-     arch_sets Basic @ ["A"; "X"]
-  | X86 ->
-     arch_sets Basic_HW @ ["MFENCE"]
-  | Power ->
-     arch_sets Basic_HW @
-       ["sync"; "lwsync"; "eieio"; "isync";
-	"SYNC"; "LWSYNC"; "EIEIO"; "ISYNC"]
-  | Arm7 ->
-     arch_sets Basic_HW @
-       ["dmb"; "DMB"; "DSB"; "DMBSY"; "dmbst"; "DMBST";
-	"dmbld"; "DMBLD"; "isb"; "ISB"; "DSBST"]
-  | Arm8 ->
-     arch_sets Arm7 @ ["screl"; "scacq"]
-  | PTX ->
-     arch_sets Basic_HW @
-       ["membarcta"; "membargl"; "membarsys"]
-
-let rec arch_rels = function
-  | Basic ->
-     ["ad"; "addr"; "cd"; "co"; "coe"; "coi"; "ctrl"; "data";
-      "dd"; "ext"; "fr"; "fre"; "fri"; "loc"; "po"; "poloc";
-      "rf"; "rfe"; "rfi"; "sb"; "sloc"; "sthd"; "thd"]
-  | C -> arch_rels Basic
-  | Basic_HW -> arch_rels Basic @ ["atom"; "rmw"]
-  | X86
-  | Power
-  | Arm7
-  | Arm8 -> arch_rels Basic_HW
-  | PTX -> arch_rels Basic_HW @ ["scta"; "sgl"]
-
-let build_env arch = 
-  (List.map (fun a -> (a,([],Rel))) (arch_rels arch)) @
-  (List.map (fun a -> (a,([],Set))) (arch_sets arch))
 				  
 (***************************)
 (* Determining Alloy types *)
 (***************************)
+
+let build_env arch = 
+  (List.map (fun a -> (a,([],Rel))) (Archs.arch_rels arch)) @
+  (List.map (fun a -> (a,([],Set))) (Archs.arch_sets arch))
 
 let alloy_type_of = function Set -> "set E" | Rel -> "E->E"
 
@@ -244,7 +163,7 @@ let rec type_instr env = function
 		  
 and type_file path =
   let model_type, model = parse_file path in
-  let arch = parse_arch model_type in
+  let arch = Archs.parse_arch model_type in
   let env = build_env arch in
   List.fold_left type_instr env model
 
@@ -320,7 +239,7 @@ let als_of_instr arch oc (env, axs) = function
      let def_type = type_of env e in
      let args_str = List.fold_left (sprintf "%s%s:E->E,") "" args in
      fprintf oc "fun %s [%se:E, X:%a] : %s {\n"
-	     x args_str pp_Arch arch (alloy_type_of def_type);
+	     x args_str Archs.pp_Arch arch (alloy_type_of def_type);
      fprintf oc "  %a\n" als_of_expr e;
      fprintf oc "}\n\n";
      let env' =
@@ -330,7 +249,7 @@ let als_of_instr arch oc (env, axs) = function
   | LetRec _ ->
      failwith "Recursive definition should have been removed."
   | Axiom (c,s,e,n) ->
-     fprintf oc "pred %s [e:E, X:%a] {\n" n pp_Arch arch; 
+     fprintf oc "pred %s [e:E, X:%a] {\n" n Archs.pp_Arch arch; 
      fprintf oc "  %a[%a]\n" als_of_shape s als_of_expr e;
      fprintf oc "}\n\n";
      (env, (n,c) :: axs)
@@ -349,10 +268,11 @@ let preamble cat_path model_name arch oc =
   fprintf oc "/* Automatically generated from %s on %s at %s */\n\n"
 	  cat_path (today ()) (now ());
   fprintf oc "module %s[E]\n" model_name;
-  fprintf oc "open %a[E]\n\n" pp_arch arch
+  fprintf oc "open %a[E]\n\n" Archs.pp_arch arch
 
 let postamble arch c axs oc =
-  fprintf oc "pred %a[e:E, X:%a] {\n" als_of_cnstrnt c pp_Arch arch;
+  fprintf oc "pred %a[e:E, X:%a] {\n"
+	  als_of_cnstrnt c Archs.pp_Arch arch;
   List.iter (fun (n,_) -> fprintf oc "  %s[e,X]\n" n) (List.rev axs);
   fprintf oc "}\n"
 			
@@ -416,7 +336,7 @@ let main () =
   in
   let oc = formatter_of_out_channel (open_out als_path) in
   let (model_type, cat_model) = parse_file cat_path in
-  let arch = parse_arch model_type in
+  let arch = Archs.parse_arch model_type in
   let env = build_env arch in
   let cat_model = unfold_instrs unrolling_factor cat_model in
   debug "Cat model: %a" pp_instrs cat_model;

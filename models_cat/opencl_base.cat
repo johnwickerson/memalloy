@@ -1,0 +1,98 @@
+(* This is a modified version of a file distributed with the paper
+"Overhauling SC atomics in C11 and OpenCL" by Mark Batty,
+Alastair F. Donaldson, and John Wickerson (POPL'16). The original 
+is available online: http://multicore.doc.ic.ac.uk/overhauling/
+
+The deadness predicates come from the paper "Automatically Comparing
+Memory Consistency Models" by John Wickerson, Mark Batty,
+Tyler Sorensen and George A. Constantinides (POPL'17).
+ *)
+
+"OpenCL"
+
+include "basic.cat"
+  
+let Fsb = [F]; po
+let sbF = po; [F]
+
+(* release sequence *)
+let rs = poloc*; rf*
+
+(* inclusive scopes (conservative original) *)
+let incl' = swg & (wg * wg)
+	  | sdv & (dv * dv)
+	  |       (sy * sy)
+
+(* inclusive scopes (less conservative version) *)
+let incl1 = [wg]; swg
+	  | [dv]; sdv
+	  | [sy]; (_ * _)
+let incl = incl1 & incl1^-1
+	 | [rem]; incl1
+	 | incl1^-1; [rem]
+      
+let scf = sc * sc
+	| (G & L & F) * (G & L & F)
+
+let swra_local =
+  ([L & rel]; Fsb?; [A & W]; rs; [L]; rf; [R & A]; sbF?; [L & acq])
+  & incl \ thd
+
+let swra_global =
+  ([G & rel]; Fsb?; [A & W]; rs; [G]; rf; [R & A]; sbF?; [G & acq])
+  & incl \ thd
+  
+let bsw_local = (entry_fence * exit_fence) & sbar & swg & (L*L) \ thd
+
+let bsw_global = (entry_fence * exit_fence) & sbar & swg & (G*G) \ thd
+						  
+let sw_local = swra_local | bsw_local | (scf & swra_global)
+
+let sw_global = swra_global | bsw_local | (scf & swra_local)
+
+let ghb = ((G * G) & po | sw_global)+
+let lhb = ((L * L) & po | sw_local)+
+
+let hb = ghb | lhb			
+
+acyclic ghb as Ghb
+acyclic lhb as Lhb
+				  
+irreflexive (co | co;rf | fr | fr;rf); ghb as Gcoh
+irreflexive (co | co;rf | fr | fr;rf); lhb as Lcoh
+
+irreflexive rf;hb as Rf
+
+empty (rf;[naL & G]) \ imm([W];(ghb & sloc)) as GnaRf
+empty (rf;[naL & L]) \ imm([W];(lhb & sloc)) as LnaRf
+
+irreflexive rf | co;fr | co;rf as Rmw
+
+let cnf = ((W * M) | (M * W)) & sloc
+
+let dr = cnf \ (hb | hb^-1) \ thd \ incl
+undefined_unless empty dr as Dr
+				  
+(* no "if(r==0)" *)
+deadness_requires empty if_zero as No_If_Zero 
+
+(* no unsequenced races *)
+(* deadness_requires empty ur as Dead_Ur *)
+
+(* coherence edges are forced *)
+deadness_requires empty unforced_co as Forced_Co
+
+(* external control dependency *)
+let cde = ((rf \ thd) | ctrl)* ; ctrl
+(* dependable release sequence *)
+let drs = rs \ ([R]; ~cde)
+(* dependable synchronises-with *)
+let dsw_global = sw_global & (((Fsb?; [rel]; drs?) \ (~ctrl; ~cde)) ; rf)
+let dsw_local = sw_local & (((Fsb?; [rel]; drs?) \ (~ctrl; ~cde)) ; rf)
+(* dependable happens-before *)
+let dhb_global = po?; (dsw_global;ctrl)*
+let dhb_local = po?; (dsw_local;ctrl)*
+(* potential data race *)
+let pdr = cnf \ incl
+
+deadness_requires empty pdr \ (dhb_global | dhb_global^-1 | dhb_local | dhb_local^-1) as Dead_Pdr

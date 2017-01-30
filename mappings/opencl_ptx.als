@@ -1,6 +1,5 @@
-open opencl_ptx_base[SE,HE]
 module opencl_ptx[SE,HE]
-
+open opencl_ptx_base[SE,HE]
 
 fun read_or_write[e: SE, 
   X : opencl_ptx_base/SW/Exec_OpenCL, 
