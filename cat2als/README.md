@@ -16,19 +16,19 @@ versions of OCaml may also work.
 
 - A reasonable fragment of the `.cat` language is supported.
 
-	- You can define sets or relations via `let x = e`.
+    - You can define sets or relations via `let x = e`.
 
-	- You can define functions via `let f(r1,...,rn) = e`, but note
+    - You can define functions via `let f(r1,...,rn) = e`, but note
       that the parameters `r1` through `rn` are assumed to be
       relations.
 	  
-	- You can define relations recursively via `let x1 = e1 and
+    - You can define relations recursively via `let x1 = e1 and
  ... and xn = en`, and these are unrolled a fixed number of times when
  translating into Alloy (since Alloy only checks up to a finite bound
  anyway). The number of unrollings is set by the `-u` flag, which
  defaults to 3.
 
-	- You can define a consistency axiom of the model called `name`
+    - You can define a consistency axiom of the model called `name`
   via `acyclic|irreflexive|empty e as name`. You can define a
   'definedness' axiom (i.e., one that must hold of every consistent
   execution or else the whole program is undefined) by prepending the
@@ -38,7 +38,7 @@ versions of OCaml may also work.
   no other passing executions) by prepending the statement above with
   `deadness_requires` instead.
 
-	- You can include the definitions and axioms of the `submodel.cat`
+    - You can include the definitions and axioms of the `submodel.cat`
   file via `include submodel.cat`. You will need to run `cat2als` on
   `submodel.cat` separately. When running `cat2als` on a sub-model, it
   is not necessary to form the overall
