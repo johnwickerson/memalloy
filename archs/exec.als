@@ -99,6 +99,7 @@ fun ctrl [e:E, X:Exec] : E->E { cd[e,X] }
 fun data [e:E, X:Exec] : E->E { dd[e,X] }
 fun loc [e:E, X:Exec] : E->E { sloc[e,X] }
 fun thd [e:E, X:Exec] : E->E { sthd[e,X] }
+fun ext [e:E, X:Exec] : E->E { (X.ev -> X.ev) - sthd[e,X] }
 
 fun fr_init[e:E, x:Exec] : E->E {
   (stor[R[e,x]] - (~(rf[e,x]) . (rf[e,x]))) . (sloc[e,x]) . (stor[W[e,x]])
