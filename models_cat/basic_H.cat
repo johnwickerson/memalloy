@@ -1,4 +1,6 @@
-"BASIC_HW"
+"HW"
+
+include "basic.cat"
   
 deadness_requires empty if_zero as No_If_Zero 
 

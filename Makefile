@@ -27,6 +27,7 @@ models_als/opencl_scoped.als \
 
 INTERMEDIATE_ALSFILES = \
 models_als/basic.als \
+models_als/basic_H.als \
 models_als/ptx_base.als \
 models_als/c11_base.als \
 models_als/opencl_base.als
