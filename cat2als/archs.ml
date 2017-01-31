@@ -76,7 +76,7 @@ let rec arch_sets = function
   | C ->
      arch_sets Basic @ ["A"; "acq"; "rel"; "sc"]
   | Basic_HW ->
-     arch_sets Basic @ ["A"; "X"]
+     arch_sets Basic
   | X86 ->
      arch_sets Basic_HW @ ["MFENCE"]
   | Power ->
