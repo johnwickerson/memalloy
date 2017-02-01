@@ -4,11 +4,11 @@ cat2als: a translator from the .cat format into Alloy
 Notes:
 
 - Compile the tool by running `make`. Clean up the directory by
-running `make clean`. I've compiled using OCaml 4.01.0; more recent
-versions of OCaml may also work.
+  running `make clean`. I've compiled using OCaml 4.01.0; more recent
+  versions of OCaml may also work.
 
 - To convert `model.cat` into `model.als`, run the command `./cat2als
--o model.als model.cat`.
+  -o model.als model.cat`.
 
 - Each `.cat` file must begin with a description of the architecture
   being modelled. This must be one of: "BASIC", "C", "HW", "X86 TSO",
@@ -44,3 +44,22 @@ versions of OCaml may also work.
       sub-model, it is not necessary to form the overall
       consistency/definedness/deadness predicates, so pass the `-i`
       flag (for 'intermediate model') to inhibit this.
+
+- There are a few syntactic restrictions on `.cat` files.
+
+    - The variable `int`, built into Herd, clashes with a keyword in
+      Alloy, so is not allowed. You can use `thd` instead.
+
+    - The variable `X`, built into Herd, clashes with another variable
+      in Alloy, so is not allowed. You can use `domain(atom) |
+      range(atom)` instead.
+
+    - The variables `L` and `A` are used in Herd for 'release' and
+      'acquire' accesses in the Arm8 architecture, but these clash
+      with the variables for 'local' accesses in OpenCL and 'atomic'
+      accesses in C and OpenCL, respectively. Alloy does not allow
+      variables to be re-used in this way, so you must use `screl` and
+      `scacq` in the Arm8 architecture instead.
+
+Credits:
+- John Wickerson, Imperial College London, 2017.
