@@ -291,14 +291,11 @@ let als_of_model intermediate env cat_path model_name arch oc instrs =
 (*********************************)
 	       
 let get_args () =
-  let als_path : string list ref = ref [] in
   let cat_path : string list ref = ref [] in
   let default_unrolling_factor = 3 in
   let unrolling_factor : int list ref = ref [] in
   let intermediate_model : bool ref = ref false in
   let speclist = [
-      ("-o", Arg.String (set_list_ref als_path),
-       "Output ALS file (mandatory)");
       ("-u", Arg.Int (set_list_ref unrolling_factor),
        sprintf "Number of times to unroll recursive definitions (optional, default=%d)" default_unrolling_factor);
       ("-i", Arg.Set intermediate_model,
@@ -314,26 +311,25 @@ let get_args () =
     raise (Arg.Bad "Missing or too many arguments.")
   in
   let cat_path = get_only_element bad_arg !cat_path in
-  let als_path = get_only_element bad_arg !als_path in
   let unrolling_factor =
     get_lone_element bad_arg default_unrolling_factor !unrolling_factor
   in
-  (cat_path, als_path, unrolling_factor, !intermediate_model)
+  (cat_path, unrolling_factor, !intermediate_model)
 
-let check_args (cat_path, als_path, unrolling_factor, interm_model) =
-  assert (Filename.check_suffix als_path ".als");
-  assert (unrolling_factor >= 0);
-  if Sys.file_exists als_path then
-    failwith "Target Alloy file already exists."
+let check_args (cat_path, unrolling_factor, interm_model) =
+  assert (unrolling_factor >= 0)
 		  
 let main () =
-  let (cat_path, als_path, unrolling_factor, interm_model) =
-    get_args ()
-  in
-  check_args (cat_path, als_path, unrolling_factor, interm_model);
+  let (cat_path, unrolling_factor, interm_model) = get_args () in
+  check_args (cat_path, unrolling_factor, interm_model);
   let model_name =
-    Filename.chop_extension (Filename.basename als_path)
+    Filename.chop_extension (Filename.basename cat_path)
   in
+  let als_file = sprintf "%s.als" model_name in
+  let als_dir = Filename.concat Filename.parent_dir_name "models_als" in
+  let als_path = Filename.concat als_dir als_file in
+  if Sys.file_exists als_path then
+    failwith "Target Alloy file already exists.";
   let oc = formatter_of_out_channel (open_out als_path) in
   let (model_type, cat_model) = parse_file cat_path in
   let arch = Archs.parse_arch model_type in

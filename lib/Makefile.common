@@ -1,0 +1,22 @@
+ifneq ($(PACKAGES),)
+PACKAGES := -pkgs $(PACKAGES)
+endif
+
+ifneq ($(LIBS),)
+LIBS := -libs $(LIBS)
+endif
+
+all:
+	@ echo "Attention: requires OCaml version >= 4.01.0."
+	ocamlbuild \
+	    -use-ocamlfind `# avoids warning`\
+	    -cflag -annot  `# enables C-c C-t for inspecting types`\
+	    $(LIBS)        `# from the standard libraries`\
+	    -I lib         `# include the repo's shared directory`\
+	    $(PACKAGES)    `# include some ocaml packages` \
+	    $(MAIN).native
+	mv $(MAIN).native $(MAIN)
+
+clean:
+	ocamlbuild -clean
+	rm -f $(MAIN)

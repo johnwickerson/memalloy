@@ -1,4 +1,5 @@
 LIBS=str,unix
-MAIN=cat2als
+PACKAGES=xml-light
+MAIN=gen
 
 include lib/Makefile.common

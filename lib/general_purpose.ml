@@ -55,3 +55,10 @@ let chop_extension extn path =
   else
     failwith
       (asprintf "File %s does not have extension \"%s\"." path extn)
+
+let last ss = List.hd (List.rev ss)
+      
+let base_of s = last (Str.split (Str.regexp_string "/") s)
+
+let remove_assocs ks =
+  List.filter (fun (k,_) -> not (List.mem k ks))

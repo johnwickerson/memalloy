@@ -1,6 +1,7 @@
 
 install:
 	make -C cat2als
+	make -C gen
 
 ALSFILES = \
 models_als/sc.als \
@@ -36,13 +37,14 @@ all: $(INTERMEDIATE_ALSFILES) $(ALSFILES)
 
 # Building .als files from corresponding .cat files
 $(ALSFILES): models_als/%.als: models_cat/%.cat
-	cd models_cat; ../cat2als/cat2als -o ../$@ ../$<
+	cd models_cat; ../cat2als/cat2als ../$<
 
 # Building .als files from corresponding .cat files
 $(INTERMEDIATE_ALSFILES): models_als/%.als: models_cat/%.cat
-	cd models_cat; ../cat2als/cat2als -i -o ../$@ ../$<
+	cd models_cat; ../cat2als/cat2als -i ../$<
 
 clean:
 	make -C cat2als clean
 	rm -f $(INTERMEDIATE_ALSFILES)
 	rm -f $(ALSFILES)
+	make -C gen clean
