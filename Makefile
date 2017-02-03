@@ -35,7 +35,7 @@ models_als/ptx_base.als \
 models_als/c11_base.als \
 models_als/opencl_base.als
 
-all: $(INTERMEDIATE_ALSFILES) $(ALSFILES)
+models: $(INTERMEDIATE_ALSFILES) $(ALSFILES)
 
 # Building .als files from corresponding .cat files
 $(ALSFILES): models_als/%.als: models_cat/%.cat
