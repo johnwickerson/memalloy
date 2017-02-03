@@ -19,3 +19,7 @@ echo "Alloy finished at `date -u`."
 # move generated XML file(s) into their own directory
 mkdir -p $MEMALLOY_HOME/xml
 mv test.xml $MEMALLOY_HOME/xml/test.xml
+
+cd ../gen
+./gen ../xml/test.xml > ~/Desktop/graph.dot
+open ~/Desktop/graph.dot
