@@ -5,7 +5,10 @@ open ../models_als/ptx_cumul[HE] as M2
 sig SE, HE {}
 
 pred gp [X : Exec_OpenCL, X' : Exec_PTX, map: SE -> HE] {
-        
+
+  withoutinit[X]
+  withoutinit[X']
+    
   // we have a valid application of the mapping
   apply_map[X, X', map]
 

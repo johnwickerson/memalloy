@@ -9,6 +9,9 @@ pred gp [
   map: SE -> HE
 ] {
   
+  withoutinit[X]
+  withoutinit[X']
+  
   no_RMWs[none,X]
 
   // we have a valid application of the mapping

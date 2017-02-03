@@ -2,24 +2,31 @@ module exec[E]
 open relations[E]
 
 sig Exec {
-  ev : set E, // domain of all events
+  ev : set E,      // domain of all events
   W, R, F : set E, // writes, reads, fences
-  naL : set E, // events accessing non-atomic locations
-  sb : E -> E, // sequenced before
-  ad : E -> E, // address dependency
-  dd : E -> E, // data dependency
-  cd : E -> E, // control dependency
-  sthd : E -> E, // same thread (E.R.)
-  sloc : E -> E, // same location (partial E.R.)
+  IW : set E,      // initial writes
+  naL : set E,     // events accessing non-atomic locations
+  sb : E -> E,     // sequenced before
+  ad : E -> E,     // address dependency
+  dd : E -> E,     // data dependency
+  cd : E -> E,     // control dependency
+  sthd : E -> E,   // same thread (E.R.)
+  sloc : E -> E,   // same location (partial E.R.)
   //////////////////////////////////////
-  rf : E -> E,  // reads-from
-  co : E -> E,  // coherence order
+  rf : E -> E,     // reads-from
+  co : E -> E,     // coherence order
 }{
   // ev captures all and only the events involved
   W + R + F + naL in ev
     
   // fences are disjoint from accesses
   no ((R + W) & F)
+
+  // initial events are writes
+  IW in W - R
+
+  // at most one initial write per location
+  (IW -> IW) & sloc in iden
     	
   // sequenced-before is intra-thread
   sb in sthd
@@ -55,8 +62,8 @@ sig Exec {
   // of dependencies
   //transitive[cd]
 
-  // sthd is an equivalence relation
-  is_equivalence[sthd, ev]
+  // sthd is an equivalence relation among non-initial events
+  is_equivalence[sthd, ev - IW]
     
   // loc is an equivalence relation among reads and writes
   is_equivalence[sloc, R + W]
@@ -64,7 +71,6 @@ sig Exec {
   // naL contains zero or more sloc-classes
   naL . sloc = naL
 
-  rf in W lone -> R
   rf in sloc
 
   // co is acyclic and transitive
@@ -76,8 +82,29 @@ sig Exec {
   	
 }
 
+pred withinit[X:Exec] {
+  // rf connects each read to exactly one write
+  X.rf in X.W one -> X.R
+
+  // for every event that accesses a location, there is
+  // exactly one initial event at the same location
+  all e : X.(R+W) | one (e.(X.sloc) & X.IW)
+
+  // initial writes have no co-predecessor
+  all e : X.IW | no e.~(X.co)
+}
+
+pred withoutinit[X:Exec] {
+  // rf connects each read to at most one write
+  X.rf in x.W lone -> X.R
+    
+  // there are no initial writes
+  no x.IW
+}
+
 fun ev [e:E, X:Exec] : set E { X.ev - e }
 fun W [e:E, X:Exec] : set E { X.W - e }
+fun IW [e:E, X:Exec] : set E { X.IW - e }
 fun R [e:E, X:Exec] : set E { X.R - e }
 fun F [e:E, X:Exec] : set E { X.F - e }
 fun M [e:E, X:Exec] : set E { X.R + X.W - e }

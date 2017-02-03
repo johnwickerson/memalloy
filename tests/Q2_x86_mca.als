@@ -12,7 +12,8 @@ fun wo[e:E, x:Exec] : E->E {
   + ((rfe[e,x]) . (M1/ppo[e,x]) . (fr_init[e,x]))
 }
 
-pred gp [X:Exec_H] { 
+pred gp [X:Exec_H] {
+  withoutinit[X]
   M1/consistent[none,X]
   not (mca_consistent[none,X])
 }

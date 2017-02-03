@@ -5,7 +5,10 @@ open ../models_als/x86tso[HE] as M2
 sig SE, HE {}
 
 pred gp [X : Exec_C, X' : Exec_X86, map: SE -> HE] {
-        
+
+  withoutinit[X]
+  withoutinit[X']
+    
   // we have a valid application of the mapping
   apply_map[X, X', map]
 

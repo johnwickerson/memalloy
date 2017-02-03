@@ -5,6 +5,9 @@ open ../mappings/opencl_amd[E]
 sig E {}
 
 pred gp [X : M1/Exec_OpenCL, map: E -> M2/Inst] {
+
+  withoutinit[X]
+    
   // we have a valid application of the mapping
   apply_map[X, map]
 

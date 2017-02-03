@@ -8,7 +8,10 @@ pred gp [
   X : Exec_C, X' : Exec_Arm7, 
   map: SE -> HE
 ] {
-
+        
+  withoutinit[X]
+  withoutinit[X']
+    
   // we have a valid application of the mapping
   apply_map[X, X', map]
 

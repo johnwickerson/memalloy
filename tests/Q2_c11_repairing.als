@@ -10,6 +10,7 @@ sig E {}
 
 run test1 {
   some X:Exec_C {
+    withoutinit[X]
     not (M0/consistent[none,X])
     M0/dead[none,X]
     M1/consistent[none,X]
@@ -20,6 +21,7 @@ run test1 {
 
 run test2 {
   some X:Exec_C {
+    withoutinit[X]
     not (M2/consistent[none,X])
     M2/dead[none,X]
     M1/consistent[none,X]
@@ -30,6 +32,7 @@ run test2 {
 
 run test3 {
   some X:Exec_C {
+    withoutinit[X]
     not (M3/consistent[none,X])
     M3/dead[none,X]
     M2/consistent[none,X]
@@ -40,6 +43,7 @@ run test3 {
 
 run test4 {
   some X:Exec_C {
+    withoutinit[X]
     not (M3/consistent[none,X])
     M3/dead[none,X]
     M4/consistent[none,X]
@@ -50,6 +54,7 @@ run test4 {
 
 run test5 {
   some X:Exec_C {
+    withoutinit[X]
     not (M5/consistent[none,X])
     M5/dead[none,X]
     M4/consistent[none,X]
@@ -60,6 +65,7 @@ run test5 {
 
 run test6 {
   some X:Exec_C {
+    withoutinit[X]
     not (M3/consistent[none,X])
     M3/dead[none,X]
     M5/consistent[none,X]

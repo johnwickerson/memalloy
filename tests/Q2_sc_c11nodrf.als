@@ -5,6 +5,8 @@ sig E {}
 
 pred gp [X : Exec_C] {
 
+  withoutinit[X]
+    
   // no atomic that aren't memory_order_seq_cst   
   A[none,X] in sc[none,X]
 

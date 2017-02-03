@@ -6,7 +6,10 @@ sig E {}
 pred gp [
   X, X' : Exec_C, map : E->E
 ] {
-        
+
+  withoutinit[X]
+  withoutinit[X']
+       
   // we have a valid application of the mapping
   apply_map_c11[X, X']
 

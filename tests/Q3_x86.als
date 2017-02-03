@@ -5,6 +5,9 @@ sig E {}
 
 pred gp [X, X' : Exec_X86, map : E->E] {
 
+  withoutinit[X]
+  withoutinit[X']
+    
   map = (iden :> X.ev)
 
   // there are no spare events

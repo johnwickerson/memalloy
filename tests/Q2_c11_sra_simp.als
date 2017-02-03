@@ -4,7 +4,9 @@ open ../models_als/c11_simp[E] as M2
 sig E {}
 
 pred gp [X : Exec_C] {
-  
+
+  withoutinit[X]
+    
   // Prefer solutions without RMWs
   no_RMWs[none,X]  
 

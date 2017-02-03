@@ -5,6 +5,8 @@ sig E {}
 
 pred gp [X : Exec_PTX] {
 
+  withoutinit[X]
+    
   no X.(R&W)
 
   no ((X.ev -> X.ev) - X.sgl)

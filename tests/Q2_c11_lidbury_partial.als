@@ -4,6 +4,7 @@ open ../models_als/c11_partial[E] as M2
 sig E {}
 
 pred distinguishes[X:Exec_C] {
+  withoutinit[X]
   not (M1/consistent[none,X])
   M1/dead[none,X]
   M2/consistent[none,X]

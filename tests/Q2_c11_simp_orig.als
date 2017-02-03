@@ -5,6 +5,8 @@ sig E {}
 
 pred gp [X : Exec_C] {     
 
+  withoutinit[X]
+    
   // The execution is forbidden in M1
   not(M1/consistent[none,X])
   M1/dead[none,X]
