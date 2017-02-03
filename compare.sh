@@ -1,6 +1,7 @@
 MEMALLOY_HOME=`pwd`
 
-ALS_FILE=$MEMALLOY_HOME/tests/Q2_sra_simp.als
+ALS_FILE=$MEMALLOY_HOME/tests/Q2_c11_sra_simp.als
+CMD=1
 
 #EVENT_COUNT=$1
 
@@ -11,7 +12,7 @@ ALS_FILE=$MEMALLOY_HOME/tests/Q2_sra_simp.als
 echo "Alloy started at `date -u`."
 
 cd alloystar
-./runalloy_once.sh $ALS_FILE
+./runalloy_once.sh $ALS_FILE $CMD
 
 echo "Alloy finished at `date -u`."
 
