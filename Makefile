@@ -1,5 +1,6 @@
 
 install:
+	opam install xml-light.2.4
 	make -C cat2als
 	make -C gen
 	git submodule update --init --recursive

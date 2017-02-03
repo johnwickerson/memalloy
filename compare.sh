@@ -21,5 +21,7 @@ mkdir -p $MEMALLOY_HOME/xml
 mv test.xml $MEMALLOY_HOME/xml/test.xml
 
 cd ../gen
-./gen ../xml/test.xml > ~/Desktop/graph.dot
-open ~/Desktop/graph.dot
+./gen ../xml/test.xml > ../exec.dot
+cd ..
+dot -Tpng -o exec.png exec.dot
+open exec.png
