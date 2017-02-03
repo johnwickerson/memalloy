@@ -2,6 +2,8 @@
 install:
 	make -C cat2als
 	make -C gen
+	git submodule update --init --recursive
+	make -C alloystar
 
 ALSFILES = \
 models_als/sc.als \
@@ -48,3 +50,4 @@ clean:
 	rm -f $(INTERMEDIATE_ALSFILES)
 	rm -f $(ALSFILES)
 	make -C gen clean
+	make -C alloystar clean

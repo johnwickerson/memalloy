@@ -1,0 +1,4 @@
+[submodule "alloystar"]
+	path = alloystar
+	url = https://github.com/johnwickerson/alloystar.git
+	branch = extra_features
