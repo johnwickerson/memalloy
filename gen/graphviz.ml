@@ -56,20 +56,27 @@ let dot_of_event_name e =
 let pp_gv_attrs oc attrs =
   pp_set oc (List.map (fun (k,v) -> sprintf "%s=\"%s\"" k v) attrs)
 		     
-let dot_of_event x loc_map thd_map oc e =
+let dot_of_event x loc_map thd_map wval_map rval_map oc e =
   let thd =
     try sprintf "%d:" (List.assoc e thd_map)
     with Not_found -> ""
   in
-  let dir,bgcolor =
+  let dir,vals,bgcolor =
     match List.mem e (get_set x "R"),
 	  List.mem e (get_set x "W"),
 	  List.mem e (get_set x "F")
     with
-    | true, true, false -> "RMW", "plum"
-    | true, false, false -> "R", "lightpink1"
-    | false, true, false -> "W", "lightblue1"
-    | false, false, true -> "F", "peachpuff1"
+    | true, true, false ->
+       let rval = List.assoc e rval_map in
+       let wval = List.assoc e wval_map in
+       "RMW", sprintf "=%d>%d" rval wval, "plum"
+    | true, false, false ->
+       let rval = List.assoc e rval_map in
+       "R", sprintf "=%d" rval, "lightpink1"
+    | false, true, false ->
+       let wval = List.assoc e wval_map in
+       "W", sprintf "=%d" wval, "lightblue1"
+    | false, false, true -> "F", "", "peachpuff1"
     | _ -> assert false
   in
   let attrs = get_sets x e in
@@ -81,7 +88,7 @@ let dot_of_event x loc_map thd_map oc e =
     with Not_found -> ""
   in
   let gv_attrs =
-    [("label", asprintf "%s:%s[%a]%s" thd dir pp_set attrs loc);
+    [("label", asprintf "%s%s[%a]%s%s" thd dir pp_set attrs loc vals);
      ("shape", "box");
      ("color", "white");
      ("style", "filled");
@@ -103,18 +110,45 @@ let dot_of_rel oc (name, tuples) =
 	    pp_gv_attrs gv_attrs
   in
   List.iter dot_of_pair tuples
-  
+	    
+let mk_wval_map loc_map co ws iws =
+  let loc_map = List.filter (fun (e,_) -> List.mem e ws) loc_map in
+  let loc_classes = val_list (invert_map loc_map) in
+  let loc_classes = List.map (List.sort (compare co)) loc_classes in
+  let rec mk_val (i,res) e = match i, List.mem e iws with
+    | 0, false -> mk_val (1,res) e
+    | _ -> (i+1, (e,i)::res)
+  in
+  let tag_with_indices es =
+    snd (List.fold_left mk_val (0,[]) (List.rev es))
+  in
+  List.concat (List.map tag_with_indices loc_classes)
+
+let mk_rval_map wval_map rf =
+  let find_src e = try
+      let w = List.assoc e (invert_rel rf) in
+      try List.assoc w wval_map
+      with Not_found -> failwith "Expected write to have a value"
+    with Not_found -> 0
+  in
+  List.map (fun e -> (e, find_src e))
+	      
 let dot_of_execution oc x =
   let x = remove_transitive "sb" x in
   let x = remove_transitive "co" x in
-  let rw = union (get_set x "R") (get_set x "W") in
-  let nI = diff (get_set x "ev") (get_set x "IW") in
+  let iws = get_set x "IW" in
+  let rs = get_set x "R" in
+  let ws = get_set x "W" in
+  let rw = union rs ws in
+  let nI = diff (get_set x "ev") iws in
   let loc_map = find_equiv_classes (get_rel x "sloc") rw in
   let thd_map = find_equiv_classes (get_rel x "sthd") nI in
+  let wval_map = mk_wval_map loc_map (get_rel x "co") ws iws in
+  let rval_map = mk_rval_map wval_map (get_rel x "rf") rs in
   fprintf oc "digraph G {\n";
   fprintf oc "ranksep = 1.3;\n";
   fprintf oc "nodesep = 0.8;\n";
-  List.iter (dot_of_event x loc_map thd_map oc) (get_set x "ev");
+  List.iter (dot_of_event x loc_map thd_map wval_map rval_map oc) (get_set x "ev");
   let visible_rels = remove_assocs ["sloc";"sthd"] x.rels in
   List.iter (dot_of_rel oc) visible_rels;
   fprintf oc "}\n"

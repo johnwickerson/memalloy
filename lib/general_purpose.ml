@@ -69,3 +69,17 @@ let union xs ys =
 
 let diff xs ys =
   List.filter (fun x -> not (List.mem x ys)) xs
+
+let invert_rel r =
+  List.map (fun (e,e') -> (e',e)) r
+
+let invert_map kvs =
+  let add_entry vks (k,v) =
+    let ks = try List.assoc v vks with Not_found -> [] in
+    (v, k :: ks) :: remove_assocs [v] vks
+  in
+  List.fold_left add_entry [] kvs
+
+let val_list kvs = List.fold_left (fun res (_,v) -> v :: res) [] kvs
+
+let compare r e e' = if List.mem (e,e') r then 1 else -1
