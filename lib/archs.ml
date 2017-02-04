@@ -72,7 +72,7 @@ let parse_arch = function
 
 let rec arch_sets = function
   | Basic ->
-     ["ev"; "W"; "R"; "F"; "naL"; "M"]
+     ["ev"; "W"; "R"; "F"; "naL"; "M"; "IW"]
   | C ->
      arch_sets Basic @ ["A"; "acq"; "rel"; "sc"]
   | Basic_HW ->
