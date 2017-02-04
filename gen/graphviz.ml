@@ -45,10 +45,10 @@ let remove_transitive_edges r =
   in
   List.filter (fun edge -> not (transitive edge)) r
 		 
-let remove_transitive_sb x =
-  let sb = List.assoc "sb" x.rels in
-  let sb = remove_transitive_edges sb in
-  { x with rels = ("sb", sb) :: (remove_assocs ["sb"] x.rels) }
+let remove_transitive r_name x =
+  let r = List.assoc r_name x.rels in
+  let r = remove_transitive_edges r in
+  { x with rels = (r_name, r) :: (remove_assocs [r_name] x.rels) }
 		 
 let dot_of_event_name e =
   Str.global_replace (Str.regexp_string "$") "" e
@@ -102,7 +102,8 @@ let dot_of_rel oc (name, tuples) =
   List.iter dot_of_pair tuples
   
 let dot_of_execution oc x =
-  let x = remove_transitive_sb x in
+  let x = remove_transitive "sb" x in
+  let x = remove_transitive "co" x in
   let loc_map =
     find_equiv_classes (get_rel x "sloc") (get_set x "ev")
   in
