@@ -2,6 +2,7 @@ MEMALLOY_HOME=`pwd`
 
 ALS_FILE=$MEMALLOY_HOME/tests/Q2_c11_sra_simp.als
 CMD=1
+export SOLVER=glucose
 
 #EVENT_COUNT=$1
 
@@ -24,4 +25,4 @@ cd ../gen
 ./gen ../xml/test.xml > ../exec.dot
 cd ..
 dot -Tpng -o exec.png exec.dot
-open exec.png
+#open exec.png
