@@ -57,7 +57,10 @@ let pp_gv_attrs oc attrs =
   pp_set oc (List.map (fun (k,v) -> sprintf "%s=\"%s\"" k v) attrs)
 		     
 let dot_of_event x loc_map thd_map oc e =
-  let thd = List.assoc e thd_map in
+  let thd =
+    try sprintf "%d:" (List.assoc e thd_map)
+    with Not_found -> ""
+  in
   let dir,bgcolor =
     match List.mem e (get_set x "R"),
 	  List.mem e (get_set x "W"),
@@ -78,7 +81,7 @@ let dot_of_event x loc_map thd_map oc e =
     with Not_found -> ""
   in
   let gv_attrs =
-    [("label", asprintf "%d:%s[%a]%s" thd dir pp_set attrs loc);
+    [("label", asprintf "%s:%s[%a]%s" thd dir pp_set attrs loc);
      ("shape", "box");
      ("color", "white");
      ("style", "filled");
@@ -104,12 +107,10 @@ let dot_of_rel oc (name, tuples) =
 let dot_of_execution oc x =
   let x = remove_transitive "sb" x in
   let x = remove_transitive "co" x in
-  let loc_map =
-    find_equiv_classes (get_rel x "sloc") (get_set x "ev")
-  in
-  let thd_map =
-    find_equiv_classes (get_rel x "sthd") (get_set x "ev")
-  in
+  let rw = union (get_set x "R") (get_set x "W") in
+  let nI = diff (get_set x "ev") (get_set x "IW") in
+  let loc_map = find_equiv_classes (get_rel x "sloc") rw in
+  let thd_map = find_equiv_classes (get_rel x "sthd") nI in
   fprintf oc "digraph G {\n";
   fprintf oc "ranksep = 1.3;\n";
   fprintf oc "nodesep = 0.8;\n";

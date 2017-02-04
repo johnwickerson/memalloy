@@ -62,3 +62,10 @@ let base_of s = last (Str.split (Str.regexp_string "/") s)
 
 let remove_assocs ks =
   List.filter (fun (k,_) -> not (List.mem k ks))
+
+let union xs ys =
+  let cons_unique res x = if List.mem x res then res else x::res in
+  List.fold_left cons_unique ys xs
+
+let diff xs ys =
+  List.filter (fun x -> not (List.mem x ys)) xs
