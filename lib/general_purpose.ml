@@ -83,3 +83,11 @@ let invert_map kvs =
 let val_list kvs = List.fold_left (fun res (_,v) -> v :: res) [] kvs
 
 let compare r e e' = if List.mem (e,e') r then 1 else -1
+
+let remove_transitive_edges r =
+  let transitive (e,e') =
+    List.exists (fun (e1,e1') ->
+      List.exists (fun (e2,e2') ->
+	e1 = e && e1' = e2 && e2' = e') r) r
+  in
+  List.filter (fun edge -> not (transitive edge)) r

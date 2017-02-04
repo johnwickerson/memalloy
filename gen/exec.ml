@@ -69,7 +69,17 @@ let get_rel x r =
 (*******************************************)
 (* Resolving locations, threads and values *)
 (*******************************************)
+
+type thread = int
+type value = int
 			     
+type execution_maps = {
+    thd_map : (event * thread) list;
+    loc_map : (event * int) list;
+    wval_map : (event * value) list;
+    rval_map : (event * value) list;
+  }
+  			     
 let loc_of_int = function
   | 0 -> "x"
   | 1 -> "y"
@@ -91,3 +101,43 @@ let find_equiv_classes r dom =
   in
   let _, class_map = List.fold_left f (0, []) dom in
   class_map
+
+let remove_transitive r_name x =
+  let r = List.assoc r_name x.rels in
+  let r = remove_transitive_edges r in
+  { x with rels = (r_name, r) :: (remove_assocs [r_name] x.rels) }
+
+let mk_wval_map loc_map co ws iws =
+  let loc_map = List.filter (fun (e,_) -> List.mem e ws) loc_map in
+  let loc_classes = val_list (invert_map loc_map) in
+  let loc_classes = List.map (List.sort (compare co)) loc_classes in
+  let rec mk_val (i,res) e = match i, List.mem e iws with
+    | 0, false -> mk_val (1,res) e
+    | _ -> (i+1, (e,i)::res)
+  in
+  let tag_with_indices es =
+    snd (List.fold_left mk_val (0,[]) (List.rev es))
+  in
+  List.concat (List.map tag_with_indices loc_classes)
+
+let mk_rval_map wval_map rf =
+  let find_src e = try
+      let w = List.assoc e (invert_rel rf) in
+      try List.assoc w wval_map
+      with Not_found -> failwith "Expected write to have a value"
+    with Not_found -> 0
+  in
+  List.map (fun e -> (e, find_src e))
+
+let resolve_exec x =
+  let iws = get_set x "IW" in
+  let rs = get_set x "R" in
+  let ws = get_set x "W" in
+  let rw = union rs ws in
+  let nI = diff (get_set x "ev") iws in
+  let thd_map = find_equiv_classes (get_rel x "sthd") nI in
+  let loc_map = find_equiv_classes (get_rel x "sloc") rw in
+  let wval_map = mk_wval_map loc_map (get_rel x "co") ws iws in
+  let rval_map = mk_rval_map wval_map (get_rel x "rf") rs in
+  { thd_map = thd_map; loc_map = loc_map;
+    wval_map = wval_map; rval_map = rval_map }
