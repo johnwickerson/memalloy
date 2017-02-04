@@ -96,10 +96,10 @@ pred withinit[X:Exec] {
 
 pred withoutinit[X:Exec] {
   // rf connects each read to at most one write
-  X.rf in x.W lone -> X.R
+  X.rf in X.W lone -> X.R
     
   // there are no initial writes
-  no x.IW
+  no X.IW
 }
 
 fun ev [e:E, X:Exec] : set E { X.ev - e }
