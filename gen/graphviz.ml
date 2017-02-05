@@ -44,10 +44,6 @@ let pp_gv_attrs oc attrs =
   pp_set oc (List.map (fun (k,v) -> sprintf "%s=\"%s\"" k v) attrs)
 		     
 let dot_of_event x maps oc e =
-  let thd =
-    try sprintf "%d:" (List.assoc e maps.thd_map)
-    with Not_found -> ""
-  in
   let dir,vals,bgcolor =
     match List.mem e (get_set x "R"),
 	  List.mem e (get_set x "W"),
@@ -74,15 +70,30 @@ let dot_of_event x maps oc e =
     try sprintf "%s" (loc_of_int (List.assoc e maps.loc_map))
     with Not_found -> ""
   in
+  let thd =
+    try Some (List.assoc e maps.thd_map)
+    with Not_found -> None
+  in
   let gv_attrs =
-    [("label", asprintf "%s%s[%a]%s%s" thd dir pp_set attrs loc vals);
+    [("label", asprintf "%s[%a]%s%s" dir pp_set attrs loc vals);
      ("shape", "box");
      ("color", "white");
      ("style", "filled");
      ("fillcolor", bgcolor)]
   in
-  fprintf oc "\"%s\" [%a]\n"
-	  (dot_of_event_name e) pp_gv_attrs gv_attrs
+  let printnode () =
+    fprintf oc "\"%s\" [%a]\n"
+	    (dot_of_event_name e) pp_gv_attrs gv_attrs
+  in
+  match thd with
+  | Some tid ->
+     fprintf oc "subgraph cluster_%d {\n" tid;
+     fprintf oc "style=dashed;\n";
+     printnode ();
+     fprintf oc "}\n"
+  | None ->
+     printnode ()
+     
 
 let dot_of_rel oc (name, tuples) =
   let gv_attrs =
