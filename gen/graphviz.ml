@@ -64,7 +64,7 @@ let dot_of_event x maps oc e =
   in
   let attrs = get_sets x e in
   let attrs =
-    List.filter (fun s -> not (List.mem s ["ev";"R";"W";"F"])) attrs
+    List.filter (fun s -> not (List.mem s ["ev";"R";"W";"F";"IW"])) attrs
   in
   let loc =
     try sprintf "%s" (loc_of_int (List.assoc e maps.loc_map))
@@ -88,6 +88,7 @@ let dot_of_event x maps oc e =
   match thd with
   | Some tid ->
      fprintf oc "subgraph cluster_%d {\n" tid;
+     fprintf oc "color=azure4;\n";
      fprintf oc "style=dashed;\n";
      printnode ();
      fprintf oc "}\n"
