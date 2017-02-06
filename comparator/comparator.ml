@@ -65,11 +65,31 @@ let check_args (model1_path, model2_path) =
 let main () =
   let model1_path, model2_path = get_args () in
   check_args (model1_path, model2_path);
-  
+
+  let read_arch path =
+    let first_line =
+      try input_line (open_in path)
+      with
+      | Sys_error _ -> failwith (sprintf "Couldn't open %s" path)
+      | End_of_file -> failwith (sprintf "File %s is empty" path)
+    in
+    let regex = Str.regexp "//[ \t]+\\([A-Za-z0-9_]+\\)" in
+    try
+      let _ = Str.string_match regex first_line 0 in
+      Str.matched_group 1 first_line
+    with Not_found ->
+      failwith (sprintf "Missing architecture in %s" path)
+  in
+  let arch =
+    let arch1 = read_arch model1_path in
+    let arch2 = read_arch model2_path in
+    if arch1=arch2 then arch1 else
+      failwith (sprintf "Mismatch between %s and %s" arch1 arch2)
+  in
   printf "open %s[E] as M1\n" (Filename.chop_extension model1_path);
   printf "open %s[E] as M2\n\n" (Filename.chop_extension model2_path);
   printf "sig E {}\n\n";
-  printf "pred gp [X:Exec] {\n\n";
+  printf "pred gp [X:%s] {\n\n" arch;
   if !withinit then
     printf "  withinit[X]\n\n"
   else

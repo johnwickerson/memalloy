@@ -265,6 +265,7 @@ let als_of_cnstrnt oc = function
   | Deadness -> fprintf oc "dead"
 		   
 let preamble cat_path model_name arch oc =
+  fprintf oc "// %a\n\n" Archs.pp_Arch arch;
   fprintf oc "/* Automatically generated from %s on %s at %s */\n\n"
 	  cat_path (today ()) (now ());
   fprintf oc "module %s[E]\n" model_name;

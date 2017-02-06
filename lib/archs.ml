@@ -58,6 +58,17 @@ let pp_Arch oc = function
   | PTX -> fprintf oc "Exec_PTX"
   | OpenCL -> fprintf oc "Exec_OpenCL"
 
+let parse_Arch = function
+  | "Exec" -> Basic
+  | "Exec_C" -> C
+  | "Exec_H" -> Basic_HW
+  | "Exec_X86" -> X86
+  | "Exec_PPC" -> Power
+  | "Exec_Arm7" -> Arm7
+  | "Exec_Arm8" -> Arm8
+  | "Exec_PTX" -> PTX
+  | "Exec_OpenCL" -> OpenCL
+
 let parse_arch = function
   | "BASIC" -> Basic
   | "C" -> C
