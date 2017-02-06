@@ -6,7 +6,8 @@ sig Exec_C extends Exec {
   acq, rel, sc : set E, // acquire, release, sc events
 }{
 
-  A in ev
+  // initial writes are non-atomic
+  A in ev - IW
 
   // acquires, releases, and SC operations are all atomic
   acq + rel + sc in A

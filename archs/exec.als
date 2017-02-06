@@ -22,7 +22,7 @@ sig Exec {
   // fences are disjoint from accesses
   no ((R + W) & F)
 
-  // initial events are writes
+  // initial events are ordinary writes
   IW in W - R
 
   // at most one initial write per location

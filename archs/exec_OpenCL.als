@@ -22,9 +22,9 @@ sig Exec_OpenCL extends Exec_C {
   // only fences can be both global and local.
   no ((G & L) - F)
 
-  // swg and sdv are equivalence relations among all events
-  is_equivalence[swg, ev]
-  is_equivalence[sdv, ev]
+  // swg and sdv are equivalence relations among non-initial events
+  is_equivalence[swg, ev - IW]
+  is_equivalence[sdv, ev - IW]
 
   // Same thread implies same workgroup
   sthd in swg
