@@ -86,12 +86,19 @@ let mk_wval_map loc_map co ws iws =
   let loc_map = List.filter (fun (e,_) -> List.mem e ws) loc_map in
   let loc_classes = val_list (invert_map loc_map) in
   let loc_classes = List.map (List.sort (compare co)) loc_classes in
+  printf "loc_classes: [";
+  List.iter (fun c ->
+	     printf "[";
+	     List.iter (fun e -> printf "%s;" e) c;
+	     printf "];";
+	    ) loc_classes;
+  printf "]";
   let rec mk_val (i,res) e = match i, List.mem e iws with
     | 0, false -> mk_val (1,res) e
     | _ -> (i+1, (e,i)::res)
   in
   let tag_with_indices es =
-    snd (List.fold_left mk_val (0,[]) (List.rev es))
+    snd (List.fold_left mk_val (0,[]) es)
   in
   List.concat (List.map tag_with_indices loc_classes)
 

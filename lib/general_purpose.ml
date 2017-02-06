@@ -92,7 +92,7 @@ let invert_map kvs =
 let key_list kvs = List.map fst kvs
 let val_list kvs = List.map snd kvs
 
-let compare r e e' = if List.mem (e,e') r then 1 else -1
+let compare r e e' = if List.mem (e,e') r then -1 else 1
 
 let exists_pair f xs ys =
   List.exists (fun x -> List.exists (f x) ys) xs

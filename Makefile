@@ -44,6 +44,7 @@ quicktest: c11_sra_simp
 c11_sra_simp: $(INTERMEDIATE_ALSFILES) $(ALSFILES)
 	cd comparator; \
 	./comparator -relacq -simplepost -normws -totalsb \
+	-events 6 \
 	../models_als/c11_sra.als \
 	../models_als/c11_simp.als > comparator.als; \
 	./do_compare.sh comparator.als

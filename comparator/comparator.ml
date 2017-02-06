@@ -35,6 +35,7 @@ let relacq = ref false
 let simplepost = ref false
 let normws = ref false
 let totalsb = ref false
+let eventcount = ref 0
 		  
 let get_args () =
   let model_paths : string list ref = ref [] in
@@ -44,6 +45,7 @@ let get_args () =
       ("-simplepost", Arg.Set simplepost, "Postcondition need not read shared locations");
       ("-normws", Arg.Set normws, "Avoid RMW events");
       ("-totalsb", Arg.Set totalsb, "Total sb per thread");
+      ("-events", Arg.Set_int eventcount, "Max number of events");
     ] in
   let usage_msg =
     "Generating an Alloy file that can be run to compare two models.\nUsage: `comparator [options] <model1.als> <model2.als>`.\nOptions available:"
@@ -116,7 +118,7 @@ let main () =
     printf "  co[none,X] in (rc[rf[none,X]]) . (rc[(sb[none,X]) . (rc[~(rf[none,X])])])\n"
   );
   printf "}\n\n";
-  printf "run gp for 1 Exec, 6 E, 3 Int\n";  
+  printf "run gp for 1 Exec, %d E, 3 Int\n" !eventcount;  
   exit 0
     
 let _ = main ()

@@ -72,16 +72,17 @@ let dot_of_event x maps oc e =
     try Some (List.assoc e maps.thd_map)
     with Not_found -> None
   in
+  let e_name = dot_of_event_name e in 
   let gv_attrs =
-    [("label", asprintf "%s[%a]%s%s" dir pp_set attrs loc vals);
+    [("label",
+      asprintf "%s: %s[%a]%s%s" e_name dir pp_set attrs loc vals);
      ("shape", "box");
      ("color", "white");
      ("style", "filled");
      ("fillcolor", bgcolor)]
   in
   let printnode () =
-    fprintf oc "\"%s\" [%a]\n"
-	    (dot_of_event_name e) pp_gv_attrs gv_attrs
+    fprintf oc "\"%s\" [%a]\n" e_name pp_gv_attrs gv_attrs
   in
   match thd with
   | Some tid ->
