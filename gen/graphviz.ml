@@ -62,12 +62,10 @@ let dot_of_event x maps oc e =
     | false, false, true -> "F", "", "peachpuff1"
     | _ -> assert false
   in
-  let attrs = get_sets x e in
-  let attrs =
-    List.filter (fun s -> not (List.mem s ["ev";"R";"W";"F";"IW"])) attrs
-  in
+  let ignored_attrs = ["ev";"R";"W";"F";"IW"] in
+  let attrs = diff (get_sets x e) ignored_attrs in
   let loc =
-    try sprintf "%s" (loc_of_int (List.assoc e maps.loc_map))
+    try asprintf "%a" Location.pp (List.assoc e maps.loc_map)
     with Not_found -> ""
   in
   let thd =

@@ -69,38 +69,13 @@ let get_rel x r =
 (*******************************************)
 (* Resolving locations, threads and values *)
 (*******************************************)
-
-type thread = int
-type value = int
 			     
 type execution_maps = {
-    thd_map : (event * thread) list;
-    loc_map : (event * int) list;
-    wval_map : (event * value) list;
-    rval_map : (event * value) list;
+    thd_map : (event, int) map;
+    loc_map : (event, Location.t) map;
+    wval_map : (event, Value.t) map;
+    rval_map : (event, Value.t) map;
   }
-  			     
-let loc_of_int = function
-  | 0 -> "x"
-  | 1 -> "y"
-  | 2 -> "z"
-  | 3 -> "w"
-  | n -> sprintf "x%d" (n - 4)
-
-let find_equiv_classes r dom =
-  let rec find_equiv e = function
-    | [] -> raise Not_found
-    | (e',i) :: _ when List.mem (e,e') r -> i
-    | _ :: class_map -> find_equiv e class_map
-  in
-  let f (i, class_map) e =
-    try
-      let i' = find_equiv e class_map in (i, (e,i')::class_map)
-    with Not_found ->
-      (i+1, (e,i)::class_map)
-  in
-  let _, class_map = List.fold_left f (0, []) dom in
-  class_map
 
 let remove_transitive r_name x =
   let r = List.assoc r_name x.rels in
@@ -135,8 +110,8 @@ let resolve_exec x =
   let ws = get_set x "W" in
   let rw = union rs ws in
   let nI = diff (get_set x "ev") iws in
-  let thd_map = find_equiv_classes (get_rel x "sthd") nI in
-  let loc_map = find_equiv_classes (get_rel x "sloc") rw in
+  let thd_map = partition true (get_rel x "sthd") nI in
+  let loc_map = partition true (get_rel x "sloc") rw in
   let wval_map = mk_wval_map loc_map (get_rel x "co") ws iws in
   let rval_map = mk_rval_map wval_map (get_rel x "rf") rs in
   { thd_map = thd_map; loc_map = loc_map;

@@ -191,7 +191,7 @@ let als_of_shape oc = function
   | Acyclic -> fprintf oc "is_acyclic"
   | Irreflexive -> fprintf oc "irreflexive"
   | IsEmpty -> fprintf oc "is_empty"
-		  
+		       
 let rec als_of_expr oc = function
   | Empty_rln -> fprintf oc "none -> none"
   | Var x -> fprintf oc "%s[e,X]" x
@@ -214,11 +214,11 @@ let rec als_of_expr oc = function
      als_of_expr oc (Op (Inter, [e; prod]))
   | Op1 (Domain, e) -> fprintf oc "dom[%a]" als_of_expr e
   | Op1 (Range, e) -> fprintf oc "ran[%a]" als_of_expr e
-  | Op (Seq,es) -> fprintf_iter "." als_of_expr oc es
-  | Op (Union,es) -> fprintf_iter "+" als_of_expr oc es
-  | Op (Diff,es) -> fprintf_iter "-" als_of_expr oc es
-  | Op (Inter,es) -> fprintf_iter "&" als_of_expr oc es
-  | Op (Cross,es) -> fprintf_iter "->" als_of_expr oc es
+  | Op (Seq,es) -> fprintf_iter " . " (fparen als_of_expr) oc es
+  | Op (Union,es) -> fprintf_iter " + " (fparen als_of_expr) oc es
+  | Op (Diff,es) -> fprintf_iter " - " (fparen als_of_expr) oc es
+  | Op (Inter,es) -> fprintf_iter " & " (fparen als_of_expr) oc es
+  | Op (Cross,es) -> fprintf_iter " -> " (fparen als_of_expr) oc es
 
 and als_of_exprs oc = function
   | [] -> fprintf oc ""

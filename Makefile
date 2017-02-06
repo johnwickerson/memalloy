@@ -3,6 +3,7 @@ install:
 	opam install xml-light.2.4
 	make -C cat2als
 	make -C gen
+	make -C comparator
 	git submodule update --init --recursive
 	make -C alloystar
 
@@ -38,6 +39,15 @@ models_als/opencl_base.als
 
 models: $(INTERMEDIATE_ALSFILES) $(ALSFILES)
 
+quicktest: c11_sra_simp
+
+c11_sra_simp: $(INTERMEDIATE_ALSFILES) $(ALSFILES)
+	cd comparator; \
+	./comparator -relacq -simplepost -normws -totalsb \
+	../models_als/c11_sra.als \
+	../models_als/c11_simp.als > comparator.als; \
+	./do_compare.sh comparator.als
+
 # Building .als files from corresponding .cat files
 $(ALSFILES): models_als/%.als: models_cat/%.cat
 	cd models_cat; ../cat2als/cat2als ../$<
@@ -51,4 +61,5 @@ clean:
 	rm -f $(INTERMEDIATE_ALSFILES)
 	rm -f $(ALSFILES)
 	make -C gen clean
+	make -C comparator clean
 	make -C alloystar clean

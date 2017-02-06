@@ -25,35 +25,12 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
 open Format
 open General_purpose
-  
-(*********************************)
-(* Processing command-line input *)
-(*********************************)
-	       
-let get_args () =
-  let xml_path : string list ref = ref [] in
-  let speclist = [] in
-  let usage_msg =
-    "Processing executions and generating litmus tests.\nUsage: `gen [options] <xml_file.xml>`.\nOptions available:"
-  in
-  Arg.parse speclist (set_list_ref xml_path) usage_msg;
-  let bad_arg () =
-    Arg.usage speclist usage_msg;
-    raise (Arg.Bad "Missing or too many arguments.")
-  in
-  let xml_path = get_only_element bad_arg !xml_path in
-  xml_path
+       
+type t = int
 
-let check_args xml_path =
-  assert (Filename.check_suffix xml_path ".xml")
-		  
-let main () =
-  let xml_path = get_args () in
-  check_args xml_path;
-  let (_, exec) = Xml_input.parse_file xml_path in
-  printf "%a\n" Graphviz.dot_of_execution exec;
-  (*let litmus = Mk_litmus.litmus_of_execution exec in
-  printf "%a\n" Litmus.pp litmus;*)
-  exit 0
-    
-let _ = main ()     
+let pp oc = function
+  | 0 -> fprintf oc "x"
+  | 1 -> fprintf oc "y"
+  | 2 -> fprintf oc "z"
+  | 3 -> fprintf oc "w"
+  | n -> fprintf oc "x%d" (n - 4)

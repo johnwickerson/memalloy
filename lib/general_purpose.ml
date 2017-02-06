@@ -31,10 +31,14 @@ let get_only_element k = function [x] -> x | _ -> k ()
 
 let get_lone_element k z = function [x] -> x | [] -> z | _ -> k ()
 
+let get_only_two_elements k = function [x;y] -> x,y | _ -> k ()
+
 let rec fprintf_iter s f oc = function
   | [] -> ()
-  | [x] -> fprintf oc "(%a)" f x
-  | x :: xs -> fprintf oc "(%a) %s %a" f x s (fprintf_iter s f) xs
+  | [x] -> f oc x
+  | x :: xs -> f oc x; fprintf oc "%s" s; fprintf_iter s f oc xs
+
+let fparen f oc x = fprintf oc "(%a)" f x
 
 let debug b format =
   if b then eprintf format else ifprintf err_formatter format
@@ -67,12 +71,17 @@ let union xs ys =
   let cons_unique res x = if List.mem x res then res else x::res in
   List.fold_left cons_unique ys xs
 
+let inter xs ys =
+  List.filter (fun x -> List.mem x ys) xs
+
 let diff xs ys =
   List.filter (fun x -> not (List.mem x ys)) xs
 
 let invert_rel r =
   List.map (fun (e,e') -> (e',e)) r
 
+type ('k,'v) map = ('k * 'v) list 
+	   
 let invert_map kvs =
   let add_entry vks (k,v) =
     let ks = try List.assoc v vks with Not_found -> [] in
@@ -80,14 +89,32 @@ let invert_map kvs =
   in
   List.fold_left add_entry [] kvs
 
-let val_list kvs = List.fold_left (fun res (_,v) -> v :: res) [] kvs
+let key_list kvs = List.map fst kvs
+let val_list kvs = List.map snd kvs
 
 let compare r e e' = if List.mem (e,e') r then 1 else -1
 
+let exists_pair f xs ys =
+  List.exists (fun x -> List.exists (f x) ys) xs
+
 let remove_transitive_edges r =
-  let transitive (e,e') =
-    List.exists (fun (e1,e1') ->
-      List.exists (fun (e2,e2') ->
-	e1 = e && e1' = e2 && e2' = e') r) r
+  let is_transitive (e,e') =
+    exists_pair (fun (e1,e1') (e2,e2') ->
+      e1 = e && e1' = e2 && e2' = e') r r
   in
-  List.filter (fun edge -> not (transitive edge)) r
+  List.filter (fun edge -> not (is_transitive edge)) r
+
+let partition invert r es =
+  let rec find_related e = function
+    | [] -> raise Not_found
+    | (e',i) :: _ when
+	   if invert then List.mem (e,e') r
+	   else not (List.mem (e,e') r) && not (List.mem (e',e) r)
+      -> i
+    | _ :: map -> find_related e map
+  in
+  let partition_helper (i, map) e =
+    try let i' = find_related e map in (i, (e,i')::map)
+    with Not_found -> (i+1, (e,i)::map)
+  in
+  snd (List.fold_left partition_helper (0, []) es)
