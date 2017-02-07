@@ -29,11 +29,17 @@ open General_purpose
 (*********************************)
 (* Processing command-line input *)
 (*********************************)
+
+type output_type = Dot | Als
 	       
 let get_args () =
   let xml_path : string list ref = ref [] in
   let out_path : string list ref = ref [] in
+  let output_dot = ref false in
+  let output_als = ref false in
   let speclist = [
+      ("-Tdot", Arg.Set output_dot, "Produce .dot output");
+      ("-Tals", Arg.Set output_als, "Produce .als constraints");
       ("-o", Arg.String (set_list_ref out_path),
        "Output file (mandatory)");
     ] in
@@ -47,19 +53,29 @@ let get_args () =
   in
   let xml_path = get_only_element bad_arg !xml_path in
   let out_path = get_only_element bad_arg !out_path in
-  xml_path, out_path
+  let out_type = match !output_dot, !output_als with
+    | true, false -> Dot
+    | false, true -> Als
+    | _ -> bad_arg ()
+  in
+  xml_path, out_path, out_type
 
-let check_args (xml_path, out_path) =
+let check_args (xml_path, out_path, out_type) =
   assert (Filename.check_suffix xml_path ".xml")
 		  
 let main () =
-  let xml_path, out_path = get_args () in
-  check_args (xml_path, out_path);
+  let xml_path, out_path, out_type = get_args () in
+  check_args (xml_path, out_path, out_type);
   let (_, exec) = Xml_input.parse_file xml_path in
   let oc = formatter_of_out_channel (open_out out_path) in
-  fprintf oc "%a\n" Graphviz.dot_of_execution exec;
+  match out_type with
+  | Dot ->
+     assert (Filename.check_suffix out_path ".dot");
+     fprintf oc "%a\n" Graphviz.dot_of_execution exec
+  | Als ->
+     assert (Filename.check_suffix out_path ".als");
+     fprintf oc "%a\n" Alsbackend.als_of_execution exec
   (*let litmus = Mk_litmus.litmus_of_execution exec in
   printf "%a\n" Litmus.pp litmus;*)
-  exit 0
     
 let _ = main ()     

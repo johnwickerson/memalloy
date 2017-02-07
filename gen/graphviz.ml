@@ -36,9 +36,6 @@ let edge_color = function
   | "rf" -> "crimson"
   | "sb" | "ad" | "cd" | "dd" -> "black"
   | _ -> "black"
-		 
-let dot_of_event_name e =
-  Str.global_replace (Str.regexp_string "$") "" e
 
 let pp_gv_attrs oc attrs =
   pp_set oc (List.map (fun (k,v) -> sprintf "%s=\"%s\"" k v) attrs)
@@ -71,18 +68,18 @@ let dot_of_event x maps oc e =
   let thd =
     try Some (List.assoc e maps.thd_map)
     with Not_found -> None
-  in
-  let e_name = dot_of_event_name e in 
+  in 
   let gv_attrs =
     [("label",
-      asprintf "%s: %s[%a]%s%s" e_name dir pp_set attrs loc vals);
+      asprintf "%a: %s[%a]%s%s"
+	       pp_event_name e dir pp_set attrs loc vals);
      ("shape", "box");
      ("color", "white");
      ("style", "filled");
      ("fillcolor", bgcolor)]
   in
   let printnode () =
-    fprintf oc "\"%s\" [%a]\n" e_name pp_gv_attrs gv_attrs
+    fprintf oc "\"%a\" [%a]\n" pp_event_name e pp_gv_attrs gv_attrs
   in
   match thd with
   | Some tid ->
@@ -103,9 +100,8 @@ let dot_of_rel oc (name, tuples) =
   let gv_attrs = ("color", edge_color name) :: gv_attrs in
   let gv_attrs = ("label", name) :: gv_attrs in
   let dot_of_pair (e,e') =
-    fprintf oc "%s -> %s [%a]\n"
-	    (dot_of_event_name e) (dot_of_event_name e')
-	    pp_gv_attrs gv_attrs
+    fprintf oc "%a -> %a [%a]\n"
+	    pp_event_name e pp_event_name e' pp_gv_attrs gv_attrs
   in
   List.iter dot_of_pair tuples
 

@@ -31,6 +31,9 @@ open General_purpose
 (****************************************)
 
 type event = string
+
+let pp_event_name oc e =
+  fprintf oc "%s" (Str.global_replace (Str.regexp_string "$") "" e)
        
 type execution = {
     sets : (string * event list) list;
