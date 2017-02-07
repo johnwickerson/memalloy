@@ -32,7 +32,11 @@ open General_purpose
 	       
 let get_args () =
   let xml_path : string list ref = ref [] in
-  let speclist = [] in
+  let out_path : string list ref = ref [] in
+  let speclist = [
+      ("-o", Arg.String (set_list_ref out_path),
+       "Output file (mandatory)");
+    ] in
   let usage_msg =
     "Processing executions and generating litmus tests.\nUsage: `gen [options] <xml_file.xml>`.\nOptions available:"
   in
@@ -42,16 +46,18 @@ let get_args () =
     raise (Arg.Bad "Missing or too many arguments.")
   in
   let xml_path = get_only_element bad_arg !xml_path in
-  xml_path
+  let out_path = get_only_element bad_arg !out_path in
+  xml_path, out_path
 
-let check_args xml_path =
+let check_args (xml_path, out_path) =
   assert (Filename.check_suffix xml_path ".xml")
 		  
 let main () =
-  let xml_path = get_args () in
-  check_args xml_path;
+  let xml_path, out_path = get_args () in
+  check_args (xml_path, out_path);
   let (_, exec) = Xml_input.parse_file xml_path in
-  printf "%a\n" Graphviz.dot_of_execution exec;
+  let oc = formatter_of_out_channel (open_out out_path) in
+  fprintf oc "%a\n" Graphviz.dot_of_execution exec;
   (*let litmus = Mk_litmus.litmus_of_execution exec in
   printf "%a\n" Litmus.pp litmus;*)
   exit 0
