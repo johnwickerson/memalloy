@@ -49,6 +49,14 @@ c11_sra_simp: $(INTERMEDIATE_ALSFILES) $(ALSFILES)
 	../models_als/c11_simp.als > comparator.als; \
 	./do_compare.sh comparator.als
 
+c11_lidbury_partial: $(INTERMEDIATE_ALSFILES) $(ALSFILES)
+	cd comparator; \
+	./comparator -normws -totalsb \
+	-events 4 \
+	../models_als/c11_lidbury.als \
+	../models_als/c11_partial.als > comparator.als; \
+	./do_compare.sh comparator.als
+
 # Building .als files from corresponding .cat files
 $(ALSFILES): models_als/%.als: models_cat/%.cat
 	cd models_cat; ../cat2als/cat2als ../$<
