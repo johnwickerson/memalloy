@@ -10,5 +10,5 @@ Quick start:
 3. Run `make`.
 
 4. Run `make quicktest`. After a few minutes, this should create a
-   file called `png/_latest/exec.png`, which is a picture of an
+   file called `png/_latest/test_0.png`, which is a picture of an
    execution that distinguishes two versions of the C11 memory model.

@@ -5,13 +5,14 @@ cd ..
 export SOLVER=glucose
 
 echo "Alloy started at `date -u`."
-STAMP=`date +%y%m%d-%H%M%S`
 
-# run alloy
+# prepare output directory
+STAMP=`date +%y%m%d-%H%M%S`
 XMLDIR=xml/$STAMP
 mkdir -p $XMLDIR
 cd xml; rm -f _latest; ln -s $STAMP _latest; cd ..
 
+# run alloy
 cd alloystar
 ./runalloy_once.sh ../comparator/$ALS_FILE $CMD ../$XMLDIR
 ALLOY_EXIT_STATUS=$?
@@ -31,14 +32,22 @@ echo "Converting XML file(s) to DOT file(s)."
 DOTDIR=dot/$STAMP
 mkdir -p $DOTDIR
 cd dot; rm -f _latest; ln -s $STAMP _latest; cd ..
-gen/gen -Tdot -o $DOTDIR/exec.dot $XMLDIR/test_0.xml
+cd $XMLDIR
+for file in test_*.xml; do
+    ../../gen/gen -Tdot -o ../../$DOTDIR/${file%.xml}.dot $file
+done
+cd ../..
 
 # convert .dot to .png
 echo "Converting DOT file(s) to PNG file(s)."
 PNGDIR=png/$STAMP
 mkdir -p $PNGDIR
 cd png; rm -f _latest; ln -s $STAMP _latest; cd ..
-dot -Tpng -o $PNGDIR/exec.png $DOTDIR/exec.dot
+cd $DOTDIR
+for file in test_*.dot; do
+    dot -Tpng -o ../../$PNGDIR/${file%.dot}.png $file
+done
+cd ../..
 
 # visualise .png
 if [ "$OS" = "x86-mac" ]
