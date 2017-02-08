@@ -37,36 +37,10 @@ let normws = ref false
 let totalsb = ref false
 let eventcount = ref 0
 let noalloy = ref false
-		  
-let get_args () =
-  let model_paths : string list ref = ref [] in
-  let speclist = [
-      ("-noalloy", Arg.Set noalloy, "Only generate comparator.als");
-      ("-withinit", Arg.Set withinit, "Explicit initial writes");
-      ("-relacq", Arg.Set relacq, "Only release/acquire fragment");
-      ("-simplepost", Arg.Set simplepost, "Postcondition need not read shared locations");
-      ("-normws", Arg.Set normws, "Avoid RMW events");
-      ("-totalsb", Arg.Set totalsb, "Total sb per thread");
-      ("-events", Arg.Set_int eventcount, "Max number of events");
-    ] in
-  let usage_msg =
-    "Generating an Alloy file that can be run to compare two models.\nUsage: `comparator [options] <model1.als> <model2.als>`.\nOptions available:"
-  in
-  Arg.parse speclist (set_list_ref model_paths) usage_msg;
-  let bad_arg () =
-    Arg.usage speclist usage_msg;
-    raise (Arg.Bad "Missing or too many arguments.")
-  in
-  let model2_path, model1_path =
-    get_only_two_elements bad_arg !model_paths
-  in
-  model1_path, model2_path
-
-let check_args (model1_path, model2_path) =
-  assert (Filename.check_suffix model1_path ".als");
-  assert (Filename.check_suffix model2_path ".als")
+let description = ref ""
 		  
 let pp_comparator oc model1_path model2_path arch =
+  if !description != "" then fprintf oc "/* %s */\n" !description;
   fprintf oc "open ../%s[E] as M1\n" (Filename.chop_extension model1_path);
   fprintf oc "open ../%s[E] as M2\n\n" (Filename.chop_extension model2_path);
   fprintf oc "sig E {}\n\n";
@@ -99,11 +73,45 @@ let pp_comparator oc model1_path model2_path arch =
   fprintf oc "}\n\n";
   fprintf oc "run gp for 1 Exec, %d E, 3 Int\n" !eventcount
 
+let get_args () =
+  let model_paths : string list ref = ref [] in
+  let speclist = [
+      ("-desc", Arg.Set_string description, "Textual description");
+      ("-noalloy", Arg.Set noalloy, "Only generate comparator.als");
+      ("-withinit", Arg.Set withinit, "Explicit initial writes");
+      ("-relacq", Arg.Set relacq, "Only release/acquire fragment");
+      ("-simplepost", Arg.Set simplepost, "Postcondition need not read shared locations");
+      ("-normws", Arg.Set normws, "Avoid RMW events");
+      ("-totalsb", Arg.Set totalsb, "Total sb per thread");
+      ("-events", Arg.Set_int eventcount, "Max number of events");
+    ] in
+  let usage_msg =
+    "Generating an Alloy file that can be run to compare two models.\nUsage: `comparator [options] <model1.als> <model2.als>`.\nOptions available:"
+  in
+  Arg.parse speclist (set_list_ref model_paths) usage_msg;
+  let bad_arg () =
+    Arg.usage speclist usage_msg;
+    raise (Arg.Bad "Missing or too many arguments.")
+  in
+  let model2_path, model1_path =
+    get_only_two_elements bad_arg !model_paths
+  in
+  model1_path, model2_path
+
+let check_args (model1_path, model2_path) =
+  assert (Filename.check_suffix model1_path ".als");
+  assert (Filename.check_suffix model2_path ".als")
+	  
 let main () =
   let model1_path, model2_path = get_args () in
   check_args (model1_path, model2_path);
   if not (Sys.file_exists "alloystar") then
-    failwith "Please run from the top-level directory of the repo";
+    failwith "Please run me from the top-level directory of the repo";
+  printf "\n";
+  printf "\n";
+  printf "==============================\n";
+  printf "%s\n" !description;
+  printf "------------------------------\n";
   let read_arch path =
     let first_line =
       try input_line (open_in path)
@@ -132,50 +140,62 @@ let main () =
   let stamp =
     let open Unix in
     let t = localtime (time ()) in
-    sprintf "%02d%02d%02d-%02d%02d%02d"
-	    ((t.tm_year + 1900) mod 100) (t.tm_mon + 1) t.tm_mday
-	    t.tm_hour t.tm_min t.tm_sec
+    let base = sprintf "%02d%02d%02d-%02d%02d%02d"
+		       ((t.tm_year + 1900) mod 100) (t.tm_mon + 1)
+		       t.tm_mday t.tm_hour t.tm_min t.tm_sec
+    in
+    let rec mk_stamp i =
+      let stamp = if i=0 then base else sprintf "%s-%d" base i in
+      if Sys.file_exists ("xml/" ^ stamp) then mk_stamp (i+1) else stamp
+    in
+    mk_stamp 0
   in
   let mk_fresh_dir_in s =
-    if not (Sys.file_exists s) then
-      Unix.mkdir s 0o755;
+    if not (Sys.file_exists s) then Unix.mkdir s 0o755;
     Sys.chdir s;
     Unix.mkdir stamp 0o755;
     Sys.remove "_latest";
     Unix.symlink stamp "_latest";
-    Sys.chdir "..";
+    Sys.chdir ".."
   in
   mk_fresh_dir_in "xml";
   let alloy_cmd =
-    sprintf "cd alloystar; export SOLVER=glucose; ./runalloy_once.sh ../%s 0 ../xml/_latest"
-	    comparator_als
+    sprintf "cd alloystar; export SOLVER=glucose; ./runalloy_iter.sh ../%s 0 ../xml/%s" comparator_als stamp
   in
   printf "Alloy started at %s.\n" (now ());
+  flush stdout;
   let alloy_exit_code = Sys.command alloy_cmd in
   printf "Alloy finished at %s.\n" (now ());
   if alloy_exit_code != 0 then (
     printf "Alloy was unsuccessful.\n";
     exit 0
   );
+  flush stdout;
+  let rec count_solns_from i =
+    let xml_file = sprintf "xml/%s/test_%d.xml" stamp i in
+    if Sys.file_exists xml_file then count_solns_from (i+1) else i
+  in
+  let num_solns = count_solns_from 0 in
+  printf "Alloy found %d solutions.\n" num_solns;
+  flush stdout;
   mk_fresh_dir_in "dot";
   mk_fresh_dir_in "png";
-  let rec convert_solns_from i =
-    let xml_file = sprintf "xml/_latest/test_%d.xml" i in
-    if Sys.file_exists xml_file then
-      let dot_file = sprintf "dot/_latest/test_%d.dot" i in
-      let png_file = sprintf "png/_latest/test_%d.png" i in
-      let gen_cmd = sprintf "gen/gen -Tdot -o %s %s" dot_file xml_file in
-      let dot_cmd = sprintf "dot -Tpng -o %s %s" png_file dot_file in
-      let _ = Sys.command gen_cmd in
-      let _ = Sys.command dot_cmd in
-      convert_solns_from (i+1)
-    else i
-  in
-  let sol_count = convert_solns_from 0 in
-  begin match Sys.os_type, sol_count with
+  for i = 0 to num_solns - 1 do    
+    let xml_file = sprintf "xml/%s/test_%d.xml" stamp i in
+    let dot_file = sprintf "dot/%s/test_%d.dot" stamp i in
+    let png_file = sprintf "png/%s/test_%d.png" stamp i in
+    let gen_cmd = sprintf "gen/gen -Tdot -o %s %s" dot_file xml_file in
+    let dot_cmd = sprintf "dot -Tpng -o %s %s" png_file dot_file in
+    ignore (Sys.command gen_cmd);
+    ignore (Sys.command dot_cmd);
+    printf "Converted solution %d of %d.\n" i (num_solns - 1);
+    flush stdout
+  done;
+  printf "Solution(s) are in png/%s.\n" stamp;
+  begin match Sys.os_type, num_solns with
   | "Unix", 1 -> ignore (Sys.command "open png/_latest/test_0.png")
   | "Unix", _ -> ignore (Sys.command "open png/_latest")
-  | _, _ -> printf "Solution(s) are in png/_latest."
+  | _, _ -> ()
   end;
   exit 0
        
