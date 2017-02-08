@@ -42,20 +42,10 @@ models: $(INTERMEDIATE_ALSFILES) $(ALSFILES)
 quicktest: c11_sra_simp
 
 c11_sra_simp: $(INTERMEDIATE_ALSFILES) $(ALSFILES)
-	cd comparator; \
-	./comparator -relacq -simplepost -normws -totalsb \
-	-events 6 \
-	../models_als/c11_sra.als \
-	../models_als/c11_simp.als > comparator.als; \
-	./do_compare.sh comparator.als
+	comparator/comparator -events 6 -relacq -simplepost -normws -totalsb models_als/c11_sra.als models_als/c11_simp.als
 
 c11_lidbury_partial: $(INTERMEDIATE_ALSFILES) $(ALSFILES)
-	cd comparator; \
-	./comparator -normws -totalsb \
-	-events 4 \
-	../models_als/c11_lidbury.als \
-	../models_als/c11_partial.als > comparator.als; \
-	./do_compare.sh comparator.als
+	comparator/comparator -events 4 -normws -totalsb models_als/c11_lidbury.als models_als/c11_partial.als
 
 # Building .als files from corresponding .cat files
 $(ALSFILES): models_als/%.als: models_cat/%.cat
@@ -69,6 +59,7 @@ clean:
 	make -C cat2als clean
 	rm -f $(INTERMEDIATE_ALSFILES)
 	rm -f $(ALSFILES)
+	rm -f comparator/comparator.als
 	make -C gen clean
 	make -C comparator clean
 	make -C alloystar clean
