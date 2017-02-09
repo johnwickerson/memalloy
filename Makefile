@@ -40,8 +40,13 @@ models_als/opencl_base.als
 models: $(INTERMEDIATE_ALSFILES) $(ALSFILES)
 
 quicktest: $(INTERMEDIATE_ALSFILES) $(ALSFILES)
-	@ tests/Q2_c11_sra_simp.sh
 	@ tests/Q2_c11_lidbury_partial.sh
+
+moretests: $(INTERMEDIATE_ALSFILES) $(ALSFILES)
+	@ tests/Q2_c11_lidbury_partial.sh
+	@ tests/Q2_c11_sra_simp.sh
+	@ tests/Q2_c11_lidbury_partial_iter.sh
+	@ tests/Q2_c11_sra_simp_iter.sh
 
 # Building .als files from corresponding .cat files
 $(ALSFILES): models_als/%.als: models_cat/%.cat

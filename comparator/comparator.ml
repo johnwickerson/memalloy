@@ -38,6 +38,7 @@ let totalsb = ref false
 let eventcount = ref 0
 let noalloy = ref false
 let description = ref ""
+let iter = ref false
 		  
 let pp_comparator oc model1_path model2_path arch =
   if !description != "" then fprintf oc "/* %s */\n" !description;
@@ -77,6 +78,7 @@ let get_args () =
   let model_paths : string list ref = ref [] in
   let speclist = [
       ("-desc", Arg.Set_string description, "Textual description");
+      ("-iter", Arg.Set iter, "Find all solutions, not just one");
       ("-noalloy", Arg.Set noalloy, "Only generate comparator.als");
       ("-withinit", Arg.Set withinit, "Explicit initial writes");
       ("-relacq", Arg.Set relacq, "Only release/acquire fragment");
@@ -160,11 +162,17 @@ let main () =
   in
   mk_fresh_dir_in "xml";
   let alloy_cmd =
-    sprintf "cd alloystar; export SOLVER=glucose; ./runalloy_iter.sh ../%s 0 ../xml/%s" comparator_als stamp
+    sprintf "cd alloystar; ./runalloy_%s.sh"
+	    (if !iter then "iter" else "once")
+  in
+  let solver = "glucose" in
+  let run_alloy =
+    sprintf "export SOLVER=%s; %s ../%s 0 ../xml/%s"
+	    solver alloy_cmd comparator_als stamp
   in
   printf "Alloy started at %s.\n" (now ());
   flush stdout;
-  let alloy_exit_code = Sys.command alloy_cmd in
+  let alloy_exit_code = Sys.command run_alloy in
   printf "Alloy finished at %s.\n" (now ());
   if alloy_exit_code != 0 then (
     printf "Alloy was unsuccessful.\n";
@@ -177,16 +185,32 @@ let main () =
   in
   let num_solns = count_solns_from 0 in
   printf "Alloy found %d solutions.\n" num_solns;
+  printf "Removing duplicate solutions.\n";
+  flush stdout;
+  let py_cmd =
+    sprintf "python comparator/partition.py %d xml/%s" !eventcount stamp
+  in
+  let _ = Sys.command py_cmd in
+  flush stdout;
+  let rec count_unique_solns_from i =
+    let d = sprintf "xml/%s/%d_unique" stamp i in
+    if Sys.file_exists d then count_unique_solns_from (i+1) else i
+  in
+  let num_solns = count_unique_solns_from 0 in
+  printf "Reduced to %d unique solutions.\n" num_solns;
   flush stdout;
   mk_fresh_dir_in "dot";
   mk_fresh_dir_in "png";
   for i = 0 to num_solns - 1 do    
-    let xml_file = sprintf "xml/%s/test_%d.xml" stamp i in
+    let xml_dir = sprintf "xml/%s/%d_unique" stamp i in
+    let xml_files = Sys.readdir xml_dir in
+    assert (Array.length xml_files > 0);
+    let xml_file = sprintf "%s/%s" xml_dir (xml_files.(0)) in 
     let dot_file = sprintf "dot/%s/test_%d.dot" stamp i in
-    let png_file = sprintf "png/%s/test_%d.png" stamp i in
     let gen_cmd = sprintf "gen/gen -Tdot -o %s %s" dot_file xml_file in
-    let dot_cmd = sprintf "dot -Tpng -o %s %s" png_file dot_file in
     ignore (Sys.command gen_cmd);
+    let png_file = sprintf "png/%s/test_%d.png" stamp i in
+    let dot_cmd = sprintf "dot -Tpng -o %s %s" png_file dot_file in
     ignore (Sys.command dot_cmd);
     printf "Converted solution %d of %d.\n" i (num_solns - 1);
     flush stdout
