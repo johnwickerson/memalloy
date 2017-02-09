@@ -30,16 +30,18 @@ open General_purpose
 (* Processing command-line input *)
 (*********************************)
 
-type output_type = Dot | Als
+type output_type = Dot | Als | Lit
 	       
 let get_args () =
   let xml_path : string list ref = ref [] in
   let out_path : string list ref = ref [] in
   let output_dot = ref false in
   let output_als = ref false in
+  let output_lit = ref false in
   let speclist = [
       ("-Tdot", Arg.Set output_dot, "Produce .dot output");
       ("-Tals", Arg.Set output_als, "Produce .als constraints");
+      ("-Tlit", Arg.Set output_lit, "Produce litmus test");
       ("-o", Arg.String (set_list_ref out_path),
        "Output file (mandatory)");
     ] in
@@ -53,9 +55,10 @@ let get_args () =
   in
   let xml_path = get_only_element bad_arg !xml_path in
   let out_path = get_only_element bad_arg !out_path in
-  let out_type = match !output_dot, !output_als with
-    | true, false -> Dot
-    | false, true -> Als
+  let out_type = match !output_dot, !output_als, !output_lit with
+    | true, false, false -> Dot
+    | false, true, false -> Als
+    | false, false, true -> Lit
     | _ -> bad_arg ()
   in
   xml_path, out_path, out_type
@@ -67,15 +70,21 @@ let main () =
   let xml_path, out_path, out_type = get_args () in
   check_args (xml_path, out_path, out_type);
   let (_, exec) = Xml_input.parse_file xml_path in
-  let oc = formatter_of_out_channel (open_out out_path) in
-  match out_type with
+  let oc = open_out out_path in
+  let fmtr = formatter_of_out_channel oc in
+  begin match out_type with
   | Dot ->
      assert (Filename.check_suffix out_path ".dot");
-     fprintf oc "%a\n" Graphviz.dot_of_execution exec
+     fprintf fmtr "%a\n" Graphviz.dot_of_execution exec
   | Als ->
      assert (Filename.check_suffix out_path ".als");
-     fprintf oc "%a\n" Alsbackend.als_of_execution exec
-  (*let litmus = Mk_litmus.litmus_of_execution exec in
-  printf "%a\n" Litmus.pp litmus;*)
+     fprintf fmtr "%a\n" Alsbackend.als_of_execution exec
+  | Lit ->
+     assert (Filename.check_suffix out_path ".litmus");
+     let litmus = Mk_litmus.litmus_of_execution exec in
+     fprintf fmtr "%a\n" Litmus.pp litmus
+  end;
+  close_out oc;
+  exit 0
     
 let _ = main ()     

@@ -58,7 +58,7 @@ let mk_instr x maps reg_map e =
 		
 let rec partition_seq k sb = function
   | [] -> assert false
-  | [e] -> let ins,attrs = k e in Instr (ins, attrs)
+  | [e] -> let ins,attrs = k e in Basic (ins, attrs)
   | es ->
      let map = partition false sb es in
      let classes = val_list (invert_map map) in

@@ -45,43 +45,46 @@ type instruction =
   | Cas of Location.t with_fake_deps * Value.t * Value.t with_fake_deps
   | Fence
 		   
-type component =
-  | Instr of instruction * attribute list
-  | Seq of component list
-  | Unseq of component list
-  | If of Register.t * Value.t * component
+type 'a component =
+  | Basic of 'a
+  | Seq of 'a component list
+  | Unseq of 'a component list
+  | If of Register.t * Value.t * 'a component
 		       
 type litmus_test = {
     locs: Location.t list;
-    thds: component list;
+    thds: (instruction * attribute list) component list;
     post: (address, Value.t) map;
   }
 
-let rec pp_component oc = function
-  | Instr (Load (r,(l,_)), attrs) ->
+let pp_instr oc = function
+  | Load (r,(l,_)), attrs -> 
      fprintf oc "%a := load(%a%a)" Register.pp r Location.pp l
 	     (fprintf_iter "" (fun oc -> fprintf oc ",%s")) attrs
-  | Instr (Store ((l,_),(v,_)), attrs) ->
+  | Store ((l,_),(v,_)), attrs ->
      fprintf oc "store(%a,%d%a)" Location.pp l v
 	     (fprintf_iter "" (fun oc -> fprintf oc ",%s")) attrs
-  | Instr (Cas ((l,_),v,(v',_)), attrs) ->
+  | Cas ((l,_),v,(v',_)), attrs ->
      fprintf oc "cas(%a,%d,%d%a)" Location.pp l v v'
 	     (fprintf_iter "" (fun oc -> fprintf oc ",%s")) attrs
-  | Instr (Fence, attrs) ->
+  | Fence, attrs ->
      fprintf oc "fence(%a)"
 	     (fprintf_iter "" (fun oc -> fprintf oc ",%s")) attrs
-  | Seq [c] | Unseq [c] -> pp_component oc c
-  | Seq cs -> fparen (fprintf_iter "; " pp_component) oc cs
-  | Unseq cs -> fparen (fprintf_iter " + " pp_component) oc cs
+	     
+let rec pp_component k oc = function
+  | Basic b -> k oc b     
+  | Seq [c] | Unseq [c] -> (pp_component k) oc c
+  | Seq cs -> fparen (fprintf_iter "; " (pp_component k)) oc cs
+  | Unseq cs -> fparen (fprintf_iter " + " (pp_component k)) oc cs
   | If (r,v,c) ->
-     fprintf oc "if (%a==%d) %a" Register.pp r v pp_component c
+     fprintf oc "if (%a==%d) %a" Register.pp r v (pp_component k) c
 		     
 let pp oc lt =
   fprintf oc "Locations: %a.\n\n" (fprintf_iter ", " Location.pp) lt.locs;
   let pp_thd tid = function
     | Seq cs ->
        fprintf oc "Thread %d:\n" tid;
-       fprintf_iter ";\n" pp_component oc cs;
+       fprintf_iter ";\n" (pp_component pp_instr) oc cs;
        fprintf oc ";\n\n";
        tid+1
     | _ -> assert false
