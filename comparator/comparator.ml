@@ -40,7 +40,7 @@ let noalloy = ref false
 let description = ref ""
 let iter = ref false
 		  
-let pp_comparator oc model1_path model2_path arch =
+let pp_comparator model1_path model2_path arch oc =
   if !description != "" then fprintf oc "/* %s */\n" !description;
   fprintf oc "open ../%s[E] as M1\n" (Filename.chop_extension model1_path);
   fprintf oc "open ../%s[E] as M2\n\n" (Filename.chop_extension model2_path);
@@ -103,17 +103,15 @@ let get_args () =
 let check_args (model1_path, model2_path) =
   assert (Filename.check_suffix model1_path ".als");
   assert (Filename.check_suffix model2_path ".als")
-	  
-let main () =
-  let model1_path, model2_path = get_args () in
-  check_args (model1_path, model2_path);
-  if not (Sys.file_exists "alloystar") then
-    failwith "Please run me from the top-level directory of the repo";
+
+let pp_description () =
   printf "\n";
   printf "\n";
   printf "==============================\n";
   printf "%s\n" !description;
-  printf "------------------------------\n";
+  printf "------------------------------\n"
+
+let find_arch model1_path model2_path =
   let read_arch path =
     let first_line =
       try input_line (open_in path)
@@ -128,63 +126,67 @@ let main () =
     with Not_found ->
       failwith (sprintf "Missing architecture in %s" path)
   in
-  let arch =
-    let arch1 = read_arch model1_path in
-    let arch2 = read_arch model2_path in
-    if arch1=arch2 then arch1 else
-      failwith (sprintf "Mismatch between %s and %s" arch1 arch2)
+  let arch1 = read_arch model1_path in
+  let arch2 = read_arch model2_path in
+  if arch1=arch2 then arch1 else
+    failwith (sprintf "Mismatch between %s and %s" arch1 arch2)
+
+let write_file als_file pp =
+  let oc = open_out als_file in
+  pp (formatter_of_out_channel oc);
+  close_out oc
+
+let make_stamp () = 
+  let open Unix in
+  let t = localtime (time ()) in
+  let base = sprintf "%02d%02d%02d-%02d%02d%02d"
+		     ((t.tm_year + 1900) mod 100) (t.tm_mon + 1)
+		     t.tm_mday t.tm_hour t.tm_min t.tm_sec
   in
-  let comparator_als = "comparator/comparator.als" in
-  let oc = open_out comparator_als in
-  pp_comparator (formatter_of_out_channel oc) model1_path model2_path arch;
-  close_out oc;
-  if !noalloy then exit 0;
-  let stamp =
-    let open Unix in
-    let t = localtime (time ()) in
-    let base = sprintf "%02d%02d%02d-%02d%02d%02d"
-		       ((t.tm_year + 1900) mod 100) (t.tm_mon + 1)
-		       t.tm_mday t.tm_hour t.tm_min t.tm_sec
-    in
-    let rec mk_stamp i =
-      let stamp = if i=0 then base else sprintf "%s-%d" base i in
-      if Sys.file_exists ("xml/" ^ stamp) then mk_stamp (i+1) else stamp
-    in
-    mk_stamp 0
+  let rec mk_stamp i =
+    let stamp = if i=0 then base else sprintf "%s-%d" base i in
+    if Sys.file_exists ("xml/" ^ stamp) then mk_stamp (i+1) else stamp
   in
-  let mk_fresh_dir_in s =
-    if not (Sys.file_exists s) then Unix.mkdir s 0o755;
-    Sys.chdir s;
-    Unix.mkdir stamp 0o755;
-    Sys.remove "_latest";
-    Unix.symlink stamp "_latest";
-    Sys.chdir ".."
-  in
-  mk_fresh_dir_in "xml";
+  mk_stamp 0
+
+let mk_fresh_dir_in s stamp =
+  if not (Sys.file_exists s) then Unix.mkdir s 0o755;
+  Sys.chdir s;
+  Unix.mkdir stamp 0o755;
+  Sys.remove "_latest";
+  Unix.symlink stamp "_latest";
+  Sys.chdir ".."
+
+let count p =
+  let rec count_helper i = if p i then count_helper (i+1) else i in
+  count_helper 0
+
+let run_alloy comparator_als stamp =
   let alloy_cmd =
     sprintf "cd alloystar; ./runalloy_%s.sh"
 	    (if !iter then "iter" else "once")
   in
   let solver = "glucose" in
-  let run_alloy =
-    sprintf "export SOLVER=%s; %s ../%s 0 ../xml/%s"
-	    solver alloy_cmd comparator_als stamp
-  in
   printf "Alloy started at %s.\n" (now ());
   flush stdout;
-  let alloy_exit_code = Sys.command run_alloy in
+  let alloy_exit_code =
+    Sys.command (sprintf "export SOLVER=%s; %s ../%s 0 ../xml/%s"
+			 solver alloy_cmd comparator_als stamp)
+  in
   printf "Alloy finished at %s.\n" (now ());
   if alloy_exit_code != 0 then (
     printf "Alloy was unsuccessful.\n";
     exit 0
   );
   flush stdout;
-  let rec count_solns_from i =
-    let xml_file = sprintf "xml/%s/test_%d.xml" stamp i in
-    if Sys.file_exists xml_file then count_solns_from (i+1) else i
+  let num_solns =
+    count (fun i ->
+	   Sys.file_exists (sprintf "xml/%s/test_%d.xml" stamp i))
   in
-  let num_solns = count_solns_from 0 in
   printf "Alloy found %d solutions.\n" num_solns;
+  flush stdout
+
+let remove_dups stamp =
   printf "Removing duplicate solutions.\n";
   flush stdout;
   let py_cmd =
@@ -192,26 +194,48 @@ let main () =
   in
   let _ = Sys.command py_cmd in
   flush stdout;
-  let rec count_unique_solns_from i =
-    let d = sprintf "xml/%s/%d_unique" stamp i in
-    if Sys.file_exists d then count_unique_solns_from (i+1) else i
+  let num_solns =
+    count (fun i ->
+	   Sys.file_exists (sprintf "xml/%s/%d_unique" stamp i))
   in
-  let num_solns = count_unique_solns_from 0 in
   printf "Reduced to %d unique solutions.\n" num_solns;
   flush stdout;
-  mk_fresh_dir_in "dot";
-  mk_fresh_dir_in "png";
-  for i = 0 to num_solns - 1 do    
-    let xml_dir = sprintf "xml/%s/%d_unique" stamp i in
-    let xml_files = Sys.readdir xml_dir in
-    assert (Array.length xml_files > 0);
-    let xml_file = sprintf "%s/%s" xml_dir (xml_files.(0)) in 
-    let dot_file = sprintf "dot/%s/test_%d.dot" stamp i in
-    let gen_cmd = sprintf "gen/gen -Tdot -o %s %s" dot_file xml_file in
-    ignore (Sys.command gen_cmd);
-    let png_file = sprintf "png/%s/test_%d.png" stamp i in
-    let dot_cmd = sprintf "dot -Tpng -o %s %s" png_file dot_file in
-    ignore (Sys.command dot_cmd);
+  num_solns
+
+let xml_to_dot stamp i =
+  let xml_dir = sprintf "xml/%s/%d_unique" stamp i in
+  let xml_files = Sys.readdir xml_dir in
+  assert (Array.length xml_files > 0);
+  let xml_file = sprintf "%s/%s" xml_dir (xml_files.(0)) in 
+  let dot_file = sprintf "dot/%s/test_%d.dot" stamp i in
+  let gen_cmd = sprintf "gen/gen -Tdot -o %s %s" dot_file xml_file in
+  ignore (Sys.command gen_cmd)
+
+let dot_to_png stamp i =
+  let dot_file = sprintf "dot/%s/test_%d.dot" stamp i in
+  let png_file = sprintf "png/%s/test_%d.png" stamp i in
+  let dot_cmd = sprintf "dot -Tpng -o %s %s" png_file dot_file in
+  ignore (Sys.command dot_cmd)
+	 
+let main () =
+  let model1_path, model2_path = get_args () in
+  check_args (model1_path, model2_path);
+  if not (Sys.file_exists "alloystar") then
+    failwith "Please run me from the top-level directory of the repo";
+  pp_description ();
+  let arch = find_arch model1_path model2_path in
+  let comparator_als = "comparator/comparator.als" in
+  write_file comparator_als (pp_comparator model1_path model2_path arch);
+  if !noalloy then exit 0;
+  let stamp = make_stamp () in
+  mk_fresh_dir_in "xml" stamp;
+  run_alloy comparator_als stamp;
+  let num_solns = remove_dups stamp in
+  mk_fresh_dir_in "dot" stamp;
+  mk_fresh_dir_in "png" stamp;
+  for i = 0 to num_solns - 1 do
+    xml_to_dot stamp i;
+    dot_to_png stamp i;
     printf "Converted solution %d of %d.\n" i (num_solns - 1);
     flush stdout
   done;
