@@ -34,6 +34,7 @@ let simplepost = ref false
 let normws = ref false
 let totalsb = ref false
 let nodeps = ref false
+let noscrelacq = ref false 
 let eventcount = ref 0
 let noalloy = ref false
 let description = ref ""
@@ -68,6 +69,10 @@ let pp_comparator (succ_paths, fail_paths) arch oc =
     fprintf oc "  W[none,X] in rel[none,X]\n";
     fprintf oc "  no sc[none,X]\n"
   );
+  if !noscrelacq then (
+    fprintf oc "  // Avoid screl and scacq events\n";
+    fprintf oc "  no (screl[none,X] + scacq[none,X])\n"
+  );
   if !normws then (
     fprintf oc "  // Avoid RMW events\n";
     fprintf oc "  no_RMWs[none,X]\n"
@@ -77,6 +82,7 @@ let pp_comparator (succ_paths, fail_paths) arch oc =
     fprintf oc "  total_sb[none,X]\n"
   );
   if !nodeps then (
+    fprintf oc "  // Avoid dependencies\n";
     fprintf oc "  no (ad[none,X] + cd[none,X] + dd[none,X])\n"
   );
   if !simplepost then (
@@ -111,6 +117,8 @@ let get_args () =
       ("-simplepost", Arg.Set simplepost,
        "Option: postcondition need not read shared locations");
       ("-normws", Arg.Set normws, "Option: avoid RMW events");
+      ("-noscrelacq", Arg.Set noscrelacq,
+       "Option: avoid screl and scacq events");
       ("-totalsb", Arg.Set totalsb, "Option: Total sb per thread");
       ("-nodeps", Arg.Set nodeps,
        "Option: avoid address/control/data dependencies");
