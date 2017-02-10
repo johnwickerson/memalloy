@@ -46,7 +46,7 @@ BASE_ARR = ["E$%d" % x for x in range(EVENTS)]
 # Doesn't need to contain "F" because we have "*mb*"
 # Doesn't need to contain "ev" because we only partition executions of the same size (i.e. number of events)
 # The order of these makes a difference. Put things that are likely to fail fast first
-E_TYPES = ["W", "R", "T", "F", "isb", "dmb", "dmbst", "dmbld"]
+E_TYPES = ["W", "R", "F", "isb", "dmb", "dmbst", "dmbld"]
 
 # We don't need sthread because we have sb
 # We don't need sloc because have rf and co (I think)
