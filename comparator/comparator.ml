@@ -184,7 +184,8 @@ let run_alloy comparator_als stamp =
 	   Sys.file_exists (sprintf "xml/%s/test_%d.xml" stamp i))
   in
   printf "Alloy found %d solutions.\n" num_solns;
-  flush stdout
+  flush stdout;
+  num_solns
 
 let remove_dups stamp =
   printf "Removing duplicate solutions.\n";
@@ -229,7 +230,8 @@ let main () =
   if !noalloy then exit 0;
   let stamp = make_stamp () in
   mk_fresh_dir_in "xml" stamp;
-  run_alloy comparator_als stamp;
+  let num_solns_incl_dups = run_alloy comparator_als stamp in
+  if num_solns_incl_dups = 0 then exit 0;
   let num_solns = remove_dups stamp in
   mk_fresh_dir_in "dot" stamp;
   mk_fresh_dir_in "png" stamp;
