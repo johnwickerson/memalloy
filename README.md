@@ -23,8 +23,8 @@ See also: http://johnwickerson.github.io/memalloy
   `../comparator/cat2als model.cat`.
 
 - Each `.cat` file must begin with a description of the architecture
-  being modelled. This must be one of: `"BASIC"`, `"C"`, `"HW"`, `"X86
-  TSO"`, `"PPC"`, `"ARM7"`, `"ARM8"`, `"PTX"`, or `"OpenCL"`.
+  being modelled. This must be one of: `"BASIC"`, `"C"`, `"HW"`,
+  `"X86"`, `"PPC"`, `"ARM7"`, `"ARM8"`, `"PTX"`, or `"OpenCL"`.
 
 - A reasonable fragment of the `.cat` language is supported.
 
@@ -72,8 +72,3 @@ See also: http://johnwickerson.github.io/memalloy
       accesses in C and OpenCL, respectively. Alloy does not allow
       variables to be re-used in this way, so you must use `screl` and
       `scacq` in the Arm8 architecture instead.
-
-# People
-
-- John Wickerson, Imperial College London, 2017.
-- Tyler Sorensen, Imperial College London, 2017.

@@ -74,7 +74,7 @@ let parse_arch = function
   | "BASIC" -> Basic
   | "C" -> C
   | "HW" -> Basic_HW
-  | "X86 TSO" -> X86
+  | "X86" -> X86
   | "PPC" -> Power
   | "ARM7" -> Arm7
   | "ARM8" -> Arm8

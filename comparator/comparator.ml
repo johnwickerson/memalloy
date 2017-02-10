@@ -26,9 +26,7 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 open Format
 open General_purpose
 
-(*****************************************************************)
-(* Generates an Alloy file that can be run to compare two models *)
-(*****************************************************************)
+(** Generates an Alloy file that can be run to compare two models *)
 
 let withinit = ref false
 let relacq = ref false
@@ -51,7 +49,7 @@ let pp_comparator (succ_paths, fail_paths) arch oc =
     fprintf oc "open ../%s[E] as N%d\n" model i
   done;
   fprintf oc "sig E {}\n\n";
-  fprintf oc "pred gp [X:%s] {\n\n" arch;
+  fprintf oc "pred gp [X:%a] {\n\n" Archs.pp_Arch arch;
   if !withinit then
     fprintf oc "  withinit[X]\n\n"
   else
@@ -87,30 +85,41 @@ let pp_comparator (succ_paths, fail_paths) arch oc =
 let get_args () =
   let succ_paths : string list ref = ref [] in
   let fail_paths : string list ref = ref [] in
+  let arch : string list ref = ref [] in
   let speclist = [
       ("-satisfies", Arg.String (set_list_ref succ_paths),
-       "Execution should satisfy this model (repeatable flag)");
+       "Execution should satisfy this model (repeatable)");
       ("-violates", Arg.String (set_list_ref fail_paths),
-       "Execution should violate this model (repeatable flag)");
-      ("-desc", Arg.Set_string description, "Textual description");
-      ("-iter", Arg.Set iter, "Find all solutions, not just one");
-      ("-noalloy", Arg.Set noalloy, "Only generate comparator.als");
-      ("-withinit", Arg.Set withinit, "Explicit initial writes");
-      ("-relacq", Arg.Set relacq, "Only release/acquire fragment");
-      ("-simplepost", Arg.Set simplepost, "Postcondition need not read shared locations");
-      ("-normws", Arg.Set normws, "Avoid RMW events");
-      ("-totalsb", Arg.Set totalsb, "Total sb per thread");
+       "Execution should violate this model (repeatable)");
+      ("-arch", Arg.String (set_list_ref arch),
+       "Type of executions being compared (required)");
       ("-events", Arg.Set_int eventcount, "Max number of events");
+      ("-desc", Arg.Set_string description,
+       "Textual description (optional)");
+      ("-iter", Arg.Set iter,
+       "Option: find all solutions, not just one");
+      ("-noalloy", Arg.Set noalloy,
+       "Option: only generate comparator.als");
+      ("-withinit", Arg.Set withinit,
+       "Option: explicit initial writes");
+      ("-relacq", Arg.Set relacq,
+       "Option: Only release/acquire fragment");
+      ("-simplepost", Arg.Set simplepost,
+       "Option: postcondition need not read shared locations");
+      ("-normws", Arg.Set normws, "Option: avoid RMW events");
+      ("-totalsb", Arg.Set totalsb, "Option: Total sb per thread");
     ] in
   let usage_msg =
-    "Generating an Alloy file that can be run to compare two models.\nUsage: `comparator [options]`.\nOptions available:"
+    "Generating an Alloy file that can be run to compare two models.\nUsage: `comparator [options]`. There must be at least one -satisfies or -violates flag.\nOptions available:"
   in
   let bad_arg _ =
     Arg.usage speclist usage_msg;
     raise (Arg.Bad "Missing or too many arguments.")
   in
   Arg.parse speclist bad_arg usage_msg;
-  !succ_paths, !fail_paths
+  let arch = get_only_element bad_arg !arch in
+  let arch = Archs.parse_arch arch in
+  !succ_paths, !fail_paths, arch
 
 let check_args (succ_paths, fail_paths) =
   match succ_paths @ fail_paths with
@@ -127,31 +136,7 @@ let pp_description () =
   printf "\n";
   printf "==============================\n";
   printf "%s\n" !description;
-  printf "------------------------------\n"
-
-let find_arch paths =
-  let read_arch path =
-    let first_line =
-      try input_line (open_in path)
-      with
-      | Sys_error _ -> failwith (sprintf "Couldn't open %s" path)
-      | End_of_file -> failwith (sprintf "File %s is empty" path)
-    in
-    let regex = Str.regexp "//[ \t]+\\([A-Za-z0-9_]+\\)" in
-    try
-      let _ = Str.string_match regex first_line 0 in
-      Str.matched_group 1 first_line
-    with Not_found ->
-      failwith (sprintf "Missing architecture in %s" path)
-  in
-  match List.map read_arch paths with
-  | [] -> assert false
-  | arch :: archs ->
-     try
-       let arch' = List.find (fun arch' -> arch' <> arch) archs in
-       failwith (sprintf "Mismatch between %s and %s" arch arch')
-     with Not_found -> arch
-       
+  printf "------------------------------\n"      
 
 let write_file als_file pp =
   let oc = open_out als_file in
@@ -241,14 +226,14 @@ let dot_to_png stamp i =
   ignore (Sys.command dot_cmd)
 	 
 let main () =
-  let succ_paths, fail_paths = get_args () in
+  let succ_paths, fail_paths, arch = get_args () in
   check_args (succ_paths, fail_paths);
   if not (Sys.file_exists "alloystar") then
     failwith "Please run me from the top-level directory of the repo";
   pp_description ();
-  let arch = find_arch (succ_paths @ fail_paths) in
   let comparator_als = "comparator/comparator.als" in
-  write_file comparator_als (pp_comparator (succ_paths, fail_paths) arch);
+  write_file comparator_als
+	     (pp_comparator (succ_paths, fail_paths) arch);
   if !noalloy then exit 0;
   let stamp = make_stamp () in
   mk_fresh_dir_in "xml" stamp;
