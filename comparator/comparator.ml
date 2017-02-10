@@ -40,19 +40,29 @@ let noalloy = ref false
 let description = ref ""
 let iter = ref false
 		  
-let pp_comparator model1_path model2_path arch oc =
+let pp_comparator (succ_paths, fail_paths) arch oc =
   if !description != "" then fprintf oc "/* %s */\n" !description;
-  fprintf oc "open ../%s[E] as M1\n" (Filename.chop_extension model1_path);
-  fprintf oc "open ../%s[E] as M2\n\n" (Filename.chop_extension model2_path);
+  for i = 1 to List.length succ_paths do
+    let model = Filename.chop_extension (List.nth succ_paths (i-1)) in
+    fprintf oc "open ../%s[E] as M%d\n" model i
+  done;
+  for i = 1 to List.length fail_paths do
+    let model = Filename.chop_extension (List.nth fail_paths (i-1)) in
+    fprintf oc "open ../%s[E] as N%d\n" model i
+  done;
   fprintf oc "sig E {}\n\n";
   fprintf oc "pred gp [X:%s] {\n\n" arch;
   if !withinit then
     fprintf oc "  withinit[X]\n\n"
   else
-    fprintf oc "  withoutinit[X]\n\n"; 
-  fprintf oc "  not(M1/consistent[none,X])\n";
-  fprintf oc "  M1/dead[none,X]\n";
-  fprintf oc "  M2/consistent[none,X]\n\n";
+    fprintf oc "  withoutinit[X]\n\n";
+  for i = 1 to List.length fail_paths do
+    fprintf oc "  not(N%d/consistent[none,X])\n" i;
+    fprintf oc "  N%d/dead[none,X]\n" i
+  done;
+  for i = 1 to List.length succ_paths do
+    fprintf oc "  M%d/consistent[none,X]\n\n" i
+  done;
   if !relacq then (
     fprintf oc "  // Stay within the rel/acq fragment\n";
     fprintf oc "  R[none,X] in acq[none,X]\n";
@@ -75,8 +85,13 @@ let pp_comparator model1_path model2_path arch oc =
   fprintf oc "run gp for 1 Exec, %d E, 3 Int\n" !eventcount
 
 let get_args () =
-  let model_paths : string list ref = ref [] in
+  let succ_paths : string list ref = ref [] in
+  let fail_paths : string list ref = ref [] in
   let speclist = [
+      ("-satisfies", Arg.String (set_list_ref succ_paths),
+       "Execution should satisfy this model (repeatable flag)");
+      ("-violates", Arg.String (set_list_ref fail_paths),
+       "Execution should violate this model (repeatable flag)");
       ("-desc", Arg.Set_string description, "Textual description");
       ("-iter", Arg.Set iter, "Find all solutions, not just one");
       ("-noalloy", Arg.Set noalloy, "Only generate comparator.als");
@@ -88,22 +103,25 @@ let get_args () =
       ("-events", Arg.Set_int eventcount, "Max number of events");
     ] in
   let usage_msg =
-    "Generating an Alloy file that can be run to compare two models.\nUsage: `comparator [options] <model1.als> <model2.als>`.\nOptions available:"
+    "Generating an Alloy file that can be run to compare two models.\nUsage: `comparator [options]`.\nOptions available:"
   in
-  Arg.parse speclist (set_list_ref model_paths) usage_msg;
-  let bad_arg () =
+  let bad_arg _ =
     Arg.usage speclist usage_msg;
     raise (Arg.Bad "Missing or too many arguments.")
   in
-  let model2_path, model1_path =
-    get_only_two_elements bad_arg !model_paths
-  in
-  model1_path, model2_path
+  Arg.parse speclist bad_arg usage_msg;
+  !succ_paths, !fail_paths
 
-let check_args (model1_path, model2_path) =
-  assert (Filename.check_suffix model1_path ".als");
-  assert (Filename.check_suffix model2_path ".als")
-
+let check_args (succ_paths, fail_paths) =
+  match succ_paths @ fail_paths with
+  | [] -> failwith "Expected at least one model"
+  | paths ->
+     let check_ext p =
+       if not (Filename.check_suffix p ".als") then
+	 failwith "Expected file(s) ending with .als"
+     in
+     List.iter check_ext paths
+	       
 let pp_description () =
   printf "\n";
   printf "\n";
@@ -111,7 +129,7 @@ let pp_description () =
   printf "%s\n" !description;
   printf "------------------------------\n"
 
-let find_arch model1_path model2_path =
+let find_arch paths =
   let read_arch path =
     let first_line =
       try input_line (open_in path)
@@ -126,10 +144,14 @@ let find_arch model1_path model2_path =
     with Not_found ->
       failwith (sprintf "Missing architecture in %s" path)
   in
-  let arch1 = read_arch model1_path in
-  let arch2 = read_arch model2_path in
-  if arch1=arch2 then arch1 else
-    failwith (sprintf "Mismatch between %s and %s" arch1 arch2)
+  match List.map read_arch paths with
+  | [] -> assert false
+  | arch :: archs ->
+     try
+       let arch' = List.find (fun arch' -> arch' <> arch) archs in
+       failwith (sprintf "Mismatch between %s and %s" arch arch')
+     with Not_found -> arch
+       
 
 let write_file als_file pp =
   let oc = open_out als_file in
@@ -219,14 +241,14 @@ let dot_to_png stamp i =
   ignore (Sys.command dot_cmd)
 	 
 let main () =
-  let model1_path, model2_path = get_args () in
-  check_args (model1_path, model2_path);
+  let succ_paths, fail_paths = get_args () in
+  check_args (succ_paths, fail_paths);
   if not (Sys.file_exists "alloystar") then
     failwith "Please run me from the top-level directory of the repo";
   pp_description ();
-  let arch = find_arch model1_path model2_path in
+  let arch = find_arch (succ_paths @ fail_paths) in
   let comparator_als = "comparator/comparator.als" in
-  write_file comparator_als (pp_comparator model1_path model2_path arch);
+  write_file comparator_als (pp_comparator (succ_paths, fail_paths) arch);
   if !noalloy then exit 0;
   let stamp = make_stamp () in
   mk_fresh_dir_in "xml" stamp;
