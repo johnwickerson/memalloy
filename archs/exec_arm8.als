@@ -6,10 +6,10 @@ sig Exec_Arm8 extends Exec_Arm7 {
   scacq : set E  // acquire events
 }{
 
-  // only atomic reads can acquire
+  // only reads can acquire
   scacq in R
 
-  // only atomic writes can release
+  // only non-initial writes can release
   screl in W - IW
     
 }
