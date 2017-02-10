@@ -153,7 +153,7 @@ let mk_fresh_dir_in s stamp =
   if not (Sys.file_exists s) then Unix.mkdir s 0o755;
   Sys.chdir s;
   Unix.mkdir stamp 0o755;
-  Sys.remove "_latest";
+  if (Sys.file_exists "_latest") then Sys.remove "_latest";
   Unix.symlink stamp "_latest";
   Sys.chdir ".."
 
