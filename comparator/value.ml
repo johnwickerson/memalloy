@@ -27,3 +27,5 @@ open Format
 open General_purpose
 
 type t = int
+
+let pp oc v = fprintf oc "%d" v

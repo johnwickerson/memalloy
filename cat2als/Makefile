@@ -1,4 +1,0 @@
-LIBS=str,unix
-MAIN=cat2als
-
-include lib/Makefile.common

@@ -208,7 +208,7 @@ let xml_to_dot stamp i =
   assert (Array.length xml_files > 0);
   let xml_file = sprintf "%s/%s" xml_dir (xml_files.(0)) in 
   let dot_file = sprintf "dot/%s/test_%d.dot" stamp i in
-  let gen_cmd = sprintf "gen/gen -Tdot -o %s %s" dot_file xml_file in
+  let gen_cmd = sprintf "comparator/gen -Tdot -o %s %s" dot_file xml_file in
   ignore (Sys.command gen_cmd)
 
 let dot_to_png stamp i =

@@ -40,9 +40,6 @@ let rec fprintf_iter s f oc = function
 
 let fparen f oc x = fprintf oc "(%a)" f x
 
-let debug b format =
-  if b then eprintf format else ifprintf err_formatter format
-
 let today() =
   let open Unix in
   let t = localtime (time ()) in
@@ -80,7 +77,10 @@ let diff xs ys =
 let invert_rel r =
   List.map (fun (e,e') -> (e',e)) r
 
-type ('k,'v) map = ('k * 'v) list 
+type ('k,'v) map = ('k * 'v) list
+
+let strong_assoc map x =
+  try List.assoc x map with Not_found -> assert false
 	   
 let invert_map kvs =
   let add_entry vks (k,v) =

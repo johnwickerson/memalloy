@@ -27,8 +27,6 @@ open Format
 open General_purpose
 open Cat_syntax
 
-let debug = debug false
-
 (***********************************)
 (* Unfolding recursive definitions *)
 (***********************************)
@@ -336,7 +334,6 @@ let main () =
   let arch = Archs.parse_arch model_type in
   let env = build_env arch in
   let cat_model = unfold_instrs unrolling_factor cat_model in
-  debug "Cat model: %a" pp_instrs cat_model;
   als_of_model interm_model env cat_path model_name arch oc cat_model; 
   exit 0
     

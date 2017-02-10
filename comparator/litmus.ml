@@ -37,12 +37,21 @@ let pp_addr oc = function
   | Reg r -> Register.pp oc r
   | Loc l -> Location.pp oc l
        
-type 'a with_fake_deps = 'a * Register.t list
+type 'a expr =
+  | Just of 'a
+  | Madd of 'a expr * Register.t
+
+let rec pp_expr k oc = function
+  | Just x -> k oc x
+  | Madd (e,r) -> fprintf oc "%a + 0*%a" (pp_expr k) e Register.pp r
+
+let mk_expr b rs =
+  List.fold_left (fun e r -> Madd(e,r)) (Just b) rs
 		   
 type instruction =
-  | Load of Register.t * Location.t with_fake_deps
-  | Store of Location.t with_fake_deps * Value.t with_fake_deps
-  | Cas of Location.t with_fake_deps * Value.t * Value.t with_fake_deps
+  | Load of Register.t * Location.t expr
+  | Store of Location.t expr * Value.t expr
+  | Cas of Location.t expr * Value.t * Value.t expr
   | Fence
 		   
 type 'a component =
@@ -50,6 +59,12 @@ type 'a component =
   | Seq of 'a component list
   | Unseq of 'a component list
   | If of Register.t * Value.t * 'a component
+
+let rec map_component f = function
+  | Basic x -> Basic (f x)
+  | Seq cs -> Seq (List.map (map_component f) cs)
+  | Unseq cs -> Unseq (List.map (map_component f) cs)
+  | If (r,v,c) -> If (r,v, map_component f c)
 		       
 type litmus_test = {
     locs: Location.t list;
@@ -58,14 +73,17 @@ type litmus_test = {
   }
 
 let pp_instr oc = function
-  | Load (r,(l,_)), attrs -> 
-     fprintf oc "%a := load(%a%a)" Register.pp r Location.pp l
+  | Load (r,le), attrs -> 
+     fprintf oc "%a := load(%a%a)"
+	     Register.pp r (pp_expr Location.pp) le
 	     (fprintf_iter "" (fun oc -> fprintf oc ",%s")) attrs
-  | Store ((l,_),(v,_)), attrs ->
-     fprintf oc "store(%a,%d%a)" Location.pp l v
+  | Store (le,ve), attrs ->
+     fprintf oc "store(%a,%a%a)"
+	     (pp_expr Location.pp) le (pp_expr Value.pp) ve
 	     (fprintf_iter "" (fun oc -> fprintf oc ",%s")) attrs
-  | Cas ((l,_),v,(v',_)), attrs ->
-     fprintf oc "cas(%a,%d,%d%a)" Location.pp l v v'
+  | Cas (le,v,ve), attrs ->
+     fprintf oc "cas(%a,%a,%a%a)"
+	     (pp_expr Location.pp) le Value.pp v (pp_expr Value.pp) ve
 	     (fprintf_iter "" (fun oc -> fprintf oc ",%s")) attrs
   | Fence, attrs ->
      fprintf oc "fence(%a)"
@@ -77,7 +95,8 @@ let rec pp_component k oc = function
   | Seq cs -> fparen (fprintf_iter "; " (pp_component k)) oc cs
   | Unseq cs -> fparen (fprintf_iter " + " (pp_component k)) oc cs
   | If (r,v,c) ->
-     fprintf oc "if (%a==%d) %a" Register.pp r v (pp_component k) c
+     fprintf oc "if (%a==%a) %a" Register.pp r Value.pp v
+	     (pp_component k) c
 		     
 let pp oc lt =
   fprintf oc "Locations: %a.\n\n" (fprintf_iter ", " Location.pp) lt.locs;
