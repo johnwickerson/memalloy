@@ -33,6 +33,7 @@ let relacq = ref false
 let simplepost = ref false
 let normws = ref false
 let totalsb = ref false
+let nodeps = ref false
 let eventcount = ref 0
 let noalloy = ref false
 let description = ref ""
@@ -75,6 +76,9 @@ let pp_comparator (succ_paths, fail_paths) arch oc =
     fprintf oc "  // Total sb per thread\n";
     fprintf oc "  total_sb[none,X]\n"
   );
+  if !nodeps then (
+    fprintf oc "  no (ad[none,X] + cd[none,X] + dd[none,X])\n"
+  );
   if !simplepost then (
     fprintf oc "  // The postcondition need not read shared locations\n";
     fprintf oc "  co[none,X] in (rc[rf[none,X]]) . (rc[(sb[none,X]) . (rc[~(rf[none,X])])])\n"
@@ -108,6 +112,8 @@ let get_args () =
        "Option: postcondition need not read shared locations");
       ("-normws", Arg.Set normws, "Option: avoid RMW events");
       ("-totalsb", Arg.Set totalsb, "Option: Total sb per thread");
+      ("-nodeps", Arg.Set nodeps,
+       "Option: avoid address/control/data dependencies");
     ] in
   let usage_msg =
     "Generating an Alloy file that can be run to compare two models.\nUsage: `comparator [options]`. There must be at least one -satisfies or -violates flag.\nOptions available:"
