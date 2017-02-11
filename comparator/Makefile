@@ -7,15 +7,21 @@ OCB_OPTS := $(OCB_OPTS) -libs str,unix
 # OCaml packages
 OCB_OPTS := $(OCB_OPTS) -pkgs xml-light
 
+# Set title of documentation
+OCD_OPTS := -docflags -t,Comparator
+# Set custom stylesheet
+OCD_OPTS := $(OCD_OPTS) -docflags -css-style,mystyle.css
+
 MAINS = gen cat2als comparator
 
 .PHONY: all clean
 
 all: $(MAINS)
 	python mk_odocl.py > comparator.odocl
-	ocamlbuild $(OCB_OPTS) comparator.docdir/index.html
-	mv comparator.docdir doc
-	@ echo "HTML documentation is in doc/index.html."
+	ocamlbuild $(OCB_OPTS) $(OCD_OPTS) comparator.docdir/index.html
+	rm -rf ../doc && mv comparator.docdir ../doc
+	cp mystyle.css ../doc/
+	@ echo "HTML documentation is in ../doc/index.html."
 
 $(MAINS):
 	ocamlbuild $(OCB_OPTS) $@.native
@@ -25,4 +31,4 @@ clean:
 	ocamlbuild -clean
 	rm -f $(MAINS)
 	rm -f comparator.odocl
-	rm -rf doc
+	rm -rf ../doc

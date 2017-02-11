@@ -11,7 +11,7 @@ See also: http://johnwickerson.github.io/memalloy
 
 2. Run `source configure.sh`.
 
-3. Run `make`.
+3. Run `make`. HTML documentation can now be browsed at `doc/index.html`.
 
 4. Run `make quicktest`. After a few minutes you should find some
    pictures of distinguishing executions in the `png` directory.
