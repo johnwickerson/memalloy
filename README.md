@@ -2,7 +2,13 @@
 
 # System requirements
 
-- OCaml version >= 4.01.0
+- Tested with the following versions of (OCaml, OPAM):
+    - (4.01.0, 1.0.0)
+    - (4.01.0, 1.2.1)
+    - (4.02.1, 1.2.0)
+    - (4.02.3, 1.2.2)
+
+- Requires OPAM packages `xml-light` and `ocamlfind`.
 
 # Quick start
 

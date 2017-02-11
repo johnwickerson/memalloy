@@ -33,3 +33,4 @@ eval `opam config env`
 export OS=amd64-linux
 make
 make quicktest
+java -version
