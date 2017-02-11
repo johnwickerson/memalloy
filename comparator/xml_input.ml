@@ -27,9 +27,7 @@ open Format
 open General_purpose
 open Exec
 
-(***********************************)
-(* Parsing execution from XML file *)
-(***********************************)
+(** Parsing execution from XML file *)
 
 let parse_file xml_path =
   let alloy_soln = Xml.parse_file xml_path in
@@ -70,4 +68,4 @@ let parse_file xml_path =
     in
     List.fold_left add_field empty_exec field_nodes
   in
-  ("C", exec)
+  ("C", exec) (* TODO: architecture here? *)

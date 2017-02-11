@@ -26,6 +26,8 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 open Format
 open General_purpose
 
+(** Represents a value in memory *)
+
 type t = int
 
 let pp oc v = fprintf oc "%d" v

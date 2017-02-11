@@ -28,10 +28,9 @@ open General_purpose
 open Exec
 open Litmus
 
-(**********************************************)
-(* Generating a litmus test from an execution *)
-(**********************************************)
+(** Generating a litmus test from an execution *)
 
+(** [mk_instr x maps reg_map e] returns an instruction corresponding to the event [e] in the execution [x], by looking up values, registers, and so on, in [maps] and [reg_map]. *)
 let mk_instr x maps reg_map e =
   let ignored_attrs = ["ev";"R";"W";"F";"IW"] in
   let attrs = diff (get_sets x e) ignored_attrs in
@@ -67,7 +66,8 @@ let mk_instr x maps reg_map e =
   | false, false, true ->
      Fence, attrs
   | _ -> assert false
-		
+
+(** If the list of events [es] comprises a single event, [partition_seq sb es] returns a basic component containing just that event. Otherwise, [partition_seq sb es] partitions the events in [es] into a sequence of components, such that whenever two events are in consecutive components, they are ordered by [sb]. *)
 let rec partition_seq sb = function
   | [] -> assert false
   | [e] -> Basic e
@@ -81,6 +81,7 @@ let rec partition_seq sb = function
      let classes = List.sort comparator classes in
      Seq (List.map (partition_par sb) classes)
 
+(** [partition_par sb es] partitions the events in [es] into a collection of unsequenced components, such that whenever two events are in different components, they are unrelated (in either direction) by [sb]. *)
 and partition_par sb = function
   | [] -> assert false
   | es ->

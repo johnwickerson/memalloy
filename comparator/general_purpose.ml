@@ -42,6 +42,9 @@ let rec fprintf_iter s f oc = function
 
 let fparen f oc x = fprintf oc "(%a)" f x
 
+let pp_str oc s = fprintf oc "%s" s
+let pp_pair oc (s,s') = fprintf oc "(%s,%s)" s s'
+
 let today() =
   let open Unix in
   let t = localtime (time ()) in

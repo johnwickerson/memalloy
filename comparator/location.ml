@@ -25,6 +25,8 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
 open Format
 open General_purpose
+
+(** Represents a memory location *)
        
 type t = int
 

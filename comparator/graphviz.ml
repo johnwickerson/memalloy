@@ -27,9 +27,7 @@ open Format
 open General_purpose
 open Exec
 
-(******************************)
-(* Generating Graphviz output *)
-(******************************)
+(** Converting an execution to Graphviz *)
 		 
 let edge_color = function
   | "co" -> "cornflowerblue"
@@ -37,9 +35,12 @@ let edge_color = function
   | "sb" | "ad" | "cd" | "dd" -> "black"
   | _ -> "black"
 
+(** Pretty-printing a list of Graphviz attributes *)
 let pp_gv_attrs oc attrs =
-  pp_set oc (List.map (fun (k,v) -> sprintf "%s=\"%s\"" k v) attrs)
-		     
+  let pp_gv_attr oc (k,v) = fprintf oc "%s=\"%s\"" k v in
+  fprintf_iter "," pp_gv_attr oc attrs
+
+(** Convert a single event into a Graphviz node description *)
 let dot_of_event x maps oc e =
   let dir,vals,bgcolor =
     match List.mem e (get_set x "R"),
@@ -72,7 +73,8 @@ let dot_of_event x maps oc e =
   let gv_attrs =
     [("label",
       asprintf "%a: %s[%a]%s%s"
-	       pp_event_name e dir pp_set attrs loc vals);
+	       pp_event_name e dir (fprintf_iter "," pp_str) attrs
+	       loc vals);
      ("shape", "box");
      ("color", "white");
      ("style", "filled");
@@ -91,7 +93,7 @@ let dot_of_event x maps oc e =
   | None ->
      printnode ()
      
-
+(** Convert a relation into a set of Graphviz edge descriptions *)
 let dot_of_rel oc (name, tuples) =
   let gv_attrs =
     if List.mem name ["sb"] then [] else [("constraint", "false")]
@@ -105,6 +107,7 @@ let dot_of_rel oc (name, tuples) =
   in
   List.iter dot_of_pair tuples
 
+(** Convert an execution into a complete Graphviz file *)
 let dot_of_execution oc x =
   let x = remove_transitive "sb" x in
   let x = remove_transitive "co" x in
