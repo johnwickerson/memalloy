@@ -25,8 +25,10 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
 open Format
 
+(** Some general-purpose definitions *)
+
 let set_list_ref r v = r := (v :: !r)
-							 
+
 let get_only_element k = function [x] -> x | _ -> k ()
 
 let get_lone_element k z = function [x] -> x | [] -> z | _ -> k ()
@@ -81,7 +83,8 @@ type ('k,'v) map = ('k * 'v) list
 
 let strong_assoc map x =
   try List.assoc x map with Not_found -> assert false
-	   
+
+(** Example: [invert_map [(k1,v1);(k2,v2);(k3;v1)] = [(v1,[k1;k3]);(v2,[k2])]] *)
 let invert_map kvs =
   let add_entry vks (k,v) =
     let ks = try List.assoc v vks with Not_found -> [] in
@@ -104,6 +107,7 @@ let remove_transitive_edges r =
   in
   List.filter (fun edge -> not (is_transitive edge)) r
 
+(** [partition true r es] returns a list of partitions of [es], with two elements of [es] being in the same partition iff they are related (in either direction) by [r]. [partition false r es] is similar, but each partitions contains elements that are {i not} related (in either direction) by [r]. *)
 let partition invert r es =
   let rec find_related e = function
     | [] -> raise Not_found

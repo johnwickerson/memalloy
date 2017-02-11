@@ -26,9 +26,7 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 open Format
 open General_purpose
   
-(*********************************)
-(* Processing command-line input *)
-(*********************************)
+(** Command-line tool for processing executions and generating litmus tests *)
 
 type output_type = Dot | Als | Lit
 	       

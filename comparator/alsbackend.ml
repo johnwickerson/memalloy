@@ -27,25 +27,27 @@ open Format
 open General_purpose
 open Exec
   
-(***************************************************)
-(* Converting an execution into an Alloy predicate *)
-(***************************************************)
+(** Converting an execution into an Alloy predicate *)
 
+(** Convert event set to Alloy constraint *)
 let als_of_set oc (name, es) =
   fprintf oc "    X.%s = " name;
   if es = [] then fprintf oc "none"
   else fprintf_iter "+" pp_event_name oc es;
   fprintf oc "\n"
 
+(** Convert event pair to Alloy expression *)
 let als_of_pair oc (e,e') =
   fprintf oc "(%a->%a)" pp_event_name e pp_event_name e'
-	  
+
+(** Convert event relation to Alloy constraint *)
 let als_of_rel oc (name, ees) =
   fprintf oc "    X.%s = " name;
   if ees = [] then fprintf oc "none->none"
   else fprintf_iter "+" als_of_pair oc ees;
   fprintf oc "\n"	  
-       
+
+(** Convert execution to Alloy predicate *)
 let als_of_execution oc x =
   let ev = get_set x "ev" in
   fprintf oc "pred hint[X:Exec] {\n";

@@ -24,7 +24,10 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 *)
 
 open Format
+open General_purpose
 
+(** Abstract syntax tree for a .cat model *)
+       
 type access_type =
   | WriteRead
   | Write
@@ -36,6 +39,7 @@ type set_or_rel = Set | Rel
 
 let pp_typ = function Set -> "Set" | Rel -> "Rel"
 
+(** Unary operators *)
 type unop =
   | Set_to_rln
   | Star
@@ -46,7 +50,8 @@ type unop =
   | Select of access_type * access_type
   | Domain
   | Range
-			      
+
+(** Binary operators *)
 type binop =
   | Seq
   | Union
@@ -54,6 +59,7 @@ type binop =
   | Inter
   | Cross
 
+(** Expressions *)
 type cat_expr =
   | Empty_rln
   | Var of string
@@ -62,6 +68,7 @@ type cat_expr =
   | Op1 of unop * cat_expr
   | Op of binop * cat_expr list
 
+(** Basic pretty-printing of expressions (for debugging) *)
 let rec pp_expr oc = function
   | Empty_rln -> fprintf oc "0"
   | Var x -> fprintf oc "%s" x
@@ -98,31 +105,27 @@ let pp_cnstrnt oc = function
   | Provision -> fprintf oc "provides"
   | UndefUnless -> fprintf oc "undefined_unless"
   | Deadness -> fprintf oc "deadness_requires"
-		       
+
+(** Instruction in a .cat model *)
 type cat_instr =
   | Let of string * string list * cat_expr
   | LetRec of (string * cat_expr) list
   | Axiom of cnstrnt * shape * cat_expr * string
   | Include of string
 
-let rec pp_morebinds oc = function
-  | [] -> fprintf oc ""
-  | (x,e) :: xes ->
-     fprintf oc "and %s = %a" x pp_expr e;
-     pp_morebinds oc xes
-
-let rec pp_varlist oc = function
-  | [] -> ()
-  | [x] -> fprintf oc "%s" x
-  | x :: xs -> fprintf oc "%s," x; pp_varlist oc xs
+let pp_binding oc (x,e) =
+  fprintf oc "%s = %a" x pp_expr e
+		 
+let pp_var oc x = fprintf oc "%s" x
 		  
 let pp_instr oc = function
+  | Let (x,[],e) ->
+     fprintf oc "let %a\n\n" pp_binding (x,e)
   | Let (x,args,e) ->
-     fprintf oc "let %s%a = %a\n\n" x pp_varlist args pp_expr e
-  | LetRec ((x,e) :: xes) ->
-     fprintf oc "let %s = %a\n\n" x pp_expr e;
-     pp_morebinds oc xes
-  | LetRec [] -> assert false
+     fprintf oc "let %s(%a) = %a\n\n"
+	     x (fprintf_iter "," pp_var) args pp_expr e
+  | LetRec xes ->
+     fprintf oc "let %a\n\n" (fprintf_iter " and " pp_binding) xes
   | Axiom (c,t,e,n) ->
      fprintf oc "%a %a(%a) as %s\n\n"
        pp_cnstrnt c pp_shape t pp_expr e n
@@ -131,4 +134,5 @@ let pp_instr oc = function
 
 let pp_instrs oc = List.iter (pp_instr oc)
 
+(** Entire .cat model *)
 type cat_model = cat_instr list

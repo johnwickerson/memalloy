@@ -27,12 +27,19 @@ open Format
 open General_purpose
 open Cat_syntax
 
-(***********************************)
-(* Unfolding recursive definitions *)
-(***********************************)
+(** Converting a .cat model into an .als file *)
+
+(** Parse the given .cat file into an abstract syntax tree *)
+let parse_file cat_path =
+  let ic = open_in cat_path in
+  let lexbuf = Lexing.from_channel ic in
+  Cat_parser.main Cat_lexer.token lexbuf
+       
+(** {2 Unfolding recursive definitions} *)
 
 let add_subscript = sprintf "%s_%d"
 
+(** [sub_subscript xs d e] appends a subscript [d] to each variable in [e] that is in the list [xs] *)
 let rec sub_subscript xs d = function
   | Empty_rln -> Empty_rln
   | Var x -> Var (if List.mem x xs then add_subscript x d else x)
@@ -41,61 +48,63 @@ let rec sub_subscript xs d = function
   | Op1 (o, e) -> Op1 (o, sub_subscript xs d e)
   | Op (o, es) -> Op (o, List.map (sub_subscript xs d) es)
 				    
-let rec unfold_defs' xs d = function
-  | [] -> []
-  | (x,e) :: rest ->
-     Let (add_subscript x d, [], sub_subscript xs (d-1) e) ::
-       unfold_defs' xs d rest
-	    
-let rec unfold_defs xes d u =
+(** If [xes] comprises the recursive definitions {i x=e(x,y)} and {i y=f(x,y)}, then [unfold_defs xes u] produces a sequence of non-recursive definitions corresponding to [u] unrollings of [xes]. For instance, [unfold_defs xes 2] produces the sequence {i x0=0}, {i y0=0}, {i x1=e(x0,y0)}, {i y1=f(x0,y0)}, {i x=e(x1,y1)}, {i y=f(x1,y1)}. *)
+let unfold_defs xes u =
   let xs = List.map fst xes in
-  if d = 0 then
-    List.map (fun (x,_) -> Let (add_subscript x 0, [], Empty_rln)) xes
-  else
-    let iter_d =
-      if d = u then
-	List.map
-	  (fun (x,e) -> Let (x, [], sub_subscript xs (d-1) e)) xes
-      else
-	unfold_defs' xs d xes
-    in
-    unfold_defs xes (d - 1) u @ iter_d
-				    
+  let rec unfold_defs' d =
+    if d = 0 then
+      let upd_bind (x,_) = Let (add_subscript x 0, [], Empty_rln) in
+      List.map upd_bind xes
+    else
+      let iter_d =
+	let upd_bind (x,e) =
+	  let x' = if d=u then x else add_subscript x d in
+	  Let (x', [], sub_subscript xs (d-1) e) in
+	List.map upd_bind xes
+      in
+      unfold_defs' (d - 1) @ iter_d
+  in
+  unfold_defs' u
+
+(** [unfold_instrs u instrs] unrolls each recursive definition in [instrs] by factor [u]. *)
 let rec unfold_instrs u = function
   | [] -> []
   | LetRec xes :: instrs ->
-     unfold_defs xes u u @ unfold_instrs u instrs
+     unfold_defs xes u @ unfold_instrs u instrs
   | other_instr :: instrs ->
      other_instr :: unfold_instrs u instrs
 				  
-(***************************)
-(* Determining Alloy types *)
-(***************************)
+(** {2 Determining Alloy types} *)
 
+(** Create a typing environment containing the pre-defined sets and relations for the given architecture *)
 let build_env arch = 
   (List.map (fun a -> (a,([],Rel))) (Archs.arch_rels arch)) @
   (List.map (fun a -> (a,([],Set))) (Archs.arch_sets arch))
 
 let alloy_type_of = function Set -> "set E" | Rel -> "E->E"
 
+(** Print environment (for debugging) *)
 let pp_env oc =
   List.iter (fun (x,(_,t)) -> fprintf oc "%s:%s\n" x (pp_typ t))
-	    
+
+(** Look up type of variable in typing environment *)
 let type_of_var env x =
   try List.assoc x env with Not_found ->
     failwith (asprintf "Variable %s is unbound in [\n%a]" x pp_env env)
-     
-let rec type_list env e = function
-  | [] -> type_of env e
-  | e' :: es ->
-     let t = type_of env e and t' = type_of env e' in
-     if t = t' then
-       type_list env e es
-     else
-       failwith (asprintf
-		   "%a has type %s but %a has type %s"
-		   pp_expr e (pp_typ t) pp_expr e' (pp_typ t'))
-	     
+
+(** If [es] is a non-empty list of expressions all with type {i t}, [type_list env es] returns {i t}. *)
+let rec type_list env = function
+  | [] -> assert false
+  | e :: es ->
+     let t = type_of env e in
+     try
+       let e' = List.find (fun e' -> type_of env e' <> t) es in
+       failwith (asprintf "%a has type %s but %a has type %s"
+			  pp_expr e (pp_typ t)
+			  pp_expr e' (pp_typ (type_of env e')))
+     with Not_found -> t
+
+(** [type_of env e] returns the type of the expression [e] according to the typing environment [env]. *)
 and type_of env = function
   | Empty_rln -> Rel
   | Var x -> begin
@@ -136,19 +145,22 @@ and type_of env = function
   | Op (Union,es)
   | Op (Inter,es) ->
      assert (es != []);
-     type_list env (List.hd es) (List.tl es)
+     type_list env es
   | Op (Cross,es) ->
      assert (List.length es = 2);
      assert (type_of env (List.nth es 0) = Set);
      assert (type_of env (List.nth es 1) = Set);
      Rel
-       
-let parse_file cat_path =
-  let ic = open_in cat_path in
-  let lexbuf = Lexing.from_channel ic in
-  Cat_parser.main Cat_lexer.token lexbuf
 
-let rec type_instr env = function
+(** Returns the typing environment obtained by processing the instructions in the given .cat file *)
+let rec type_file path =
+  let model_type, model = parse_file path in
+  let arch = Archs.parse_arch model_type in
+  let env = build_env arch in
+  List.fold_left type_instr env model
+
+(** [type_instr env instr] updates the typing environment [env] with any new entries introduced by processing the instruction [instr] *)
+and type_instr env = function
   | Let (x,args,e) ->
      (* NB we assume all args are relations, not sets *)
      let env' = (List.map (fun a -> (a,([],Rel))) args) @ env in
@@ -158,26 +170,20 @@ let rec type_instr env = function
      (List.map (fun (x,e) -> (x, ([], Rel))) xes) @ env
   | Axiom _ -> env 
   | Include path -> type_file path @ env
-		  
-and type_file path =
-  let model_type, model = parse_file path in
-  let arch = Archs.parse_arch model_type in
-  let env = build_env arch in
-  List.fold_left type_instr env model
 
-let rec extract_axioms_instr axs = function
+(** Returns the list of axioms declared in the given .cat file *)
+let rec extract_axioms path =
+  let (_, model) = parse_file path in
+  List.fold_left extract_axioms_instr [] model 
+
+(** [extract_axioms_instr axs ins] updates the axiom list [axs] with any new axioms introduced by the instruction [ins] *)
+and extract_axioms_instr axs = function
   | Axiom (c,_,_,n) -> (n,c)::axs
   | Include path -> extract_axioms path @ axs
   | _ -> axs
-
-and extract_axioms path =
-  let (_, model) = parse_file path in
-  List.fold_left extract_axioms_instr [] model
 				    
-(*************************)
-(* Generating Alloy code *)
-(*************************)
-		       
+(** {2 Generating Alloy code} *)
+
 let als_of_access_type = function
   | WriteRead -> Var "M"
   | Write -> Var "W"
@@ -189,7 +195,8 @@ let als_of_shape oc = function
   | Acyclic -> fprintf oc "is_acyclic"
   | Irreflexive -> fprintf oc "irreflexive"
   | IsEmpty -> fprintf oc "is_empty"
-		       
+
+(** Cat expression to Alloy expression *)
 let rec als_of_expr oc = function
   | Empty_rln -> fprintf oc "none -> none"
   | Var x -> fprintf oc "%s[e,X]" x
@@ -218,10 +225,12 @@ let rec als_of_expr oc = function
   | Op (Inter,es) -> fprintf_iter " & " (fparen als_of_expr) oc es
   | Op (Cross,es) -> fprintf_iter " -> " (fparen als_of_expr) oc es
 
+(** List of cat expressions to list of Alloy expressions *)
 and als_of_exprs oc = function
   | [] -> fprintf oc ""
   | e :: es -> fprintf oc "%a, %a" als_of_expr e als_of_exprs es
 
+(** [replace_vars_with_args args e] converts the variables in [e] that are listed in [args] into "arguments" (which are treated differently when generating Alloy code) *)
 let rec replace_vars_with_args args = function
   | Empty_rln -> Empty_rln
   | Var x -> if List.mem x args then Arg x else Var x
@@ -229,7 +238,8 @@ let rec replace_vars_with_args args = function
   | App (f,es) -> App (f, List.map (replace_vars_with_args args) es)
   | Op1 (o,e) -> Op1 (o, replace_vars_with_args args e)
   | Op (o,es) -> Op (o, List.map (replace_vars_with_args args) es)
-		       
+
+(** [als_of_instr arch oc (env, axs) ins] converts the .cat instruction [ins] into Alloy code (which is sent to [oc]), assuming architecture [arch], typing environment [env], and axiom list [axs]. Returns an updated typing environment and axiom list. *)
 let als_of_instr arch oc (env, axs) = function
   | Let (x,args,e) ->
      (* NB we assume all args are relations, not sets *)
@@ -261,7 +271,8 @@ let als_of_cnstrnt oc = function
   | Provision -> fprintf oc "consistent"
   | UndefUnless -> fprintf oc "racefree"
   | Deadness -> fprintf oc "dead"
-		   
+
+(** Generates the first part of the Alloy file *)
 let preamble cat_path model_name arch oc =
   (* fprintf oc "// %a\n\n" Archs.pp_Arch arch; *)
   fprintf oc "/* Automatically generated from %s on %s at %s */\n\n"
@@ -269,25 +280,15 @@ let preamble cat_path model_name arch oc =
   fprintf oc "module %s[E]\n" model_name;
   fprintf oc "open %a[E]\n\n" Archs.pp_arch arch
 
+(** Generates the final part of the Alloy file *)
 let postamble arch c axs oc =
   fprintf oc "pred %a[e:E, X:%a] {\n"
 	  als_of_cnstrnt c Archs.pp_Arch arch;
   List.iter (fun (n,_) -> fprintf oc "  %s[e,X]\n" n) (List.rev axs);
   fprintf oc "}\n"
-			
-let als_of_model intermediate env cat_path model_name arch oc instrs =
-  preamble cat_path model_name arch oc;
-  let _,axs = List.fold_left (als_of_instr arch oc) (env, []) instrs
-  in
-  if (not intermediate) then
-    let mk_postamble c =
-      postamble arch c (List.filter (fun (_,c') -> c = c') axs) oc
-    in
-    List.iter mk_postamble [Provision; UndefUnless; Deadness]
 
-(*********************************)
-(* Processing command-line input *)
-(*********************************)
+	  
+(** {2 Processing command-line input} *)
 	       
 let get_args () =
   let cat_path : string list ref = ref [] in
@@ -332,9 +333,19 @@ let main () =
   let oc = formatter_of_out_channel (open_out als_path) in
   let (model_type, cat_model) = parse_file cat_path in
   let arch = Archs.parse_arch model_type in
-  let env = build_env arch in
   let cat_model = unfold_instrs unrolling_factor cat_model in
-  als_of_model interm_model env cat_path model_name arch oc cat_model; 
+  preamble cat_path model_name arch oc;
+  let env = build_env arch in
+  let _,axs =
+    List.fold_left (als_of_instr arch oc) (env, []) cat_model
+  in
+  begin
+  if (not interm_model) then
+    let mk_postamble c =
+      postamble arch c (List.filter (fun (_,c') -> c = c') axs) oc
+    in
+    List.iter mk_postamble [Provision; UndefUnless; Deadness]
+  end;
   exit 0
     
 let _ = main ()     

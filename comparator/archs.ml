@@ -21,10 +21,12 @@ NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE
 LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION
 OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION
 WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
-*)
+ *)
 
 open Format
 
+(** The architectures supported by the tool *)
+       
 type architecture =
   | Basic
   | C
@@ -36,6 +38,7 @@ type architecture =
   | PTX
   | OpenCL
 
+(** Convert architecture to Alloy module name *)      
 let pp_arch oc = function
   | Basic -> fprintf oc "../archs/exec"
   | C -> fprintf oc "../archs/exec_C"
@@ -47,6 +50,7 @@ let pp_arch oc = function
   | PTX -> fprintf oc "../archs/exec_ptx"
   | OpenCL -> fprintf oc "../archs/exec_OpenCL"
 
+(** Convert architecture to Alloy signature name *)
 let pp_Arch oc = function
   | Basic -> fprintf oc "Exec"
   | C -> fprintf oc "Exec_C"
@@ -58,6 +62,7 @@ let pp_Arch oc = function
   | PTX -> fprintf oc "Exec_PTX"
   | OpenCL -> fprintf oc "Exec_OpenCL"
 
+(** Convert Alloy signature name to architecture *)
 let parse_Arch = function
   | "Exec" -> Basic
   | "Exec_C" -> C
@@ -70,6 +75,7 @@ let parse_Arch = function
   | "Exec_OpenCL" -> OpenCL
   | x -> failwith (asprintf "Unexpected architecture %s" x)
 
+(** Parse architecture name *)
 let parse_arch = function
   | "BASIC" -> Basic
   | "C" -> C
@@ -82,6 +88,11 @@ let parse_arch = function
   | "OpenCL" -> OpenCL
   | x -> failwith (asprintf "Unexpected architecture %s" x)
 
+(** All supported architectures *)
+let all =
+  ["BASIC"; "C"; "HW"; "X86"; "PPC"; "ARM7"; "ARM8"; "PTX"; "OpenCL"]
+
+(** Pre-defined event sets for given architecture *)
 let rec arch_sets = function
   | Basic ->
      ["ev"; "W"; "R"; "F"; "naL"; "M"; "IW"]
@@ -109,6 +120,7 @@ let rec arch_sets = function
        ["L"; "G"; "fga"; "rem"; "entry_fence";
 	"exit_fence"; "wg"; "dv"; "sy"]
 
+(** Pre-defined event relations for given architecture *)
 let rec arch_rels = function
   | Basic ->
      ["ad"; "addr"; "cd"; "co"; "coe"; "coi"; "ctrl"; "data";
