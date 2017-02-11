@@ -4,7 +4,7 @@
 #########################################################
 
 # Edit this for your own project dependencies
-OPAM_DEPENDS="xml-light"
+OPAM_DEPENDS="ocamlfind xml-light"
 
 case "$OCAML_VERSION,$OPAM_VERSION" in
 4.01.0,1.0.0) ppa=avsm/ocaml41+opam10 ;;
