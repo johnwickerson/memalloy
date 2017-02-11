@@ -8,7 +8,9 @@
     - (4.02.1, 1.2.0)
     - (4.02.3, 1.2.2)
 
-- Requires OPAM packages `xml-light` and `ocamlfind`.
+- OPAM packages `xml-light` and `ocamlfind`.
+
+- Java runtime version 8 (Java SE 8).
 
 # Quick start
 

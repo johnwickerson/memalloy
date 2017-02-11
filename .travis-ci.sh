@@ -32,5 +32,4 @@ opam install ${OPAM_DEPENDS}
 eval `opam config env`
 export OS=amd64-linux
 make
-make quicktest
-java -version
+make moretests
