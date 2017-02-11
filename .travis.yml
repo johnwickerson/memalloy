@@ -1,4 +1,4 @@
-language: c
+language: java
 script: bash -ex .travis-ci.sh
 sudo: required
 env:
@@ -6,3 +6,5 @@ env:
   - OCAML_VERSION=4.01.0 OPAM_VERSION=1.2.1
   - OCAML_VERSION=4.02.1 OPAM_VERSION=1.2.0
   - OCAML_VERSION=4.02.3 OPAM_VERSION=1.2.2
+jdk:
+  - oraclejdk8
