@@ -4,6 +4,7 @@ comparator/comparator \
     -violates models_als/c11_lidbury.als \
     -satisfies models_als/c11_partial.als \
     -events 4 \
+    -expect 1252 \
     -normws \
     -totalsb \
     -iter

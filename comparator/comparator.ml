@@ -39,6 +39,7 @@ let eventcount = ref 0
 let noalloy = ref false
 let description = ref ""
 let iter = ref false
+let expectation = ref None
 
 (** [pp_comparator (succ_paths, fail_paths) arch oc] generates an Alloy file (sent to [oc]) that can be used to find an execution of type [arch] that satisfies all the models in [succ_paths] and violates all the models in [fail_paths]. *)
 let pp_comparator (succ_paths, fail_paths) arch oc =
@@ -105,6 +106,8 @@ let get_args () =
       ("-arch", Arg.String (set_list_ref arch),
        "Type of executions being compared (required)");
       ("-events", Arg.Set_int eventcount, "Max number of events");
+      ("-expect", Arg.Int (fun i -> expectation := Some i),
+       "Expect to find this many unique solutions (optional)");
       ("-desc", Arg.Set_string description,
        "Textual description (optional)");
       ("-iter", Arg.Set iter,
@@ -239,14 +242,18 @@ let xml_to_dot stamp i =
   let xml_file = sprintf "%s/%s" xml_dir (xml_files.(0)) in 
   let dot_file = sprintf "dot/%s/test_%d.dot" stamp i in
   let gen_cmd = sprintf "comparator/gen -Tdot -o %s %s" dot_file xml_file in
-  ignore (Sys.command gen_cmd)
+  let exit_status = Sys.command gen_cmd in
+  if exit_status <> 0 then
+    failwith "Conversion from .xml to .dot failed"
 
 (** Convert the Graphviz files into PNG format for easy viewing *)
 let dot_to_png stamp i =
   let dot_file = sprintf "dot/%s/test_%d.dot" stamp i in
   let png_file = sprintf "png/%s/test_%d.png" stamp i in
   let dot_cmd = sprintf "dot -Tpng -o %s %s" png_file dot_file in
-  ignore (Sys.command dot_cmd)
+  let exit_status = Sys.command dot_cmd in
+  if exit_status <> 0 then
+    failwith "Conversion from .dot to .png failed"
 	 
 let main () =
   let succ_paths, fail_paths, arch = get_args () in
@@ -263,20 +270,24 @@ let main () =
   let num_solns_incl_dups = run_alloy comparator_als stamp in
   if num_solns_incl_dups = 0 then exit 0;
   let num_solns = remove_dups stamp in
+  (match !expectation with
+  | Some i when i <> num_solns ->
+     failwith
+       (asprintf "Expected %d unique solutions but found %d" i num_solns)
+  | _ -> ());
   mk_fresh_dir_in "dot" stamp;
   mk_fresh_dir_in "png" stamp;
   for i = 0 to num_solns - 1 do
     xml_to_dot stamp i;
     dot_to_png stamp i;
-    printf "Converted solution %d of %d.\n" i (num_solns - 1);
+    printf "Converted solution %d of %d.\n" (i + 1) num_solns;
     flush stdout
   done;
   printf "Solution(s) are in png/%s.\n" stamp;
-  begin match Sys.os_type, num_solns with
-  | "Unix", 1 -> ignore (Sys.command "open png/_latest/test_0.png")
-  | "Unix", _ -> ignore (Sys.command "open png/_latest")
-  | _, _ -> ()
-  end;
+  (match Sys.os_type, num_solns with
+   | "Unix", 1 -> ignore (Sys.command "open png/_latest/test_0.png")
+   | "Unix", _ -> ignore (Sys.command "open png/_latest")
+   | _, _ -> ());
   exit 0
        
 let _ = main ()

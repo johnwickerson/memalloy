@@ -4,6 +4,7 @@ comparator/comparator \
     -satisfies models_als/c11_simp.als \
     -arch C \
     -events 6 \
+    -expect 1 \
     -relacq \
     -simplepost \
     -normws \
