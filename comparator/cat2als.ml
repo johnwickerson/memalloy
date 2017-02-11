@@ -23,11 +23,11 @@ OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION
 WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 *)
 
+(** Converting a .cat model into an .als file *)
+
 open Format
 open General_purpose
 open Cat_syntax
-
-(** Converting a .cat model into an .als file *)
 
 (** Parse the given .cat file into an abstract syntax tree *)
 let parse_file cat_path =

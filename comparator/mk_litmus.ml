@@ -23,12 +23,12 @@ OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION
 WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 *)
 
+(** Generating a litmus test from an execution *)
+
 open Format
 open General_purpose
 open Exec
 open Litmus
-
-(** Generating a litmus test from an execution *)
 
 (** [mk_instr x maps reg_map e] returns an instruction corresponding to the event [e] in the execution [x], by looking up values, registers, and so on, in [maps] and [reg_map]. *)
 let mk_instr x maps reg_map e =

@@ -23,11 +23,11 @@ OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION
 WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 *)
 
+(** Converting an execution to Graphviz *)
+
 open Format
 open General_purpose
 open Exec
-
-(** Converting an execution to Graphviz *)
 		 
 let edge_color = function
   | "co" -> "cornflowerblue"

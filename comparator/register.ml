@@ -23,10 +23,10 @@ OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION
 WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 *)
 
+(** Represents a thread-local register *)
+
 open Format
 open General_purpose
-
-(** Represents a thread-local register *)
 
 type t = int
 	   

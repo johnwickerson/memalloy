@@ -23,10 +23,10 @@ OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION
 WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 *)
 
+(** Abstract syntax tree for a .cat model *)
+
 open Format
 open General_purpose
-
-(** Abstract syntax tree for a .cat model *)
        
 type access_type =
   | WriteRead

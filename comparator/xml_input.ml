@@ -23,11 +23,11 @@ OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION
 WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 *)
 
+(** Parsing execution from XML file *)
+
 open Format
 open General_purpose
 open Exec
-
-(** Parsing execution from XML file *)
 
 let parse_file xml_path =
   let alloy_soln = Xml.parse_file xml_path in

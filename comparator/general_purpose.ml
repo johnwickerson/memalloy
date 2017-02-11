@@ -23,9 +23,9 @@ OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION
 WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 *)
 
-open Format
-
 (** Some general-purpose definitions *)
+
+open Format
 
 let set_list_ref r v = r := (v :: !r)
 
