@@ -1,6 +1,6 @@
 
 install:
-	opam install xml-light.2.4
+	opam install xml-light
 	make -C comparator
 	git submodule update --init --recursive
 	make -C alloystar

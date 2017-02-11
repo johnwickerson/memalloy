@@ -1,5 +1,4 @@
-See also: http://johnwickerson.github.io/memalloy
-
+[![Build Status](https://travis-ci.org/johnwickerson/memalloy.svg?branch=master)](https://travis-ci.org/johnwickerson/memalloy)
 
 # System requirements
 
