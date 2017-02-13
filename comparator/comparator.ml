@@ -29,9 +29,11 @@ open Format
 open General_purpose
 
 let withinit = ref false
+let minimal = ref false
 let relacq = ref false
 let simplepost = ref false
 let normws = ref false
+let nofences = ref false
 let totalsb = ref false
 let nodeps = ref false
 let noscrelacq = ref false 
@@ -54,6 +56,8 @@ let pp_comparator (succ_paths, fail_paths) arch oc =
   done;
   fprintf oc "sig E {}\n\n";
   fprintf oc "pred gp [X:%a] {\n\n" Archs.pp_Arch arch;
+  fprintf oc "  // Every event is a read, write or a fence\n";
+  fprintf oc "  E in R[none,X] + W[none,X] + F[none,X]\n\n";
   if !withinit then
     fprintf oc "  withinit[X]\n\n"
   else
@@ -65,6 +69,17 @@ let pp_comparator (succ_paths, fail_paths) arch oc =
   for i = 1 to List.length succ_paths do
     fprintf oc "  M%d/consistent[none,X]\n\n" i
   done;
+  if !minimal then (
+    fprintf oc "  not (some e : X.ev {\n";
+    for i = 1 to List.length fail_paths do
+      fprintf oc "    not(N%d/consistent[e,X])\n" i;
+      fprintf oc "    N%d/dead[e,X]\n" i
+    done;
+    for i = 1 to List.length succ_paths do
+      fprintf oc "    M%d/consistent[e,X]\n" i
+    done;
+    fprintf oc "  })\n"
+  );
   if !relacq then (
     fprintf oc "  // Stay within the rel/acq fragment\n";
     fprintf oc "  R[none,X] in acq[none,X]\n";
@@ -79,6 +94,10 @@ let pp_comparator (succ_paths, fail_paths) arch oc =
     fprintf oc "  // Avoid RMW events\n";
     fprintf oc "  no_RMWs[none,X]\n"
   );
+  if !nofences then (
+    fprintf oc "  // Avoid fences\n";
+    fprintf oc "  no F[none,X]\n";
+  );
   if !totalsb then (
     fprintf oc "  // Total sb per thread\n";
     fprintf oc "  total_sb[none,X]\n"
@@ -92,7 +111,9 @@ let pp_comparator (succ_paths, fail_paths) arch oc =
     fprintf oc "  co[none,X] in (rc[rf[none,X]]) . (rc[(sb[none,X]) . (rc[~(rf[none,X])])])\n"
   );
   fprintf oc "}\n\n";
-  fprintf oc "run gp for 1 Exec, %d E, 3 Int\n" !eventcount
+  fprintf oc "run gp for 1 Exec, %s%d E, 3 Int\n"
+	  (if !minimal then "exactly " else "")
+	  !eventcount
 
 let get_args () =
   let succ_paths : string list ref = ref [] in
@@ -110,8 +131,8 @@ let get_args () =
        "Expect to find this many unique solutions (optional)");
       ("-desc", Arg.Set_string description,
        "Textual description (optional)");
-      ("-iter", Arg.Set iter,
-       "Option: find all solutions, not just one");
+      ("-iter", Arg.Set iter, "Option: find all solutions");
+      ("-minimal", Arg.Set minimal, "Option: find minimal executions");
       ("-noalloy", Arg.Set noalloy,
        "Option: only generate comparator.als");
       ("-withinit", Arg.Set withinit,
@@ -121,9 +142,10 @@ let get_args () =
       ("-simplepost", Arg.Set simplepost,
        "Option: postcondition need not read shared locations");
       ("-normws", Arg.Set normws, "Option: avoid RMW events");
+      ("-nofences", Arg.Set nofences, "Option: avoid fences");
       ("-noscrelacq", Arg.Set noscrelacq,
        "Option: avoid screl and scacq events");
-      ("-totalsb", Arg.Set totalsb, "Option: Total sb per thread");
+      ("-totalsb", Arg.Set totalsb, "Option: total sb per thread");
       ("-nodeps", Arg.Set nodeps,
        "Option: avoid address/control/data dependencies");
     ] in

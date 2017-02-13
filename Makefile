@@ -41,6 +41,7 @@ quicktest: $(INTERMEDIATE_ALSFILES) $(ALSFILES)
 	@ tests/Q2_c11_lidbury_partial.sh
 
 moretests: $(INTERMEDIATE_ALSFILES) $(ALSFILES)
+	@ tests/Q2_sc_x86.sh
 	@ tests/Q2_c11_lidbury_partial.sh
 	@ tests/Q2_c11_sra_simp.sh
 	@ tests/Q2_c11_lidbury_partial_iter.sh
