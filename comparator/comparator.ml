@@ -91,8 +91,9 @@ let pp_comparator (succ_paths, fail_paths) arch oc =
     fprintf oc "  no (screl[none,X] + scacq[none,X])\n"
   );
   if !normws then (
-    fprintf oc "  // Avoid RMW events\n";
-    fprintf oc "  no_RMWs[none,X]\n"
+    fprintf oc "  // Avoid RMW events (single and dual events)\n";
+    fprintf oc "  no_RMWs[none,X]\n";
+    fprintf oc "  no atom[none,X]\n"
   );
   if !nofences then (
     fprintf oc "  // Avoid fences\n";
