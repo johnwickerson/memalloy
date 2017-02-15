@@ -12,25 +12,28 @@ OCD_OPTS := -docflags -t,Memalloy
 # Set custom stylesheet
 OCD_OPTS := $(OCD_OPTS) -docflags -css-style,mystyle.css
 
-MAINS = gen comparator
+.PHONY: all clean gen comparator doc
 
-.PHONY: all clean
+all: gen comparator doc
 
-all: $(MAINS)
+gen: 
+	ocamlbuild $(OCB_OPTS) gen.native
+	mv gen.native ../gen
+
+comparator:
+	ocamlbuild $(OCB_OPTS) comparator.native
+	mv comparator.native ../comparator
+
+doc:
 	python mk_odocl.py > comparator.odocl
 	ocamlbuild $(OCB_OPTS) $(OCD_OPTS) comparator.docdir/index.html
 	rm -rf ../doc && mv comparator.docdir ../doc
 	cp mystyle.css ../doc/
 	@ echo "HTML documentation is in ../doc/index.html."
 
-$(MAINS):
-	ocamlbuild $(OCB_OPTS) $@.native
-	mv $@.native ../$@
-	chmod +x ../$@
-
 clean:
 	ocamlbuild -clean
 	@ echo ""
-	cd .. && rm -f $(MAINS)
+	rm -f ../gen ../comparator
 	rm -f comparator.odocl
 	rm -rf ../doc

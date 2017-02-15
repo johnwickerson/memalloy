@@ -1,12 +1,12 @@
-comparator/comparator \
+./comparator \
     -desc "Searching for all executions allowed by Batty et al's simplified C11 model but disallowed by Lahav et al.'s strong release/acquire model." \
-    -violates models_als/c11_sra.als \
-    -satisfies models_als/c11_simp.als \
+    -violates c11_sra.cat \
+    -satisfies c11_simp.cat \
     -arch C \
     -events 6 \
     -expect 1 \
     -relacq \
     -simplepost \
-    -normws \
+    -satisfies c11_normws.cat \
     -totalsb \
     -iter

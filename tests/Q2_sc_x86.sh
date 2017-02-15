@@ -1,9 +1,10 @@
-comparator/comparator \
-    -desc "Searching for an execution allowed by x86 but disallowed by sequential consistency." \
+./comparator \
+    -desc "Searching for executions allowed by x86 but disallowed by sequential consistency." \
     -arch X86 \
-    -violates models_als/sc.als \
-    -satisfies models_als/x86tso.als \
+    -violates sc.cat \
+    -satisfies x86tso.cat \
     -nodeps \
-    -events 5 \
+    -events 4 \
+    -expect 2 \
     -iter \
     -minimal
