@@ -59,8 +59,7 @@ let dot_of_event x maps oc e =
        "W", sprintf "=%d" wval, "lightblue1"
     | false, false, true -> "F", "", "peachpuff1"
     | false, false, false -> "Nop", "", "azure3"
-    | r,w,f -> failwith
-		 (asprintf "Found event where (R,W,F) = (%b,%b,%b)" r w f)
+    | r,w,f -> failwith "Found event with (R,W,F)=(%b,%b,%b)" r w f
   in
   let ignored_attrs = ["ev";"R";"W";"F";"IW"] in
   let attrs = diff (get_sets x e) ignored_attrs in

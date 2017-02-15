@@ -30,6 +30,11 @@ open General_purpose
 
 let withinit = ref false
 let minimal = ref false
+let eventcount = ref 0
+let description = ref ""
+let iter = ref false
+let expectation = ref None
+		     
 let relacq = ref false
 let simplepost = ref false
 let normws = ref false
@@ -37,22 +42,17 @@ let nofences = ref false
 let totalsb = ref false
 let nodeps = ref false
 let noscrelacq = ref false 
-let eventcount = ref 0
-let noalloy = ref false
-let description = ref ""
-let iter = ref false
-let expectation = ref None
 
 (** [pp_comparator (succ_paths, fail_paths) arch oc] generates an Alloy file (sent to [oc]) that can be used to find an execution of type [arch] that satisfies all the models in [succ_paths] and violates all the models in [fail_paths]. *)
 let pp_comparator (succ_paths, fail_paths) arch oc =
   if !description != "" then fprintf oc "/* %s */\n" !description;
   for i = 1 to List.length succ_paths do
     let model = Filename.chop_extension (List.nth succ_paths (i-1)) in
-    fprintf oc "open ../%s[E] as M%d\n" model i
+    fprintf oc "open models/%s[E] as M%d\n" model i
   done;
   for i = 1 to List.length fail_paths do
     let model = Filename.chop_extension (List.nth fail_paths (i-1)) in
-    fprintf oc "open ../%s[E] as N%d\n" model i
+    fprintf oc "open models/%s[E] as N%d\n" model i
   done;
   fprintf oc "sig E {}\n\n";
   fprintf oc "pred gp [X:%a] {\n\n" Archs.pp_Arch arch;
@@ -66,8 +66,9 @@ let pp_comparator (succ_paths, fail_paths) arch oc =
     fprintf oc "  not(N%d/consistent[none,X])\n" i;
     fprintf oc "  N%d/dead[none,X]\n" i
   done;
+  fprintf oc "\n";
   for i = 1 to List.length succ_paths do
-    fprintf oc "  M%d/consistent[none,X]\n\n" i
+    fprintf oc "  M%d/consistent[none,X]\n" i
   done;
   if !minimal then (
     fprintf oc "  not (some e : X.ev {\n";
@@ -80,6 +81,15 @@ let pp_comparator (succ_paths, fail_paths) arch oc =
     done;
     fprintf oc "  })\n"
   );
+  (*
+  List.iter (
+      fun extra_cnstrnt ->
+      let lexbuf = Lexing.from_string extra_cnstrnt in
+      let s,e,n = Cat_parser.axiom Cat_lexer.token lexbuf in
+      fprintf oc "  // Extra constraint: %s\n" n;
+      fprintf oc "  %a\n" (Cat2als.als_of_axiom false) (s,e)
+    ) !extra_cnstrnts;
+  *)
   if !relacq then (
     fprintf oc "  // Stay within the rel/acq fragment\n";
     fprintf oc "  R[none,X] in acq[none,X]\n";
@@ -134,8 +144,6 @@ let get_args () =
        "Textual description (optional)");
       ("-iter", Arg.Set iter, "Option: find all solutions");
       ("-minimal", Arg.Set minimal, "Option: find minimal executions");
-      ("-noalloy", Arg.Set noalloy,
-       "Option: only generate comparator.als");
       ("-withinit", Arg.Set withinit,
        "Option: explicit initial writes");
       ("-relacq", Arg.Set relacq,
@@ -165,14 +173,15 @@ let get_args () =
 let check_args (succ_paths, fail_paths) =
   match succ_paths @ fail_paths with
   | [] -> failwith "Expected at least one model"
-  | paths ->
+  | _ -> ()
+(*| paths ->
      let check_ext p =
        if not (Filename.check_suffix p ".als") then
 	 failwith "Expected file(s) ending with .als"
      in
-     List.iter check_ext paths
+     List.iter check_ext paths*)
 
-(** Print a description of the comparision being undertaken *)
+(** Print a description of the comparison being undertaken *)
 let pp_description () =
   printf "\n";
   printf "\n";
@@ -245,7 +254,7 @@ let remove_dups stamp =
   printf "Removing duplicate solutions.\n";
   flush stdout;
   let py_cmd =
-    sprintf "python comparator/partition.py %d xml/%s" !eventcount stamp
+    sprintf "python src/partition.py %d xml/%s" !eventcount stamp
   in
   let _ = Sys.command py_cmd in
   flush stdout;
@@ -264,7 +273,7 @@ let xml_to_dot stamp i =
   assert (Array.length xml_files > 0);
   let xml_file = sprintf "%s/%s" xml_dir (xml_files.(0)) in 
   let dot_file = sprintf "dot/%s/test_%d.dot" stamp i in
-  let gen_cmd = sprintf "comparator/gen -Tdot -o %s %s" dot_file xml_file in
+  let gen_cmd = sprintf "./gen -Tdot -o %s %s" dot_file xml_file in
   let exit_status = Sys.command gen_cmd in
   if exit_status <> 0 then
     failwith "Conversion from .xml to .dot failed"
@@ -277,27 +286,31 @@ let dot_to_png stamp i =
   let exit_status = Sys.command dot_cmd in
   if exit_status <> 0 then
     failwith "Conversion from .dot to .png failed"
-	 
+
+
+ 
 let main () =
   let succ_paths, fail_paths, arch = get_args () in
-  check_args (succ_paths, fail_paths);
+  let unrolling_factor = 3 in
+  let cat2als path =
+    (* let path = Filename.concat Filename.parent_dir_name path in *)
+    Cat2als.als_of_file false unrolling_factor path
+  in
+  begin match succ_paths @ fail_paths with
+	| [] -> failwith "Expected at least one model"
+	| paths -> List.iter cat2als paths
+  end;
   if not (Sys.file_exists "alloystar") then
     failwith "Please run me from the top-level directory of the repo";
   pp_description ();
-  let comparator_als = "comparator/comparator.als" in
-  write_file comparator_als
-	     (pp_comparator (succ_paths, fail_paths) arch);
-  if !noalloy then exit 0;
+  let comparator_als = "comparator.als" in
+  let pp = pp_comparator (succ_paths, fail_paths) arch in
+  write_file comparator_als pp;
   let stamp = make_stamp () in
   mk_fresh_dir_in "xml" stamp;
   let num_solns_incl_dups = run_alloy comparator_als stamp in
   if num_solns_incl_dups = 0 then exit 0;
   let num_solns = remove_dups stamp in
-  (match !expectation with
-  | Some i when i <> num_solns ->
-     failwith
-       (asprintf "Expected %d unique solutions but found %d" i num_solns)
-  | _ -> ());
   mk_fresh_dir_in "dot" stamp;
   mk_fresh_dir_in "png" stamp;
   for i = 0 to num_solns - 1 do
@@ -311,6 +324,10 @@ let main () =
    | "Unix", 1 -> ignore (Sys.command "open png/_latest/test_0.png")
    | "Unix", _ -> ignore (Sys.command "open png/_latest")
    | _, _ -> ());
+  (match !expectation with
+   | Some i when i <> num_solns ->
+      failwith "Expected %d unique solutions, found %d" i num_solns
+   | _ -> ());
   exit 0
        
 let _ = main ()

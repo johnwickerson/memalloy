@@ -26,6 +26,7 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 (** The architectures supported by the tool *)
 
 open Format
+open General_purpose
        
 type architecture =
   | Basic
@@ -73,7 +74,7 @@ let parse_Arch = function
   | "Exec_Arm8" -> Arm8
   | "Exec_PTX" -> PTX
   | "Exec_OpenCL" -> OpenCL
-  | x -> failwith (asprintf "Unexpected architecture %s" x)
+  | x -> failwith "Unexpected architecture %s" x
 
 (** Parse architecture name *)
 let parse_arch = function
@@ -86,7 +87,7 @@ let parse_arch = function
   | "ARM8" -> Arm8
   | "PTX" -> PTX
   | "OpenCL" -> OpenCL
-  | x -> failwith (asprintf "Unexpected architecture %s" x)
+  | x -> failwith "Unexpected architecture %s" x
 
 (** All supported architectures *)
 let all =

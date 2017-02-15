@@ -3,8 +3,7 @@ comparator/comparator \
     -arch X86 \
     -violates models_als/sc.als \
     -satisfies models_als/x86tso.als \
-    -events 5 \
-    -expect 2 \
-    -iter \
     -nodeps \
+    -events 5 \
+    -iter \
     -minimal

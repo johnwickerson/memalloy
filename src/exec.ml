@@ -56,14 +56,14 @@ let empty_exec = { sets = []; rels = [] }
 
 let get_set x s =
   try List.assoc s x.sets
-  with Not_found -> failwith (asprintf "Couldn't find set %s" s)
+  with Not_found -> failwith "Couldn't find set %s" s
 
 let get_sets x e =
   List.map fst (List.filter (fun (_,es) -> List.mem e es) x.sets)
 	      
 let get_rel x r =
   try List.assoc r x.rels
-  with Not_found -> failwith (asprintf "Couldn't find relation %s" r)
+  with Not_found -> failwith "Couldn't find relation %s" r
 
 (** {2 Resolving locations, threads and values } *)
 

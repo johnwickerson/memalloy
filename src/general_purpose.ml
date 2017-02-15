@@ -27,6 +27,16 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
 open Format
 
+(** Fails with an error message, given as a formatted string *)
+let failwith fmt =
+  let b = Buffer.create 512 in
+  let ppf = formatter_of_buffer b in
+  let k =
+    pp_print_flush ppf ();
+    failwith (Buffer.contents b)
+  in
+  kfprintf k ppf fmt
+
 let set_list_ref r v = r := (v :: !r)
 
 let get_only_element k = function [x] -> x | _ -> k ()
@@ -59,8 +69,7 @@ let chop_extension extn path =
   if Filename.check_suffix path extn then
     Filename.chop_extension path
   else
-    failwith
-      (asprintf "File %s does not have extension \"%s\"." path extn)
+    failwith "File %s does not have extension \"%s\"." path extn
 
 let last ss = List.hd (List.rev ss)
       
@@ -125,3 +134,5 @@ let partition invert r es =
     with Not_found -> (i+1, (e,i)::map)
   in
   snd (List.fold_left partition_helper (0, []) es)
+
+

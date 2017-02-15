@@ -64,7 +64,7 @@ let parse_file xml_path =
 	     { exec with sets = (field_name, tuples) :: exec.sets }
       | 2 -> let tuples = List.fold_left add_pair [] tuple_nodes in
 	     { exec with rels = (field_name, tuples) :: exec.rels }
-      | _ -> failwith (asprintf "Unexpected arity %d." arity)
+      | _ -> failwith "Unexpected arity %d." arity
     in
     List.fold_left add_field empty_exec field_nodes
   in

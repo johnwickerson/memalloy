@@ -1,5 +1,3 @@
-// Exec_C
-
 /* A weaker version of c11_orig that can be shown to violate the
    "DRF-for-SC" guarantee.
 */

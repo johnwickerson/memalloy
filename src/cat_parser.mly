@@ -63,8 +63,10 @@ let do_op op e1 e2 = Op (op, as_op op e1 @ as_op op e2)
 INCLUDE LET REC SHOW TESTEMPTY WITHSC UNDEFINED_UNLESS UNSHOW
        
 %type <string * Cat_syntax.cat_model> main
+%type <Cat_syntax.shape * Cat_syntax.cat_expr * string> axiom
 			       
 %start main
+%start axiom
 
 /* Precedences */
 %right UNION
@@ -88,20 +90,23 @@ ins_list:
 | ins ins_list { $1 @ $2 }
 
 ins:
-| LET VAR EQUAL exp { [Let ($2,[],$4)] }
+| LET VAR EQUAL exp  { [Let ($2,[],$4)] }
 | LET REC VAR EQUAL exp more_bindings
-                    { [LetRec (($3,$5) :: $6)] }
+                     { [LetRec (($3,$5) :: $6)] }
 | LET VAR LPAR var_list RPAR EQUAL exp
-                    { [Let ($2,$4,$7)] }
-| cnstrnt_type test_type exp AS VAR
-                    { [Axiom($1,$2,$3,$5)] }
+                     { [Let ($2,$4,$7)] }
+| cnstrnt_type axiom
+                     { let s,e,n = $2 in [Axiom($1,s,e,n)] }
 | cnstrnt_type test_type exp
-                    { failwith "All tests must be named." }
-| INCLUDE STRING    { [Include $2] }
-| SHOW exp AS VAR   { [] }
-| SHOW var_list     { [] }
-| UNSHOW var_list   { [] }
+                     { failwith "All tests must be named." }
+| INCLUDE STRING     { [Include $2] }
+| SHOW exp AS VAR    { [] }
+| SHOW var_list      { [] }
+| UNSHOW var_list    { [] }
 
+axiom:
+| test_type exp AS VAR { ($1, $2, $4) }
+	 
 more_bindings:
 |                                 { [] }
 | AND VAR EQUAL exp more_bindings { ($2,$4) :: $5 }

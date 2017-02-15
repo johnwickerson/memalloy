@@ -8,11 +8,11 @@ OCB_OPTS := $(OCB_OPTS) -libs str,unix
 OCB_OPTS := $(OCB_OPTS) -pkgs xml-light
 
 # Set title of documentation
-OCD_OPTS := -docflags -t,Comparator
+OCD_OPTS := -docflags -t,Memalloy
 # Set custom stylesheet
 OCD_OPTS := $(OCD_OPTS) -docflags -css-style,mystyle.css
 
-MAINS = gen cat2als comparator
+MAINS = gen comparator
 
 .PHONY: all clean
 
@@ -25,10 +25,12 @@ all: $(MAINS)
 
 $(MAINS):
 	ocamlbuild $(OCB_OPTS) $@.native
-	mv $@.native $@
+	mv $@.native ../$@
+	chmod +x ../$@
 
 clean:
 	ocamlbuild -clean
-	rm -f $(MAINS)
+	@ echo ""
+	cd .. && rm -f $(MAINS)
 	rm -f comparator.odocl
 	rm -rf ../doc
