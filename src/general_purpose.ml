@@ -30,12 +30,11 @@ open Format
 (** Fails with an error message, given as a formatted string *)
 let failwith fmt =
   let b = Buffer.create 512 in
-  let ppf = formatter_of_buffer b in
-  let k =
+  let k ppf =
     pp_print_flush ppf ();
     failwith (Buffer.contents b)
   in
-  kfprintf k ppf fmt
+  kfprintf k (formatter_of_buffer b) fmt
 
 let set_list_ref r v = r := (v :: !r)
 
