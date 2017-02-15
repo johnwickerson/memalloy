@@ -97,8 +97,9 @@ let dot_of_execution x =
   let x = remove_transitive "co" x in
   let maps = resolve_exec x in
   let thds = val_list (invert_map maps.thd_map) in
-  let cluster_attrs = ["color", "azure4"; "style", "dashed"] in
-  let mk_cluster nodelist = Cluster (nodelist, cluster_attrs) in
+  let mk_cluster ns =
+    Cluster (ns, ["color", "azure4"; "style", "dashed"])
+  in
   let nodes =
     let doe = dot_of_event x maps in
     List.map doe (get_set x "IW") @
