@@ -34,14 +34,28 @@ let eventcount = ref 0
 let description = ref ""
 let iter = ref false
 let expectation = ref None
-		     
+let atleastnthreads = ref 0		      
+let atleastnlocs = ref 0
+			  
 let relacq = ref false
 let simplepost = ref false
 let normws = ref false
 let nofences = ref false
 let totalsb = ref false
 let nodeps = ref false
-let noscrelacq = ref false 
+let noscrelacq = ref false
+
+(** [range i j] returns [i, i+1, ..., j] *)
+let rec range i j = if i > j then [] else i :: (range (i+1) j)
+
+(** [min_classes n r dom oc] generates an Alloy constraint (sent to [oc]) that requires the existence of [n] distinct events in [dom], none of which are related by [r]*)
+let min_classes n r dom oc =
+  let es = List.map (sprintf "e%d") (range 1 n) in
+  fprintf oc "  some disj %a : E {\n" (fprintf_iter ", " pp_str) es;
+  fprintf oc "    %a in X.(%s)\n" (fprintf_iter "+" pp_str) es dom;
+  fprintf oc "    no ((sq[%a]-iden) & %s[none,X])\n"
+	  (fprintf_iter "+" pp_str) es r;
+  fprintf oc "  }\n"
 
 (** [pp_comparator (succ_paths, fail_paths) arch oc] generates an Alloy file (sent to [oc]) that can be used to find an execution of type [arch] that satisfies all the models in [succ_paths] and violates all the models in [fail_paths]. *)
 let pp_comparator (succ_paths, fail_paths) arch oc =
@@ -81,15 +95,6 @@ let pp_comparator (succ_paths, fail_paths) arch oc =
     done;
     fprintf oc "  })\n"
   );
-  (*
-  List.iter (
-      fun extra_cnstrnt ->
-      let lexbuf = Lexing.from_string extra_cnstrnt in
-      let s,e,n = Cat_parser.axiom Cat_lexer.token lexbuf in
-      fprintf oc "  // Extra constraint: %s\n" n;
-      fprintf oc "  %a\n" (Cat2als.als_of_axiom false) (s,e)
-    ) !extra_cnstrnts;
-  *)
   if !relacq then (
     fprintf oc "  // Stay within the rel/acq fragment\n";
     fprintf oc "  R[none,X] in acq[none,X]\n";
@@ -121,6 +126,14 @@ let pp_comparator (succ_paths, fail_paths) arch oc =
     fprintf oc "  // The postcondition need not read shared locations\n";
     fprintf oc "  co[none,X] in (rc[rf[none,X]]) . (rc[(sb[none,X]) . (rc[~(rf[none,X])])])\n"
   );
+  if 0 < !atleastnthreads then (
+    fprintf oc "  // At least %d threads\n" !atleastnthreads;
+    min_classes !atleastnthreads "sthd" "ev - IW" oc
+  );
+  if 0 < !atleastnlocs then (
+    fprintf oc "  // At least %d locations\n" !atleastnlocs;
+    min_classes !atleastnlocs "sloc" "R + W" oc
+  );
   fprintf oc "}\n\n";
   fprintf oc "run gp for 1 Exec, %s%d E, 3 Int\n"
 	  (if !minimal then "exactly " else "")
@@ -142,6 +155,10 @@ let get_args () =
        "Expect to find this many unique solutions (optional)");
       ("-desc", Arg.Set_string description,
        "Textual description (optional)");
+      ("-atleastnthreads", Arg.Set_int atleastnthreads,
+       "Find executions with at least N threads (default 0)");
+      ("-atleastnlocs", Arg.Set_int atleastnlocs,
+       "Find executions with at least N locations (default 0)");
       ("-iter", Arg.Set iter, "Option: find all solutions");
       ("-minimal", Arg.Set minimal, "Option: find minimal executions");
       ("-withinit", Arg.Set withinit,
