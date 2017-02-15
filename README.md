@@ -25,10 +25,6 @@
 
 # Converting .cat models to Alloy (.als) format
 
-- To convert `models_cat/model.cat` into `models_als/model.als`,
-  change to the `models_cat` directory and then run the command
-  `../comparator/cat2als model.cat`.
-
 - Each `.cat` file must begin with a description of the architecture
   being modelled. This must be one of: `"BASIC"`, `"C"`, `"HW"`,
   `"X86"`, `"PPC"`, `"ARM7"`, `"ARM8"`, `"PTX"`, or `"OpenCL"`.
@@ -58,11 +54,7 @@
       statement above with `deadness_requires` instead.
 
     - You can include the definitions and axioms of the `submodel.cat`
-      file via `include submodel.cat`. You will need to run `cat2als`
-      on `submodel.cat` separately. When running `cat2als` on a
-      sub-model, it is not necessary to form the overall
-      consistency/definedness/deadness predicates, so pass the `-i`
-      flag (for 'intermediate model') to inhibit this.
+      file via `include submodel.cat`. 
 
 - There are a few syntactic restrictions on `.cat` files.
 
