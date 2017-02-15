@@ -73,7 +73,8 @@ let main () =
   begin match out_type with
   | Dot ->
      assert (Filename.check_suffix out_path ".dot");
-     fprintf fmtr "%a\n" Graphviz.dot_of_execution exec
+     let g = Mk_graphviz.dot_of_execution exec in
+     fprintf fmtr "%a\n" Graphviz.pp_graph g
   | Als ->
      assert (Filename.check_suffix out_path ".als");
      fprintf fmtr "%a\n" Alsbackend.als_of_execution exec
