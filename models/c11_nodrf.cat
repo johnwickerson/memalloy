@@ -1,18 +1,13 @@
 (* A weaker version of c11_orig that can be shown to violate the
    "DRF-for-SC" guarantee.
-
-NB: The cat2als tool does not (currently, at least) support the `withsc`
-option (which enables the total order `S` over sc events). So, the
-`c11_nodrf.als` file is not actually generated automatically from this
-file, but is instead generated manually.
 *)
 
 "C" withsc
 include "c11_base.cat"
 
-irreflexive S; hb as S1
-irreflexive S; Fsb?; co; sbF? as S2
-irreflexive S; rf^-1; [sc]; co as S3 
-irreflexive S; Fsb; fr as S5
-irreflexive S; fr; sbF as S6
-irreflexive S; Fsb; fr; sbF as S7
+irreflexive s; hb as S1
+irreflexive s; Fsb?; co; sbF? as S2
+irreflexive s; rf^-1; [sc]; co as S3 
+irreflexive s; Fsb; fr as S5
+irreflexive s; fr; sbF as S6
+irreflexive s; Fsb; fr; sbF as S7

@@ -102,7 +102,7 @@ let rec arch_sets = function
   | Basic_HW ->
      arch_sets Basic
   | X86 ->
-     arch_sets Basic_HW @ ["MFENCE"]
+     arch_sets Basic_HW @ ["locked"]
   | Power ->
      arch_sets Basic_HW @
        ["sync"; "lwsync"; "eieio"; "isync";

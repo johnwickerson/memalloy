@@ -225,7 +225,10 @@ let als_of_expr defs oc e =
   let rec als_of_expr' oc = function
     | Empty_rln -> fprintf oc "none -> none"
     | Var x ->
-       let withsc = List.assoc x defs in
+       let withsc =
+	 try List.assoc x defs
+	 with Not_found -> failwith "Unbound variable %s" x
+       in
        fprintf oc "%s[e,X%s]" x (if withsc then ",s" else "")
     | Arg x -> fprintf oc "%s" x
     | App (f,es) ->
