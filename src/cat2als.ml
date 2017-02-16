@@ -77,12 +77,22 @@ let rec unfold_instrs u = function
 				  
 (** {2 Determining Alloy types} *)
 
-(** Create a typing environment containing the pre-defined sets and relations for the given architecture *)
-let build_env arch = 
-  (List.map (fun a -> (a,([],Rel))) (Archs.arch_rels arch)) @
-  (List.map (fun a -> (a,([],Set))) (Archs.arch_sets arch))
+(** Create a typing environment and list of definitions containing the pre-defined sets and relations for the given architecture *)
+let build_env withsc arch =
+  let rels = Archs.arch_rels arch in
+  let rels = if withsc then "s" :: rels else rels in
+  let sets = Archs.arch_sets arch in
+  let env = 
+    (List.map (fun a -> (a,([],Rel))) rels) @
+      (List.map (fun a -> (a,([],Set))) sets)
+  in
+  let defs =
+    (List.map (fun a -> (a,false)) rels) @
+      (List.map (fun a -> (a,false)) sets)
+  in
+  env, defs
 
-let alloy_type_of = function Set -> "set E" | Rel -> "E->E"
+  let alloy_type_of = function Set -> "set E" | Rel -> "E->E"
 
 (** Print environment (for debugging) *)
 let pp_env oc =
@@ -155,9 +165,9 @@ and type_of env = function
 
 (** Returns the typing environment obtained by processing the instructions in the given .cat file *)
 let rec type_file path =
-  let model_type, model = parse_file path in
+  let model_type, withsc, model = parse_file path in
   let arch = Archs.parse_arch model_type in
-  let env = build_env arch in
+  let env,_ = build_env withsc arch in
   List.fold_left type_instr env model
 
 (** [type_instr env instr] updates the typing environment [env] with any new entries introduced by processing the instruction [instr] *)
@@ -166,20 +176,33 @@ and type_instr env = function
      (* NB we assume all args are relations, not sets *)
      let env' = (List.map (fun a -> (a,([],Rel))) args) @ env in
      let def_type = type_of env' e in
-     (x, (List.map (fun _ -> Rel) args, def_type)) :: env
+     let arg_type = List.map (fun _ -> Rel) args in
+     (x, (arg_type, def_type)) :: env
   | LetRec xes ->
      (List.map (fun (x,e) -> (x, ([], Rel))) xes) @ env
   | Axiom _ -> env 
   | Include path -> type_file path @ env
 
+(** Returns the list of definitions in the given .cat file, and whether each is in 'withsc' mode *)
+let rec extract_defs path =
+  let _, withsc, model = parse_file path in
+  List.fold_left (extract_defs_instr withsc) [] model
+
+(** [extract_defs_instr defs ins] updates the definition list [axs] with any new definitions introduced by the instruction [ins] *)
+and extract_defs_instr withsc defs = function
+  | Let (x,_,_) -> (x,withsc) :: defs
+  | LetRec xes -> (List.map (fun (x,_) -> (x,withsc)) xes) @ defs
+  | Include path -> extract_defs path @ defs
+  | _ -> defs
+
 (** Returns the list of axioms declared in the given .cat file *)
 let rec extract_axioms path =
-  let (_, model) = parse_file path in
-  List.fold_left extract_axioms_instr [] model 
+  let _, withsc, model = parse_file path in
+  List.fold_left (extract_axioms_instr withsc) [] model 
 
 (** [extract_axioms_instr axs ins] updates the axiom list [axs] with any new axioms introduced by the instruction [ins] *)
-and extract_axioms_instr axs = function
-  | Axiom (c,_,_,n) -> (n,c)::axs
+and extract_axioms_instr withsc axs = function
+  | Axiom (c,_,_,n) -> (n,c,withsc) :: axs
   | Include path -> extract_axioms path @ axs
   | _ -> axs
 				    
@@ -198,39 +221,41 @@ let als_of_shape oc = function
   | IsEmpty -> fprintf oc "is_empty"
 
 (** Cat expression to Alloy expression *)
-let rec als_of_expr b oc = function
-  | Empty_rln -> fprintf oc "none -> none"
-  | Var x -> fprintf oc "%s[%s,X]" x (if b then "e" else "none")
-  | Arg x -> fprintf oc "%s" x
-  | App (f,es) -> fprintf oc "%s[%a%s,X]" f (als_of_exprs b) es
-	     (if b then "e" else "none")
-  | Op1 (Set_to_rln,e) -> fprintf oc "stor[%a]" (als_of_expr b) e
-  | Op1 (Star,e) -> fprintf oc "*(%a)" (als_of_expr b) e
-  | Op1 (Plus,e) -> fprintf oc "^(%a)" (als_of_expr b) e
-  | Op1 (Opt,e) -> fprintf oc "rc[%a]" (als_of_expr b) e
-  | Op1 (Inv,e) -> fprintf oc "~(%a)" (als_of_expr b) e
-  | Op1 (Comp t,e) ->
-     let univ =
-       match t with
-	 Set -> Var "ev"
-       | Rel -> Op(Cross, [Var "ev"; Var "ev"])
-     in
-     als_of_expr b oc (Op (Diff, [univ; e]))
-  | Op1 (Select(t1,t2), e) ->
-     let prod = Op(Cross, List.map als_of_access_type [t1;t2]) in
-     als_of_expr b oc (Op (Inter, [e; prod]))
-  | Op1 (Domain, e) -> fprintf oc "dom[%a]" (als_of_expr b) e
-  | Op1 (Range, e) -> fprintf oc "ran[%a]" (als_of_expr b) e
-  | Op (Seq,es) -> fprintf_iter " . " (fparen (als_of_expr b)) oc es
-  | Op (Union,es) -> fprintf_iter " + " (fparen (als_of_expr b)) oc es
-  | Op (Diff,es) -> fprintf_iter " - " (fparen (als_of_expr b)) oc es
-  | Op (Inter,es) -> fprintf_iter " & " (fparen (als_of_expr b)) oc es
-  | Op (Cross,es) -> fprintf_iter " -> " (fparen (als_of_expr b)) oc es
-
-(** List of cat expressions to list of Alloy expressions *)
-and als_of_exprs b oc = function
-  | [] -> fprintf oc ""
-  | e :: es -> fprintf oc "%a, %a" (als_of_expr b) e (als_of_exprs b) es
+let als_of_expr defs oc e =
+  let rec als_of_expr' oc = function
+    | Empty_rln -> fprintf oc "none -> none"
+    | Var x ->
+       let withsc = List.assoc x defs in
+       fprintf oc "%s[e,X%s]" x (if withsc then ",s" else "")
+    | Arg x -> fprintf oc "%s" x
+    | App (f,es) ->
+       let withsc = List.assoc f defs in
+       fprintf oc "%s[%a,e,X%s]" f (fprintf_iter "," als_of_expr') es
+	       (if withsc then ",s" else "")
+    | Op1 (Set_to_rln,e) -> fprintf oc "stor[%a]" als_of_expr' e
+    | Op1 (Star,e) -> fprintf oc "*(%a)" als_of_expr' e
+    | Op1 (Plus,e) -> fprintf oc "^(%a)" als_of_expr' e
+    | Op1 (Opt,e) -> fprintf oc "rc[%a]" als_of_expr' e
+    | Op1 (Inv,e) -> fprintf oc "~(%a)" als_of_expr' e
+    | Op1 (Comp t,e) ->
+       let univ =
+	 match t with
+	 | Set -> Var "ev"
+	 | Rel -> Op(Cross, [Var "ev"; Var "ev"])
+       in
+       als_of_expr' oc (Op (Diff, [univ; e]))
+    | Op1 (Select(t1,t2), e) ->
+       let prod = Op(Cross, List.map als_of_access_type [t1;t2]) in
+       als_of_expr' oc (Op (Inter, [e; prod]))
+    | Op1 (Domain, e) -> fprintf oc "dom[%a]" als_of_expr' e
+    | Op1 (Range, e) -> fprintf oc "ran[%a]" als_of_expr' e
+    | Op (Seq,es) -> fprintf_iter " . " (fparen als_of_expr') oc es
+    | Op (Union,es) -> fprintf_iter " + " (fparen als_of_expr') oc es
+    | Op (Diff,es) -> fprintf_iter " - " (fparen als_of_expr') oc es
+    | Op (Inter,es) -> fprintf_iter " & " (fparen als_of_expr') oc es
+    | Op (Cross,es) -> fprintf_iter " -> " (fparen als_of_expr') oc es
+  in
+  als_of_expr' oc e
 
 (** [replace_vars_with_args args e] converts the variables in [e] that are listed in [args] into "arguments" (which are treated differently when generating Alloy code) *)
 let rec replace_vars_with_args args = function
@@ -242,8 +267,8 @@ let rec replace_vars_with_args args = function
   | Op (o,es) -> Op (o, List.map (replace_vars_with_args args) es)
 
 (** [als_of_axiom oc (s,e)] converts the axiom [s(e)] into an Alloy expression, which is sent to [oc] *) 
-let als_of_axiom b oc (s, e) =
-  fprintf oc "%a[%a]" als_of_shape s (als_of_expr b) e
+let als_of_axiom defs oc (s, e) =
+  fprintf oc "%a[%a]" als_of_shape s (als_of_expr defs) e
 
 let als_of_cnstrnt oc = function
   | Provision -> fprintf oc "consistent"
@@ -252,49 +277,60 @@ let als_of_cnstrnt oc = function
 
 (** Generates the first part of the Alloy file *)
 let preamble cat_path model_name arch oc =
-  (* fprintf oc "// %a\n\n" Archs.pp_Arch arch; *)
   fprintf oc "/* Automatically generated from %s on %s at %s */\n\n"
 	  cat_path (today ()) (now ());
   fprintf oc "module %s[E]\n" model_name;
   fprintf oc "open %a[E]\n\n" Archs.pp_arch arch
 
 (** Generates the final part of the Alloy file *)
-let postamble arch c axs oc =
+let postamble withsc arch axs oc c =
+  let axs = List.filter (fun (_,c',_) -> c = c') axs in
   fprintf oc "pred %a[e:E, X:%a] {\n"
 	  als_of_cnstrnt c Archs.pp_Arch arch;
-  List.iter (fun (n,_) -> fprintf oc "  %s[e,X]\n" n) (List.rev axs);
+  if withsc then fprintf oc "  some s:E->E {\n";
+  if withsc then fprintf oc "    wf_s[e,X,s]\n";
+  let indent = if withsc then "    " else "  " in
+  let pp_ax (n,_,withsc) =
+    fprintf oc "%s%s[e,X%s]\n" indent n (if withsc then ",s" else "")
+  in
+  List.iter pp_ax (List.rev axs);
+  if withsc then fprintf oc "  }\n";
   fprintf oc "}\n"
 	  
-(** [als_of_instr arch oc (env, axs) ins] converts the .cat instruction [ins] into Alloy code (which is sent to [oc]), assuming architecture [arch], typing environment [env], and axiom list [axs]. Returns an updated typing environment and axiom list. *)
-let rec als_of_instr arch unrolling_factor oc (env, axs) = function
+(** [als_of_instr withsc arch u oc (env, axs, defs) ins] converts the .cat instruction [ins] into Alloy code (which is sent to [oc]), assuming architecture [arch], unrolling factor [u], typing environment [env], axiom list [axs], definition list [defs], and [withsc] controlling whether the {i S} order is included. Returns an updated typing environment, axiom list, and definition list. *)
+let rec als_of_instr withsc arch unrolling oc (env, axs, defs) = function
   | Let (x,args,e) ->
      (* NB we assume all args are relations, not sets *)
      let e = replace_vars_with_args args e in
+     let e = if withsc then replace_vars_with_args ["s"] e else e in
      let def_type = type_of env e in
      let args_str = List.fold_left (sprintf "%s%s:E->E,") "" args in
-     fprintf oc "fun %s [%se:E, X:%a] : %s {\n"
-	     x args_str Archs.pp_Arch arch (alloy_type_of def_type);
-     fprintf oc "  %a\n" (als_of_expr true) e;
+     fprintf oc "fun %s [%se:E, X:%a%s] : %s {\n"
+	     x args_str Archs.pp_Arch arch
+	     (if withsc then ", s:E->E" else "")
+	     (alloy_type_of def_type);
+     fprintf oc "  %a\n" (als_of_expr defs) e;
      fprintf oc "}\n\n";
-     let env' =
-       (x, (List.map (fun _ -> Rel) args, def_type)) :: env
-     in
-     (env', axs)
+     let new_env = (x, (List.map (fun _ -> Rel) args, def_type)) in
+     (new_env :: env, axs, (x,withsc) :: defs)
   | LetRec _ ->
-     failwith "Recursive definition should have been removed."
+     failwith "Recursive definition should have already been removed."
   | Axiom (c,s,e,n) ->
-     fprintf oc "pred %s [e:E, X:%a] {\n" n Archs.pp_Arch arch; 
-     fprintf oc "  %a\n" (als_of_axiom true) (s, e);
+     fprintf oc "pred %s [e:E, X:%a%s] {\n" n Archs.pp_Arch arch
+	     (if withsc then ", s:E->E" else "");
+     let e = if withsc then replace_vars_with_args ["s"] e else e in
+     fprintf oc "  %a\n" (als_of_axiom defs) (s, e);
      fprintf oc "}\n\n";
-     (env, (n,c) :: axs)
+     (env, (n,c,withsc) :: axs, defs)
   | Include cat_path ->
-     als_of_file true unrolling_factor cat_path;
+     als_of_file true unrolling cat_path;
      let env' = type_file cat_path in
      let axs' = extract_axioms cat_path in
+     let defs' = extract_defs cat_path in
      fprintf oc "open %s[E]\n\n" (chop_extension ".cat" cat_path);
-     (env' @ env, axs @ axs')
+     (env' @ env, axs @ axs', defs @ defs')
 
-and als_of_file interm_model unrolling_factor cat_path =
+and als_of_file interm_model unrolling cat_path =
   let model_name =
     Filename.chop_extension (Filename.basename cat_path)
   in
@@ -303,26 +339,24 @@ and als_of_file interm_model unrolling_factor cat_path =
   let als_path = Filename.concat "models" als_path in
   let oc = open_out als_path in
   let ppf = formatter_of_out_channel oc in
-  let model_type, cat_model = parse_file cat_path in
+  let model_type, withsc, cat_model = parse_file cat_path in
   let arch = Archs.parse_arch model_type in
-  let cat_model = unfold_instrs unrolling_factor cat_model in
+  let cat_model = unfold_instrs unrolling cat_model in
   preamble cat_path model_name arch ppf;
-  let env = build_env arch in
-  let _,axs =
+  let env,defs = build_env withsc arch in
+  let _,axs,_ =
     List.fold_left
-      (als_of_instr arch unrolling_factor ppf) (env, []) cat_model
+      (als_of_instr withsc arch unrolling ppf) (env, [], defs) cat_model
   in
-  begin
-    if (not interm_model) then
-      let mk_postamble c =
-	postamble arch c (List.filter (fun (_,c') -> c = c') axs) ppf
-      in
-      List.iter mk_postamble [Provision; UndefUnless; Deadness]
-  end;
+  if (not interm_model) then begin
+      postamble withsc arch axs ppf Provision;
+      postamble false arch axs ppf UndefUnless;
+      postamble false arch axs ppf Deadness
+    end;
   close_out oc
-  
+	    
 
-  (*	  
+	    (*	  
 (** {2 Processing command-line input} *)
 	       
 let get_args () =
@@ -384,4 +418,4 @@ let main () =
   exit 0
     
 let _ = main ()     
-   *)
+	     *)

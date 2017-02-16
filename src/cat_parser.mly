@@ -62,7 +62,7 @@ let do_op op e1 e2 = Op (op, as_op op e1 @ as_op op e2)
 %token AND ACYCLIC AS DEADNESS_REQUIRES EQUAL IRREFLEXIVE
 INCLUDE LET REC SHOW TESTEMPTY WITHSC UNDEFINED_UNLESS UNSHOW
        
-%type <string * Cat_syntax.cat_model> main
+%type <string * bool * Cat_syntax.cat_model> main
 %type <Cat_syntax.shape * Cat_syntax.cat_expr * string> axiom
 			       
 %start main
@@ -78,12 +78,12 @@ INCLUDE LET REC SHOW TESTEMPTY WITHSC UNDEFINED_UNLESS UNSHOW
 %%
 
 main:
-| VAR opt_withsc ins_list EOF    { ($1, $3) }
-| STRING opt_withsc ins_list EOF { ($1, $3) }
+| VAR opt_withsc ins_list EOF    { ($1, $2, $3) }
+| STRING opt_withsc ins_list EOF { ($1, $2, $3) }
 
 opt_withsc:
-|        { () }
-| WITHSC { failwith "Option `withsc` not supported." }
+|        { false }
+| WITHSC { true }
 
 ins_list:
 |              { [] }
