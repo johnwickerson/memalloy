@@ -107,12 +107,13 @@ type litmus_test = {
 (** Simple pretty-printing of litmus tests *)	   
 let pp oc lt =
   fprintf oc "Locations: %a.\n\n" (MyList.pp ", " Location.pp) lt.locs;
-  let pp_thd tid = function
+  let rec pp_thd tid = function
     | Seq cs ->
        fprintf oc "Thread %d:\n" tid;
        MyList.pp ";\n" (pp_component pp_instr) oc cs;
        fprintf oc ";\n\n";
        tid+1
+    | Basic i -> pp_thd tid (Seq [Basic i])
     | _ -> assert false
   in
   let _ = List.fold_left pp_thd 0 lt.thds in

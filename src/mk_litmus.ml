@@ -89,8 +89,7 @@ and partition_par sb = function
      let classes = Assoc.val_list (Assoc.invert_map map) in
      Unseq (List.map (partition_seq sb) classes)
 
-let litmus_of_execution x =
-  let maps = resolve_exec x in
+let litmus_of_execution' x maps =
   let locs = Assoc.key_list (Assoc.invert_map maps.loc_map) in
   let thd_classes = Assoc.val_list (Assoc.invert_map maps.thd_map) in
   let sb = get_rel x "sb" in
@@ -120,3 +119,17 @@ let litmus_of_execution x =
   in
   let loc_post = List.map final_wval (Assoc.invert_map maps.loc_map) in
   {locs = locs; thds = thds; post = reg_post @ loc_post}
+    
+let litmus_of_execution x =
+  let maps = resolve_exec x in
+  litmus_of_execution' x maps
+
+let litmus_of_execution_pair x y pi =
+  let xmaps = resolve_exec x in
+  let ymaps = resolve_exec y in
+  let ymaps = rectify_maps (x,xmaps) (y,ymaps) pi in
+  let lit1 = litmus_of_execution' x xmaps in
+  let lit2 = litmus_of_execution' y ymaps in
+  lit1,lit2
+  
+

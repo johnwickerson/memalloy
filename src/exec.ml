@@ -126,10 +126,13 @@ let rectify_maps (x,xmaps) (y,ymaps) pi =
       let e' = List.find is_mismatch xev in
       let v = Assoc.strong_assoc map e in
       let v' = Assoc.strong_assoc map' e' in
+      printf "Permuting %d and %d!\n" v v';
       Assoc.permute_vals (v, v') map
     with Not_found -> map
   in
+  printf "Permuting threads!\n";
   let thd_map = List.fold_left (fix xmaps.thd_map) ymaps.thd_map yev in
+  printf "Permuting locations!\n";
   let loc_map = List.fold_left (fix xmaps.loc_map) ymaps.loc_map yev in
   { ymaps with thd_map = thd_map; loc_map = loc_map }
   

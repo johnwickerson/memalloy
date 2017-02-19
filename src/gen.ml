@@ -100,13 +100,19 @@ let main () =
        end
     | Lit ->
        assert (Filename.check_suffix out_path ".litmus");
-       let exec =
+       begin
 	 match exec with
-	 | Xml_input.Single x -> x
-	 | _ -> failwith "Unsupported"
-       in
-       let litmus = Mk_litmus.litmus_of_execution exec in
-       fprintf fmtr "%a\n" Litmus.pp litmus
+	 | Xml_input.Single x ->
+	    let litmus = Mk_litmus.litmus_of_execution x in
+	    fprintf fmtr "%a\n" Litmus.pp litmus
+	 | Xml_input.Double (x,y,pi) ->
+	    let litmus1,litmus2 =
+	      Mk_litmus.litmus_of_execution_pair x y pi
+	    in
+	    fprintf fmtr "%a\n" Litmus.pp litmus1;
+	    fprintf fmtr "\n";
+	    fprintf fmtr "%a\n" Litmus.pp litmus2
+       end
   end;
   close_out oc;
   exit 0

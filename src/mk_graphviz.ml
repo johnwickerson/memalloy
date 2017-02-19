@@ -57,8 +57,11 @@ let dot_of_event x maps e =
     try asprintf "%a" Location.pp (List.assoc e maps.loc_map)
     with Not_found -> ""
   in
+  let thd =
+    try asprintf "T%d: " (List.assoc e maps.thd_map) with Not_found -> ""
+  in
   let e = asprintf "%a" Event.pp e in
-  let label = asprintf "%s: %s[%a]%s%s" e dir
+  let label = asprintf "%s: %s%s[%a]%s%s" e thd dir
 		       (MyList.pp "," pp_str) attrs loc vals
   in
   let attrs =
@@ -92,35 +95,34 @@ let dot_of_rel (name, tuples) =
   in
   List.map dot_of_pair tuples
 
-let dot_of_execution' resolved_x y =
-  let y = remove_transitive "sb" y in
-  let y = remove_transitive "co" y in
-  let maps = resolve_exec y in
-  let maps = match resolved_x with
-    | None -> maps
-    | Some (x,xmaps,pi) -> rectify_maps (x,xmaps) (y,maps) pi
-  in
+let dot_of_execution' maps x =
+  let x = remove_transitive "sb" x in
+  let x = remove_transitive "co" x in
   let thds = Assoc.val_list (Assoc.invert_map maps.thd_map) in
   let mk_cluster ns =
     Cluster (ns, ["color", "azure4"; "style", "dashed"])
   in
   let nodes =
-    let doe = dot_of_event y maps in
-    List.map doe (get_set y "IW") @
+    let doe = dot_of_event x maps in
+    List.map doe (get_set x "IW") @
       List.map (fun thd -> mk_cluster (List.map doe thd)) thds
   in
-  let visible_rels = Assoc.remove_assocs ["sloc";"sthd"] y.rels in
+  let visible_rels = Assoc.remove_assocs ["sloc";"sthd"] x.rels in
   let edges = List.concat (List.map dot_of_rel visible_rels) in
-  maps, {nodes = nodes; edges = edges}
+  {nodes = nodes; edges = edges}
 	   
 (** Convert an execution into a complete Graphviz file *)
 let dot_of_execution x =
-  snd (dot_of_execution' None x)
+  let maps = resolve_exec x in
+  dot_of_execution' maps x
 
 (** Convert a pair of executions into a complete Graphviz file *)
 let dot_of_execution_pair x y pi =
-  let xmaps, gx = dot_of_execution' None x in
-  let _, gy = dot_of_execution' (Some (x,xmaps,pi)) y in
+  let xmaps = resolve_exec x in
+  let ymaps = resolve_exec y in
+  let ymaps = rectify_maps (x,xmaps) (y,ymaps) pi in
+  let gx = dot_of_execution' xmaps x in
+  let gy = dot_of_execution' ymaps y in
   let pi_edges = dot_of_rel ("pi", pi) in
   let nodes = gx.nodes @ gy.nodes in
   let edges = gx.edges @ gy.edges @ pi_edges in
