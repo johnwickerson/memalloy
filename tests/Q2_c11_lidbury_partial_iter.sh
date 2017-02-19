@@ -1,10 +1,10 @@
 ./comparator \
     -desc "Searching for all executions allowed by Batty et al's C11 model but disallowed by Lidbury et al.'s model." \
     -arch C \
-    -violates c11_lidbury.cat \
-    -satisfies c11_partial.cat \
+    -violates models/c11_lidbury.cat \
+    -satisfies models/c11_partial.cat \
     -events 4 \
     -expect 1252 \
-    -satisfies c11_normws.cat \
-    -totalsb \
+    -satisfies models/c11_normws.cat \
+    -satisfies models/totalsb.cat \
     -iter

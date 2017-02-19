@@ -34,10 +34,12 @@ type event = string
 let pp_event_name oc e =
   fprintf oc "%s" (Str.global_replace (Str.regexp_string "$") "" e)
 
+type 'a relation = ('a * 'a) list
+	  
 (** An execution is a list of named event sets and a list of named event relations *)
 type execution = {
     sets : (string * event list) list;
-    rels : (string * (event * event) list) list;
+    rels : (string * event relation) list;
   }
 
 (** Basic pretty-printing of executions *)

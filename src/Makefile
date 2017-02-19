@@ -2,6 +2,8 @@
 OCB_OPTS := -use-ocamlfind
 # enable C-c C-t for inspecting types
 OCB_OPTS := $(OCB_OPTS) -cflag -annot
+# turns on debugging (use 'export OCAMLRUNPARAM=b' for stack traces)
+OCB_OPTS := $(OCB_OPTS) -cflag -g
 # standard OCaml libraries
 OCB_OPTS := $(OCB_OPTS) -libs str,unix
 # OCaml packages

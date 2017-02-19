@@ -1,0 +1,4 @@
+"C"
+
+(* The postcondition need not read the values of shared locations *)
+empty co \ (rf?; (sb; (rf^-1)?)?) as SimplePost

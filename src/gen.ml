@@ -27,7 +27,7 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
 open Format
 open General_purpose
-  
+       
 type output_type = Dot | Als | Lit
 	       
 let get_args () =
@@ -51,8 +51,12 @@ let get_args () =
     Arg.usage speclist usage_msg;
     raise (Arg.Bad "Missing or too many arguments.")
   in
-  let xml_path = get_only_element bad_arg !xml_path in
-  let out_path = get_only_element bad_arg !out_path in
+  let xml_path =
+    try get_only_element !xml_path with Not_found -> bad_arg ()
+  in
+  let out_path =
+    try get_only_element !out_path with Not_found -> bad_arg ()
+  in
   let out_type = match !output_dot, !output_als, !output_lit with
     | true, false, false -> Dot
     | false, true, false -> Als
@@ -67,23 +71,44 @@ let check_args (xml_path, out_path, out_type) =
 let main () =
   let xml_path, out_path, out_type = get_args () in
   check_args (xml_path, out_path, out_type);
-  let (_, exec) = Xml_input.parse_file xml_path in
+  let exec = Xml_input.parse_file xml_path in
   let oc = open_out out_path in
   let fmtr = formatter_of_out_channel oc in
-  begin match out_type with
-  | Dot ->
-     assert (Filename.check_suffix out_path ".dot");
-     let g = Mk_graphviz.dot_of_execution exec in
-     fprintf fmtr "%a\n" Graphviz.pp_graph g
-  | Als ->
-     assert (Filename.check_suffix out_path ".als");
-     fprintf fmtr "%a\n" Alsbackend.als_of_execution exec
-  | Lit ->
-     assert (Filename.check_suffix out_path ".litmus");
-     let litmus = Mk_litmus.litmus_of_execution exec in
-     fprintf fmtr "%a\n" Litmus.pp litmus
+  begin
+    match out_type with
+    | Dot ->
+       assert (Filename.check_suffix out_path ".dot");
+       begin
+	 match exec with
+	 | Xml_input.Single x ->
+	    let g = Mk_graphviz.dot_of_execution x in
+	    fprintf fmtr "%a\n" Graphviz.pp_graph g
+	 | Xml_input.Double (x,_,_) ->
+	    let g = Mk_graphviz.dot_of_execution x in
+	    fprintf fmtr "%a\n" Graphviz.pp_graph g
+       end
+    | Als ->
+       assert (Filename.check_suffix out_path ".als");
+       begin
+	 match exec with
+	 | Xml_input.Single x ->      
+	    fprintf fmtr "%a\n" Alsbackend.als_of_execution x
+	 | Xml_input.Double (x1,x2,pi) ->
+	    fprintf fmtr "%a\n" Alsbackend.als_of_execution x1;
+	    fprintf fmtr "%a\n" Alsbackend.als_of_execution x2;
+	    fprintf fmtr "%a\n" Alsbackend.als_of_rel ("pi", pi)
+       end
+    | Lit ->
+       assert (Filename.check_suffix out_path ".litmus");
+       let exec =
+	 match exec with
+	 | Xml_input.Single x -> x
+	 | _ -> failwith "Unsupported"
+       in
+       let litmus = Mk_litmus.litmus_of_execution exec in
+       fprintf fmtr "%a\n" Litmus.pp litmus
   end;
   close_out oc;
   exit 0
-    
-let _ = main ()     
+	    
+    let _ = main ()     

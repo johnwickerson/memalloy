@@ -1,6 +1,6 @@
 open ../mappings/c11_x86a[SE,HE]
-open ../models_als/c11_simp[SE] as M1
-open ../models_als/x86tso[HE] as M2
+open ../models/c11_simp[SE] as M1
+open ../models/x86tso[HE] as M2
 
 sig SE, HE {}
 
@@ -24,6 +24,6 @@ pred gp [X : Exec_C, X' : Exec_X86, map: SE -> HE] {
 run gp for
 exactly 1 c11_x86a/SW/exec/Exec,
 exactly 1 c11_x86a/HW/exec_H/exec/Exec,
-5 HE, 
-5 SE
+4 HE, 
+4 SE
 expect 0

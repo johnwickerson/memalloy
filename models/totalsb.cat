@@ -1,0 +1,3 @@
+"BASIC"
+
+empty (thd \ [_]) \ (po | po^-1) as ProgramOrderTotalWithinThread

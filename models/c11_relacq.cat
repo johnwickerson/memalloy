@@ -1,0 +1,5 @@
+"C"
+
+empty [R] \ [acq] as AllReadsAcquire
+empty [W] \ [rel] as AllWritesRelease
+empty [sc] as NoSCAtomics						

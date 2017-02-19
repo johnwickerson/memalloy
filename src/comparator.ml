@@ -28,26 +28,43 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 open Format
 open General_purpose
 
+let succ_paths = ref []
+let fail_paths = ref []
 let withinit = ref false
 let minimal = ref false
 let eventcount = ref 0
+let eventcount2 = ref 0
 let description = ref ""
 let iter = ref false
 let expectation = ref None
 let atleastnthreads = ref 0		      
 let atleastnlocs = ref 0
-			  
-let relacq = ref false
-let simplepost = ref false
-let normws = ref false
-let nofences = ref false
-let totalsb = ref false
-let nodeps = ref false
-let noscrelacq = ref false
 
-(** [range i j] returns [i, i+1, ..., j] *)
-let rec range i j = if i > j then [] else i :: (range (i+1) j)
+let pp_open_modules succ_sig fail_sig oc =
+  for i = 1 to List.length !succ_paths do
+    let model = Filename.chop_extension (List.nth !succ_paths (i-1)) in
+    fprintf oc "open %s[%s] as M%d\n" model succ_sig i
+  done;
+  for i = 1 to List.length !fail_paths do
+    let model = Filename.chop_extension (List.nth !fail_paths (i-1)) in
+    fprintf oc "open %s[%s] as N%d\n" model fail_sig i
+  done
 
+let pp_all_events_used ev_sig oc =
+  fprintf oc "  // Every event is a read, write or a fence\n";
+  fprintf oc "  %s in R[none,X] + W[none,X] + F[none,X]\n\n" ev_sig
+
+let pp_violated_models exec_sig oc =
+  for i = 1 to List.length !fail_paths do
+    fprintf oc "  not(N%d/consistent[none,%s])\n" i exec_sig;
+    fprintf oc "  N%d/dead[none,%s]\n\n" i exec_sig
+  done
+
+let pp_satisfied_models exec_sig oc =
+  for i = 1 to List.length !succ_paths do
+    fprintf oc "  M%d/consistent[none,%s]\n\n" i exec_sig
+  done
+  
 (** [min_classes n r dom oc] generates an Alloy constraint (sent to [oc]) that requires the existence of [n] distinct events in [dom], none of which are related by [r]*)
 let min_classes n r dom oc =
   let es = List.map (sprintf "e%d") (range 1 n) in
@@ -57,101 +74,93 @@ let min_classes n r dom oc =
 	  (fprintf_iter "+" pp_str) es r;
   fprintf oc "  }\n"
 
-(** [pp_comparator (succ_paths, fail_paths) arch oc] generates an Alloy file (sent to [oc]) that can be used to find an execution of type [arch] that satisfies all the models in [succ_paths] and violates all the models in [fail_paths]. *)
-let pp_comparator (succ_paths, fail_paths) arch oc =
+let pp_min_threads oc =
+  if 0 < !atleastnthreads then (
+    fprintf oc "  // At least %d threads\n" !atleastnthreads;
+    min_classes !atleastnthreads "sthd" "ev - IW" oc
+  )
+
+let pp_min_locs oc =
+  if 0 < !atleastnlocs then (
+    fprintf oc "  // At least %d locations\n" !atleastnlocs;
+    min_classes !atleastnlocs "sloc" "R + W" oc
+  )
+
+(** [pp_comparator arch oc] generates an Alloy file (sent to [oc]) that can be used to find an execution of type [arch] that satisfies all the models in [!succ_paths] and violates all the models in [!fail_paths]. *)
+let pp_comparator arch oc =
   if !description != "" then fprintf oc "/* %s */\n" !description;
-  for i = 1 to List.length succ_paths do
-    let model = Filename.chop_extension (List.nth succ_paths (i-1)) in
-    fprintf oc "open models/%s[E] as M%d\n" model i
-  done;
-  for i = 1 to List.length fail_paths do
-    let model = Filename.chop_extension (List.nth fail_paths (i-1)) in
-    fprintf oc "open models/%s[E] as N%d\n" model i
-  done;
+  pp_open_modules "E" "E" oc;
   fprintf oc "sig E {}\n\n";
   fprintf oc "pred gp [X:%a] {\n\n" Archs.pp_Arch arch;
-  fprintf oc "  // Every event is a read, write or a fence\n";
-  fprintf oc "  E in R[none,X] + W[none,X] + F[none,X]\n\n";
+  pp_all_events_used "E" oc;
   if !withinit then
     fprintf oc "  withinit[X]\n\n"
   else
     fprintf oc "  withoutinit[X]\n\n";
-  for i = 1 to List.length fail_paths do
-    fprintf oc "  not(N%d/consistent[none,X])\n" i;
-    fprintf oc "  N%d/dead[none,X]\n" i
-  done;
-  fprintf oc "\n";
-  for i = 1 to List.length succ_paths do
-    fprintf oc "  M%d/consistent[none,X]\n" i
-  done;
+  pp_violated_models "X" oc;
+  pp_satisfied_models "X" oc;
   if !minimal then (
     fprintf oc "  not (some e : X.ev {\n";
-    for i = 1 to List.length fail_paths do
+    for i = 1 to List.length !fail_paths do
       fprintf oc "    not(N%d/consistent[e,X])\n" i;
       fprintf oc "    N%d/dead[e,X]\n" i
     done;
-    for i = 1 to List.length succ_paths do
+    for i = 1 to List.length !succ_paths do
       fprintf oc "    M%d/consistent[e,X]\n" i
     done;
     fprintf oc "  })\n"
   );
-  if !relacq then (
-    fprintf oc "  // Stay within the rel/acq fragment\n";
-    fprintf oc "  R[none,X] in acq[none,X]\n";
-    fprintf oc "  W[none,X] in rel[none,X]\n";
-    fprintf oc "  no sc[none,X]\n"
-  );
-  if !noscrelacq then (
-    fprintf oc "  // Avoid screl and scacq events\n";
-    fprintf oc "  no (screl[none,X] + scacq[none,X])\n"
-  );
-  if !normws then (
-    fprintf oc "  // Avoid RMW events (single and dual events)\n";
-    fprintf oc "  no_RMWs[none,X]\n";
-    fprintf oc "  no atom[none,X]\n"
-  );
-  if !nofences then (
-    fprintf oc "  // Avoid fences\n";
-    fprintf oc "  no F[none,X]\n";
-  );
-  if !totalsb then (
-    fprintf oc "  // Total sb per thread\n";
-    fprintf oc "  total_sb[none,X]\n"
-  );
-  if !nodeps then (
-    fprintf oc "  // Avoid dependencies\n";
-    fprintf oc "  no (ad[none,X] + cd[none,X] + dd[none,X])\n"
-  );
-  if !simplepost then (
-    fprintf oc "  // The postcondition need not read shared locations\n";
-    fprintf oc "  co[none,X] in (rc[rf[none,X]]) . (rc[(sb[none,X]) . (rc[~(rf[none,X])])])\n"
-  );
-  if 0 < !atleastnthreads then (
-    fprintf oc "  // At least %d threads\n" !atleastnthreads;
-    min_classes !atleastnthreads "sthd" "ev - IW" oc
-  );
-  if 0 < !atleastnlocs then (
-    fprintf oc "  // At least %d locations\n" !atleastnlocs;
-    min_classes !atleastnlocs "sloc" "R + W" oc
-  );
+  pp_min_threads oc;
+  pp_min_locs oc;
   fprintf oc "}\n\n";
   fprintf oc "run gp for 1 Exec, %s%d E, 3 Int\n"
 	  (if !minimal then "exactly " else "")
 	  !eventcount
 
+(** [pp_comparator2 arch mapping_path arch2 oc] generates an Alloy file (sent to [oc]) that can be used to find an execution {i X} of type [arch] and an execution {i Y} of type [arch2] such that {i X} satisfies all the models in [!succ_paths], {i Y} violates all the models in [!fail_paths], and {i X} and {i Y} are related by the mapping in [mapping_path] *)
+let pp_comparator2 arch mapping_path arch2 oc =
+  if !withinit then
+    failwith "Initial writes not supported in compiler mappings";
+  if !minimal then
+    failwith "Minimality not supported in compiler mappings";
+  if !description != "" then fprintf oc "/* %s */\n" !description;
+  pp_open_modules "HE" "SE" oc;
+  let mapping = Filename.chop_extension mapping_path in
+  fprintf oc "open %s[SE,HE] as mapping\n\n" mapping;
+  fprintf oc "sig SE, HE {}\n\n";
+  fprintf oc "pred gp [X:%a, Y:%a, map:SE->HE] {\n\n"
+	  Archs.pp_Arch arch Archs.pp_Arch arch2;
+  pp_all_events_used "SE" oc;
+  fprintf oc "  withoutinit[X]\n";
+  fprintf oc "  withoutinit[Y]\n\n";
+  pp_violated_models "X" oc;
+  pp_satisfied_models "Y" oc;
+  fprintf oc "  // We have a valid application of the mapping\n";
+  fprintf oc "  apply_map[X, Y, map]\n\n";
+  pp_min_threads oc;
+  pp_min_locs oc;
+  fprintf oc "}\n\n";
+  fprintf oc "run gp for exactly 1 M1/Exec, exactly 1 N1/Exec, %d SE, %d HE, 3 Int\n" !eventcount !eventcount2
+
 let get_args () =
-  let succ_paths : string list ref = ref [] in
-  let fail_paths : string list ref = ref [] in
-  let arch : string list ref = ref [] in
+  let arch = ref None in
+  let arch2 = ref None in
+  let mapping_path = ref None in
   let speclist = [
       ("-satisfies", Arg.String (set_list_ref succ_paths),
        "Execution should satisfy this model (repeatable)");
       ("-violates", Arg.String (set_list_ref fail_paths),
        "Execution should violate this model (repeatable)");
-      ("-arch", Arg.String (set_list_ref arch),
+      ("-arch", Arg.String (set_option_ref arch),
        "Type of executions being compared (required)");
       ("-events", Arg.Set_int eventcount, "Max number of events");
-      ("-expect", Arg.Int (fun i -> expectation := Some i),
+      ("-mapping", Arg.String (set_option_ref mapping_path),
+       "An .als file representing a mapping between executions");
+      ("-arch2", Arg.String (set_option_ref arch2),
+       "Type of target execution (required iff -mapping is given)");
+      ("-events2", Arg.Set_int eventcount2,
+       "Max number of target events (required iff -mapping is given)");
+      ("-expect", Arg.Int (set_option_ref expectation),
        "Expect to find this many unique solutions (optional)");
       ("-desc", Arg.Set_string description,
        "Textual description (optional)");
@@ -163,17 +172,6 @@ let get_args () =
       ("-minimal", Arg.Set minimal, "Option: find minimal executions");
       ("-withinit", Arg.Set withinit,
        "Option: explicit initial writes");
-      ("-relacq", Arg.Set relacq,
-       "Option: Only release/acquire fragment");
-      ("-simplepost", Arg.Set simplepost,
-       "Option: postcondition need not read shared locations");
-      ("-normws", Arg.Set normws, "Option: avoid RMW events");
-      ("-nofences", Arg.Set nofences, "Option: avoid fences");
-      ("-noscrelacq", Arg.Set noscrelacq,
-       "Option: avoid screl and scacq events");
-      ("-totalsb", Arg.Set totalsb, "Option: total sb per thread");
-      ("-nodeps", Arg.Set nodeps,
-       "Option: avoid address/control/data dependencies");
     ] in
   let usage_msg =
     "Generating an Alloy file that can be run to compare two models.\nUsage: `comparator [options]`. There must be at least one -satisfies or -violates flag.\nOptions available:"
@@ -183,20 +181,15 @@ let get_args () =
     raise (Arg.Bad "Missing or too many arguments.")
   in
   Arg.parse speclist bad_arg usage_msg;
-  let arch = get_only_element bad_arg !arch in
-  let arch = Archs.parse_arch arch in
-  !succ_paths, !fail_paths, arch
-
-let check_args (succ_paths, fail_paths) =
-  match succ_paths @ fail_paths with
-  | [] -> failwith "Expected at least one model"
-  | _ -> ()
-(*| paths ->
-     let check_ext p =
-       if not (Filename.check_suffix p ".als") then
-	 failwith "Expected file(s) ending with .als"
-     in
-     List.iter check_ext paths*)
+  let arch = match !arch with
+    | Some arch -> Archs.parse_arch arch
+    | None -> failwith "Expected one -arch"
+  in
+  let arch2 = match !arch2 with
+    | Some arch -> Some (Archs.parse_arch arch)
+    | None -> None
+  in 
+  arch, !mapping_path, arch2
 
 (** Print a description of the comparison being undertaken *)
 let pp_description () =
@@ -234,11 +227,6 @@ let mk_fresh_dir_in s stamp =
   Unix.symlink stamp "_latest";
   Sys.chdir ".."
 
-(** [count p] returns the first non-negative integer that does not satisfy the predicate [p] *)
-let count p =
-  let rec count_helper i = if p i then count_helper (i+1) else i in
-  count_helper 0
-
 (** Run Alloy on the generated compator file *)
 let run_alloy comparator_als stamp =
   let alloy_cmd =
@@ -271,7 +259,8 @@ let remove_dups stamp =
   printf "Removing duplicate solutions.\n";
   flush stdout;
   let py_cmd =
-    sprintf "python src/partition.py %d xml/%s" !eventcount stamp
+    sprintf "python src/partition.py %d xml/%s"
+	    (!eventcount2 + !eventcount) stamp
   in
   let _ = Sys.command py_cmd in
   flush stdout;
@@ -304,24 +293,29 @@ let dot_to_png stamp i =
   if exit_status <> 0 then
     failwith "Conversion from .dot to .png failed"
 
-
- 
 let main () =
-  let succ_paths, fail_paths, arch = get_args () in
+  if not (Sys.file_exists "alloystar") then
+    failwith "Please run me from the top-level directory of the repo";
+  let arch, mapping_path, arch2 = get_args () in
   let unrolling_factor = 3 in
   let cat2als path =
-    (* let path = Filename.concat Filename.parent_dir_name path in *)
+    let path = Filename.concat Filename.parent_dir_name path in
     Cat2als.als_of_file false unrolling_factor path
   in
-  begin match succ_paths @ fail_paths with
+  begin match !succ_paths @ !fail_paths with
 	| [] -> failwith "Expected at least one model"
 	| paths -> List.iter cat2als paths
   end;
-  if not (Sys.file_exists "alloystar") then
-    failwith "Please run me from the top-level directory of the repo";
   pp_description ();
   let comparator_als = "comparator.als" in
-  let pp = pp_comparator (succ_paths, fail_paths) arch in
+  let pp =
+    match mapping_path, arch2, !eventcount2 with
+    | None, None, 0 -> pp_comparator arch
+    | Some mapping_path, Some arch2, n when n>0 ->
+       pp_comparator2 arch mapping_path arch2
+    | _ ->
+       failwith "Expected all or none of: -mapping, -arch2, -events2"
+  in
   write_file comparator_als pp;
   let stamp = make_stamp () in
   mk_fresh_dir_in "xml" stamp;

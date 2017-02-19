@@ -1,6 +1,6 @@
 open ../mappings/c11_ppc_trimmed[SE, HE]
-open ../models_als/c11_partial[SE] as M1
-open ../models_als/ppc[HE] as M2
+open ../models/c11_simp[SE] as M1
+open ../models/ppc[HE] as M2
 
 sig SE,HE {}
 
@@ -22,8 +22,9 @@ pred gp [
   M1/dead[none,X]
       
   // ... but can nonetheless be observed on the hardware.
-  M2/consistent[none,X']
-    
+  M2/consistent[none,X']    
+
+  hint1[X]
 }
 
 /*
@@ -110,7 +111,7 @@ run gp for
 exactly 1 c11_ppc_trimmed/SW/exec/Exec,
 exactly 1 c11_ppc_trimmed/HW/exec_H/exec/Exec,
 7 HE, 
-6 SE
+5 SE
 expect 1
 // Glucose: about 2 min. This finds essentially the same example
 // as is given by Lahav et al. in Appendix A.1 of

@@ -37,12 +37,11 @@ let failwith fmt =
   kfprintf k (formatter_of_buffer b) fmt
 
 let set_list_ref r v = r := (v :: !r)
+let set_option_ref r v = r := Some v
 
-let get_only_element k = function [x] -> x | _ -> k ()
-
-let get_lone_element k z = function [x] -> x | [] -> z | _ -> k ()
-
-let get_only_two_elements k = function [x;y] -> x,y | _ -> k ()
+let get_only_element = function
+  | [x] -> x
+  | _ -> raise Not_found
 
 let rec fprintf_iter s f oc = function
   | [] -> ()
@@ -53,6 +52,14 @@ let fparen f oc x = fprintf oc "(%a)" f x
 
 let pp_str oc s = fprintf oc "%s" s
 let pp_pair oc (s,s') = fprintf oc "(%s,%s)" s s'
+
+(** [range i j] returns [i, i+1, ..., j] *)
+let rec range i j = if i > j then [] else i :: (range (i+1) j)
+
+(** [count p] returns the first non-negative integer that does not satisfy the predicate [p] *)
+let count p =
+  let rec count_helper i = if p i then count_helper (i+1) else i in
+  count_helper 0
 
 let today() =
   let open Unix in

@@ -136,6 +136,7 @@ fun fr[e:E, x : Exec] : E -> E {
   (fr_init[e,x] + (~(rf[e,x]) . (co[e,x]))) - iden
 }
 
+/*
 pred no_RMWs[e:E, x : Exec] {
   no (R[e,x] & W[e,x])
 }
@@ -144,6 +145,7 @@ pred no_RMWs[e:E, x : Exec] {
 pred total_sb[e:E, x : Exec] {
   sthd[e,x] - iden in sb[e,x] + ~(sb[e,x])
 }
+*/
 
 /*
 pred forced_co[e:E, x : Exec] {
