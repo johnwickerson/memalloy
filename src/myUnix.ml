@@ -23,36 +23,15 @@ OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION
 WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 *)
 
-(** Converting an execution into an Alloy predicate *)
-
 open Format
-open General_purpose
-open Exec
+open Unix
 
-(** Convert event set to Alloy constraint *)
-let als_of_set oc (name, es) =
-  fprintf oc "    X.%s = " name;
-  if es = [] then fprintf oc "none"
-  else MyList.pp "+" Event.pp oc es;
-  fprintf oc "\n"
+(** Extension of Unix module *)
+       
+let today() =
+  let t = localtime (time ()) in
+  sprintf "%04d-%02d-%02d" (t.tm_year + 1900) (t.tm_mon + 1) t.tm_mday
 
-(** Convert event pair to Alloy expression *)
-let als_of_pair oc (e,e') =
-  fprintf oc "(%a->%a)" Event.pp e Event.pp e'
-
-(** Convert event relation to Alloy constraint *)
-let als_of_rel oc (name, ees) =
-  fprintf oc "    X.%s = " name;
-  if ees = [] then fprintf oc "none->none"
-  else MyList.pp "+" als_of_pair oc ees;
-  fprintf oc "\n"	  
-
-(** Convert execution to Alloy predicate *)
-let als_of_execution oc x =
-  let ev = get_set x "ev" in
-  fprintf oc "pred hint[X:Exec] {\n";
-  fprintf oc "  some disj %a : E {\n" (MyList.pp "," Event.pp) ev;
-  List.iter (als_of_set oc) x.sets;
-  List.iter (als_of_rel oc) x.rels;
-  fprintf oc "  }\n";
-  fprintf oc "}\n"
+let now() =
+  let t = localtime (time ()) in
+  sprintf "%02d:%02d:%02d" t.tm_hour t.tm_min t.tm_sec

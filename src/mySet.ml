@@ -23,36 +23,19 @@ OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION
 WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 *)
 
-(** Converting an execution into an Alloy predicate *)
+(** Sets (implemented as lists) *)
 
 open Format
 open General_purpose
-open Exec
 
-(** Convert event set to Alloy constraint *)
-let als_of_set oc (name, es) =
-  fprintf oc "    X.%s = " name;
-  if es = [] then fprintf oc "none"
-  else MyList.pp "+" Event.pp oc es;
-  fprintf oc "\n"
+type 'a t = 'a list
 
-(** Convert event pair to Alloy expression *)
-let als_of_pair oc (e,e') =
-  fprintf oc "(%a->%a)" Event.pp e Event.pp e'
+let union xs ys =
+  let cons_unique res x = if List.mem x res then res else x::res in
+  List.fold_left cons_unique ys xs
 
-(** Convert event relation to Alloy constraint *)
-let als_of_rel oc (name, ees) =
-  fprintf oc "    X.%s = " name;
-  if ees = [] then fprintf oc "none->none"
-  else MyList.pp "+" als_of_pair oc ees;
-  fprintf oc "\n"	  
+let inter xs ys =
+  List.filter (fun x -> List.mem x ys) xs
 
-(** Convert execution to Alloy predicate *)
-let als_of_execution oc x =
-  let ev = get_set x "ev" in
-  fprintf oc "pred hint[X:Exec] {\n";
-  fprintf oc "  some disj %a : E {\n" (MyList.pp "," Event.pp) ev;
-  List.iter (als_of_set oc) x.sets;
-  List.iter (als_of_rel oc) x.rels;
-  fprintf oc "  }\n";
-  fprintf oc "}\n"
+let diff xs ys =
+  List.filter (fun x -> not (List.mem x ys)) xs

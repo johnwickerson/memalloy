@@ -52,14 +52,14 @@ let dot_of_event x maps e =
     | r,w,f -> failwith "Found event with (R,W,F)=(%b,%b,%b)" r w f
   in
   let ignored_attrs = ["ev";"R";"W";"F";"IW"] in
-  let attrs = diff (get_sets x e) ignored_attrs in
+  let attrs = MySet.diff (get_sets x e) ignored_attrs in
   let loc =
     try asprintf "%a" Location.pp (List.assoc e maps.loc_map)
     with Not_found -> ""
   in
-  let e = asprintf "%a" pp_event_name e in
+  let e = asprintf "%a" Event.pp e in
   let label = asprintf "%s: %s[%a]%s%s" e dir
-		       (fprintf_iter "," pp_str) attrs loc vals
+		       (MyList.pp "," pp_str) attrs loc vals
   in
   let attrs =
     ["label", label;
@@ -76,6 +76,7 @@ let dot_of_rel (name, tuples) =
     | "co" -> "cornflowerblue"
     | "rf" -> "crimson"
     | "sb" | "ad" | "cd" | "dd" -> "black"
+    | "pi" -> "red"
     | _ -> "black"
   in
   let gv_attrs =
@@ -85,26 +86,42 @@ let dot_of_rel (name, tuples) =
   let gv_attrs = ("color", edge_color name) :: gv_attrs in
   let gv_attrs = ("label", name) :: gv_attrs in
   let dot_of_pair (e,e') =
-    let e = asprintf "%a" pp_event_name e in
-    let e' = asprintf "%a" pp_event_name e' in
+    let e = asprintf "%a" Event.pp e in
+    let e' = asprintf "%a" Event.pp e' in
     (e,e',gv_attrs)
   in
   List.map dot_of_pair tuples
-	    
-(** Convert an execution into a complete Graphviz file *)
-let dot_of_execution x =
-  let x = remove_transitive "sb" x in
-  let x = remove_transitive "co" x in
-  let maps = resolve_exec x in
-  let thds = val_list (invert_map maps.thd_map) in
+
+let dot_of_execution' resolved_x y =
+  let y = remove_transitive "sb" y in
+  let y = remove_transitive "co" y in
+  let maps = resolve_exec y in
+  let maps = match resolved_x with
+    | None -> maps
+    | Some (x,xmaps,pi) -> rectify_maps (x,xmaps) (y,maps) pi
+  in
+  let thds = Assoc.val_list (Assoc.invert_map maps.thd_map) in
   let mk_cluster ns =
     Cluster (ns, ["color", "azure4"; "style", "dashed"])
   in
   let nodes =
-    let doe = dot_of_event x maps in
-    List.map doe (get_set x "IW") @
-    List.map (fun thd -> mk_cluster (List.map doe thd)) thds
+    let doe = dot_of_event y maps in
+    List.map doe (get_set y "IW") @
+      List.map (fun thd -> mk_cluster (List.map doe thd)) thds
   in
-  let visible_rels = remove_assocs ["sloc";"sthd"] x.rels in
+  let visible_rels = Assoc.remove_assocs ["sloc";"sthd"] y.rels in
   let edges = List.concat (List.map dot_of_rel visible_rels) in
+  maps, {nodes = nodes; edges = edges}
+	   
+(** Convert an execution into a complete Graphviz file *)
+let dot_of_execution x =
+  snd (dot_of_execution' None x)
+
+(** Convert a pair of executions into a complete Graphviz file *)
+let dot_of_execution_pair x y pi =
+  let xmaps, gx = dot_of_execution' None x in
+  let _, gy = dot_of_execution' (Some (x,xmaps,pi)) y in
+  let pi_edges = dot_of_rel ("pi", pi) in
+  let nodes = gx.nodes @ gy.nodes in
+  let edges = gx.edges @ gy.edges @ pi_edges in
   {nodes = nodes; edges = edges}

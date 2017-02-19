@@ -23,36 +23,35 @@ OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION
 WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 *)
 
-(** Converting an execution into an Alloy predicate *)
+(** Association lists *)
 
 open Format
+open List
 open General_purpose
-open Exec
 
-(** Convert event set to Alloy constraint *)
-let als_of_set oc (name, es) =
-  fprintf oc "    X.%s = " name;
-  if es = [] then fprintf oc "none"
-  else MyList.pp "+" Event.pp oc es;
-  fprintf oc "\n"
+type ('k,'v) t = ('k * 'v) list
 
-(** Convert event pair to Alloy expression *)
-let als_of_pair oc (e,e') =
-  fprintf oc "(%a->%a)" Event.pp e Event.pp e'
+let remove_assocs ks =
+  filter (fun (k,_) -> not (mem k ks))
 
-(** Convert event relation to Alloy constraint *)
-let als_of_rel oc (name, ees) =
-  fprintf oc "    X.%s = " name;
-  if ees = [] then fprintf oc "none->none"
-  else MyList.pp "+" als_of_pair oc ees;
-  fprintf oc "\n"	  
+let strong_assoc map x =
+  try assoc x map with Not_found -> assert false
 
-(** Convert execution to Alloy predicate *)
-let als_of_execution oc x =
-  let ev = get_set x "ev" in
-  fprintf oc "pred hint[X:Exec] {\n";
-  fprintf oc "  some disj %a : E {\n" (MyList.pp "," Event.pp) ev;
-  List.iter (als_of_set oc) x.sets;
-  List.iter (als_of_rel oc) x.rels;
-  fprintf oc "  }\n";
-  fprintf oc "}\n"
+let permute_vals (v1,v2) kvs =
+  let permute = function
+    | k,v when v=v1 -> k,v2
+    | k,v when v=v2 -> k,v1
+    | k,v -> k,v
+  in
+  map permute kvs
+			     
+(** Example: [invert_map [(k1,v1);(k2,v2);(k3;v1)] = [(v1,[k1;k3]);(v2,[k2])]] *)
+let invert_map kvs =
+  let add_entry vks (k,v) =
+    let ks = try assoc v vks with Not_found -> [] in
+    (v, k :: ks) :: remove_assocs [v] vks
+  in
+  fold_left add_entry [] kvs
+
+let key_list kvs = map fst kvs
+let val_list kvs = map snd kvs

@@ -233,7 +233,7 @@ let als_of_expr defs oc e =
     | Arg x -> fprintf oc "%s" x
     | App (f,es) ->
        let withsc = List.assoc f defs in
-       fprintf oc "%s[%a,e,X%s]" f (fprintf_iter "," als_of_expr') es
+       fprintf oc "%s[%a,e,X%s]" f (MyList.pp "," als_of_expr') es
 	       (if withsc then ",s" else "")
     | Op1 (Set_to_rln,e) -> fprintf oc "stor[%a]" als_of_expr' e
     | Op1 (Star,e) -> fprintf oc "*(%a)" als_of_expr' e
@@ -252,11 +252,11 @@ let als_of_expr defs oc e =
        als_of_expr' oc (Op (Inter, [e; prod]))
     | Op1 (Domain, e) -> fprintf oc "dom[%a]" als_of_expr' e
     | Op1 (Range, e) -> fprintf oc "ran[%a]" als_of_expr' e
-    | Op (Seq,es) -> fprintf_iter " . " (fparen als_of_expr') oc es
-    | Op (Union,es) -> fprintf_iter " + " (fparen als_of_expr') oc es
-    | Op (Diff,es) -> fprintf_iter " - " (fparen als_of_expr') oc es
-    | Op (Inter,es) -> fprintf_iter " & " (fparen als_of_expr') oc es
-    | Op (Cross,es) -> fprintf_iter " -> " (fparen als_of_expr') oc es
+    | Op (Seq,es) -> MyList.pp " . " (fparen als_of_expr') oc es
+    | Op (Union,es) -> MyList.pp " + " (fparen als_of_expr') oc es
+    | Op (Diff,es) -> MyList.pp " - " (fparen als_of_expr') oc es
+    | Op (Inter,es) -> MyList.pp " & " (fparen als_of_expr') oc es
+    | Op (Cross,es) -> MyList.pp " -> " (fparen als_of_expr') oc es
   in
   als_of_expr' oc e
 
@@ -281,7 +281,7 @@ let als_of_cnstrnt oc = function
 (** Generates the first part of the Alloy file *)
 let preamble cat_path model_name arch oc =
   fprintf oc "/* Automatically generated from %s on %s at %s */\n\n"
-	  cat_path (today ()) (now ());
+	  cat_path (MyUnix.today ()) (MyUnix.now ());
   fprintf oc "module %s[E]\n" model_name;
   fprintf oc "open %a[E]\n\n" Archs.pp_arch arch
 
@@ -330,7 +330,7 @@ let rec als_of_instr withsc arch unrolling oc (env, axs, defs) = function
      let env' = type_file cat_path in
      let axs' = extract_axioms cat_path in
      let defs' = extract_defs cat_path in
-     fprintf oc "open %s[E]\n\n" (chop_extension ".cat" cat_path);
+     fprintf oc "open %s[E]\n\n" (Filename.chop_extension cat_path);
      (env' @ env, axs @ axs', defs @ defs')
 
 and als_of_file interm_model unrolling cat_path =

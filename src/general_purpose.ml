@@ -39,19 +39,9 @@ let failwith fmt =
 let set_list_ref r v = r := (v :: !r)
 let set_option_ref r v = r := Some v
 
-let get_only_element = function
-  | [x] -> x
-  | _ -> raise Not_found
-
-let rec fprintf_iter s f oc = function
-  | [] -> ()
-  | [x] -> f oc x
-  | x :: xs -> f oc x; fprintf oc "%s" s; fprintf_iter s f oc xs
-
 let fparen f oc x = fprintf oc "(%a)" f x
 
 let pp_str oc s = fprintf oc "%s" s
-let pp_pair oc (s,s') = fprintf oc "(%s,%s)" s s'
 
 (** [range i j] returns [i, i+1, ..., j] *)
 let rec range i j = if i > j then [] else i :: (range (i+1) j)
@@ -60,85 +50,3 @@ let rec range i j = if i > j then [] else i :: (range (i+1) j)
 let count p =
   let rec count_helper i = if p i then count_helper (i+1) else i in
   count_helper 0
-
-let today() =
-  let open Unix in
-  let t = localtime (time ()) in
-  sprintf "%04d-%02d-%02d" (t.tm_year + 1900) (t.tm_mon + 1) t.tm_mday
-
-let now() =
-  let open Unix in
-  let t = localtime (time ()) in
-  sprintf "%02d:%02d:%02d" t.tm_hour t.tm_min t.tm_sec
-
-let chop_extension extn path =
-  if Filename.check_suffix path extn then
-    Filename.chop_extension path
-  else
-    failwith "File %s does not have extension \"%s\"." path extn
-
-let last ss = List.hd (List.rev ss)
-      
-let base_of s = last (Str.split (Str.regexp_string "/") s)
-
-let remove_assocs ks =
-  List.filter (fun (k,_) -> not (List.mem k ks))
-
-let union xs ys =
-  let cons_unique res x = if List.mem x res then res else x::res in
-  List.fold_left cons_unique ys xs
-
-let inter xs ys =
-  List.filter (fun x -> List.mem x ys) xs
-
-let diff xs ys =
-  List.filter (fun x -> not (List.mem x ys)) xs
-
-let invert_rel r =
-  List.map (fun (e,e') -> (e',e)) r
-
-type ('k,'v) map = ('k * 'v) list
-
-let strong_assoc map x =
-  try List.assoc x map with Not_found -> assert false
-
-(** Example: [invert_map [(k1,v1);(k2,v2);(k3;v1)] = [(v1,[k1;k3]);(v2,[k2])]] *)
-let invert_map kvs =
-  let add_entry vks (k,v) =
-    let ks = try List.assoc v vks with Not_found -> [] in
-    (v, k :: ks) :: remove_assocs [v] vks
-  in
-  List.fold_left add_entry [] kvs
-
-let key_list kvs = List.map fst kvs
-let val_list kvs = List.map snd kvs
-
-let compare r e e' = if List.mem (e,e') r then -1 else 1
-
-let exists_pair f xs ys =
-  List.exists (fun x -> List.exists (f x) ys) xs
-
-let remove_transitive_edges r =
-  let is_transitive (e,e') =
-    exists_pair (fun (e1,e1') (e2,e2') ->
-      e1 = e && e1' = e2 && e2' = e') r r
-  in
-  List.filter (fun edge -> not (is_transitive edge)) r
-
-(** [partition true r es] returns a list of partitions of [es], with two elements of [es] being in the same partition iff they are related (in either direction) by [r]. [partition false r es] is similar, but each partitions contains elements that are {i not} related (in either direction) by [r]. *)
-let partition invert r es =
-  let rec find_related e = function
-    | [] -> raise Not_found
-    | (e',i) :: _ when
-	   if invert then List.mem (e,e') r
-	   else not (List.mem (e,e') r) && not (List.mem (e',e) r)
-      -> i
-    | _ :: map -> find_related e map
-  in
-  let partition_helper (i, map) e =
-    try let i' = find_related e map in (i, (e,i')::map)
-    with Not_found -> (i+1, (e,i)::map)
-  in
-  snd (List.fold_left partition_helper (0, []) es)
-
-

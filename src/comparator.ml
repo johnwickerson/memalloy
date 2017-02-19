@@ -68,10 +68,10 @@ let pp_satisfied_models exec_sig oc =
 (** [min_classes n r dom oc] generates an Alloy constraint (sent to [oc]) that requires the existence of [n] distinct events in [dom], none of which are related by [r]*)
 let min_classes n r dom oc =
   let es = List.map (sprintf "e%d") (range 1 n) in
-  fprintf oc "  some disj %a : E {\n" (fprintf_iter ", " pp_str) es;
-  fprintf oc "    %a in X.(%s)\n" (fprintf_iter "+" pp_str) es dom;
+  fprintf oc "  some disj %a : E {\n" (MyList.pp ", " pp_str) es;
+  fprintf oc "    %a in X.(%s)\n" (MyList.pp "+" pp_str) es dom;
   fprintf oc "    no ((sq[%a]-iden) & %s[none,X])\n"
-	  (fprintf_iter "+" pp_str) es r;
+	  (MyList.pp "+" pp_str) es r;
   fprintf oc "  }\n"
 
 let pp_min_threads oc =
@@ -234,13 +234,13 @@ let run_alloy comparator_als stamp =
 	    (if !iter then "iter" else "once")
   in
   let solver = "glucose" in
-  printf "Alloy started at %s.\n" (now ());
+  printf "Alloy started at %s.\n" (MyUnix.now ());
   flush stdout;
   let alloy_exit_code =
     Sys.command (sprintf "export SOLVER=%s; %s ../%s 0 ../xml/%s"
 			 solver alloy_cmd comparator_als stamp)
   in
-  printf "Alloy finished at %s.\n" (now ());
+  printf "Alloy finished at %s.\n" (MyUnix.now ());
   if alloy_exit_code != 0 then (
     printf "Alloy was unsuccessful.\n";
     exit 0

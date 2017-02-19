@@ -52,10 +52,10 @@ let get_args () =
     raise (Arg.Bad "Missing or too many arguments.")
   in
   let xml_path =
-    try get_only_element !xml_path with Not_found -> bad_arg ()
+    try MyList.the !xml_path with Not_found -> bad_arg ()
   in
   let out_path =
-    try get_only_element !out_path with Not_found -> bad_arg ()
+    try MyList.the !out_path with Not_found -> bad_arg ()
   in
   let out_type = match !output_dot, !output_als, !output_lit with
     | true, false, false -> Dot
@@ -83,8 +83,8 @@ let main () =
 	 | Xml_input.Single x ->
 	    let g = Mk_graphviz.dot_of_execution x in
 	    fprintf fmtr "%a\n" Graphviz.pp_graph g
-	 | Xml_input.Double (x,_,_) ->
-	    let g = Mk_graphviz.dot_of_execution x in
+	 | Xml_input.Double (x,y,pi) ->
+	    let g = Mk_graphviz.dot_of_execution_pair x y pi in
 	    fprintf fmtr "%a\n" Graphviz.pp_graph g
        end
     | Als ->
@@ -93,9 +93,9 @@ let main () =
 	 match exec with
 	 | Xml_input.Single x ->      
 	    fprintf fmtr "%a\n" Alsbackend.als_of_execution x
-	 | Xml_input.Double (x1,x2,pi) ->
-	    fprintf fmtr "%a\n" Alsbackend.als_of_execution x1;
-	    fprintf fmtr "%a\n" Alsbackend.als_of_execution x2;
+	 | Xml_input.Double (x,y,pi) ->
+	    fprintf fmtr "%a\n" Alsbackend.als_of_execution x;
+	    fprintf fmtr "%a\n" Alsbackend.als_of_execution y;
 	    fprintf fmtr "%a\n" Alsbackend.als_of_rel ("pi", pi)
        end
     | Lit ->

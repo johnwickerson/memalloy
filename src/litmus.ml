@@ -60,18 +60,18 @@ let pp_instr oc = function
   | Load (r,le), attrs -> 
      fprintf oc "%a := load(%a%a)"
 	     Register.pp r (pp_expr Location.pp) le
-	     (fprintf_iter "" (fun oc -> fprintf oc ",%s")) attrs
+	     (MyList.pp "" (fun oc -> fprintf oc ",%s")) attrs
   | Store (le,ve), attrs ->
      fprintf oc "store(%a,%a%a)"
 	     (pp_expr Location.pp) le (pp_expr Value.pp) ve
-	     (fprintf_iter "" (fun oc -> fprintf oc ",%s")) attrs
+	     (MyList.pp "" (fun oc -> fprintf oc ",%s")) attrs
   | Cas (le,v,ve), attrs ->
      fprintf oc "cas(%a,%a,%a%a)"
 	     (pp_expr Location.pp) le Value.pp v (pp_expr Value.pp) ve
-	     (fprintf_iter "" (fun oc -> fprintf oc ",%s")) attrs
+	     (MyList.pp "" (fun oc -> fprintf oc ",%s")) attrs
   | Fence, attrs ->
      fprintf oc "fence(%a)"
-	     (fprintf_iter "" (fun oc -> fprintf oc ",%s")) attrs
+	     (MyList.pp "" (fun oc -> fprintf oc ",%s")) attrs
       
 (** A component is either a single instruction, a collection of components in sequence, a collection of components that are unsequenced, or an if-statement *)
 type 'a component =
@@ -91,8 +91,8 @@ let rec map_component f = function
 let rec pp_component k oc = function
   | Basic b -> k oc b     
   | Seq [c] | Unseq [c] -> (pp_component k) oc c
-  | Seq cs -> fparen (fprintf_iter "; " (pp_component k)) oc cs
-  | Unseq cs -> fparen (fprintf_iter " + " (pp_component k)) oc cs
+  | Seq cs -> fparen (MyList.pp "; " (pp_component k)) oc cs
+  | Unseq cs -> fparen (MyList.pp " + " (pp_component k)) oc cs
   | If (r,v,c) ->
      fprintf oc "if (%a==%a) %a" Register.pp r Value.pp v
 	     (pp_component k) c
@@ -101,16 +101,16 @@ let rec pp_component k oc = function
 type litmus_test = {
     locs: Location.t list;
     thds: (instruction * attribute list) component list;
-    post: (address, Value.t) map;
+    post: (address, Value.t) Assoc.t;
   }
 
 (** Simple pretty-printing of litmus tests *)	   
 let pp oc lt =
-  fprintf oc "Locations: %a.\n\n" (fprintf_iter ", " Location.pp) lt.locs;
+  fprintf oc "Locations: %a.\n\n" (MyList.pp ", " Location.pp) lt.locs;
   let pp_thd tid = function
     | Seq cs ->
        fprintf oc "Thread %d:\n" tid;
-       fprintf_iter ";\n" (pp_component pp_instr) oc cs;
+       MyList.pp ";\n" (pp_component pp_instr) oc cs;
        fprintf oc ";\n\n";
        tid+1
     | _ -> assert false
@@ -118,5 +118,5 @@ let pp oc lt =
   let _ = List.fold_left pp_thd 0 lt.thds in
   fprintf oc "Final: ";
   let pp_cnstrnt oc (a,v) = fprintf oc "%a==%d" pp_addr a v in
-  fprintf_iter " && " pp_cnstrnt oc lt.post
+  MyList.pp " && " pp_cnstrnt oc lt.post
   

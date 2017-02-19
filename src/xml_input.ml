@@ -27,19 +27,18 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
 open Format
 open General_purpose
-open Exec
 
 type input_type =
-  | Single of execution
-  | Double of execution * execution * event relation
+  | Single of Exec.t
+  | Double of Exec.t * Exec.t * Event.t Rel.t
 
 type field =
-  | Set of string list
-  | Rel of (string * string) list
+  | Set of Event.t list
+  | Rel of (Event.t * Event.t) list
 					    
 let add_assocs map (k,vs) =
   let vs' = try List.assoc k map with Not_found -> [] in
-  (k, vs@vs') :: (remove_assocs [k] map)
+  (k, vs@vs') :: (Assoc.remove_assocs [k] map)
     
 let parse_file xml_path =
   let alloy_soln = Xml.parse_file xml_path in
@@ -55,14 +54,14 @@ let parse_file xml_path =
   let find_exec name =
     try
       let skolem_node = List.find (label_is name) skolem_nodes in
+      let children = Xml.children skolem_node in
       let tuple_node =
-	try get_only_element
-	      (List.filter (tag_is "tuple") (Xml.children skolem_node))
+	try MyList.the (List.filter (tag_is "tuple") children)
 	with Not_found -> failwith "Expected a 'tuple' node"
       in
+      let children = Xml.children tuple_node in
       let atom_node =
-	try get_only_element
-	      (List.filter (tag_is "atom") (Xml.children tuple_node))
+	try MyList.the (List.filter (tag_is "atom") children)
 	with Not_found -> failwith "Expected an 'atom' node"
       in
       Some (label_of atom_node)
@@ -95,9 +94,8 @@ let parse_file xml_path =
   let mk_field xo field_node =
     let field_children = Xml.children field_node in
     let arity =
-      let type_nodes = List.filter (tag_is "types") field_children in
       let type_node =
-	try get_only_element type_nodes
+	try MyList.the (List.filter (tag_is "types") field_children)
 	with Not_found -> failwith "Expected a single 'types' node" 
       in
       List.length (Xml.children type_node)
@@ -112,11 +110,11 @@ let parse_file xml_path =
     let field_name = label_of field_node in
     match mk_field xo field_node with
     | Set tuples ->
-       let sets = add_assocs exec.sets (field_name, tuples) in
-       { exec with sets = sets }
+       let sets = add_assocs exec.Exec.sets (field_name, tuples) in
+       { exec with Exec.sets = sets }
     | Rel tuples ->
-       let rels = add_assocs exec.rels (field_name, tuples) in
-       { exec with rels = rels }
+       let rels = add_assocs exec.Exec.rels (field_name, tuples) in
+       { exec with Exec.rels = rels }
   in
   let x1 =
     match find_exec "$gp_X" with
@@ -124,18 +122,15 @@ let parse_file xml_path =
     | Some x1 -> x1
   in
   let exec1 =
-    List.fold_left (add_field (Some x1)) empty_exec field_nodes
+    List.fold_left (add_field (Some x1)) Exec.empty_exec field_nodes
   in
   match find_exec "$gp_Y" with
   | None -> Single exec1
   | Some x2 ->   
      let exec2 =
-       List.fold_left (add_field (Some x2)) empty_exec field_nodes
+       List.fold_left (add_field (Some x2)) Exec.empty_exec field_nodes
      in
      let pi_node = List.find (label_is "$gp_map") skolem_nodes in
      match mk_field None pi_node with
      | Rel pi -> Double (exec1, exec2, pi)
      | _ -> failwith "Ill-formed 'map' relation"
-		     
-		     
-

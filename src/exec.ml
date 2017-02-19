@@ -27,28 +27,20 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
 open Format
 open General_purpose
-
-type event = string
-
-(** Remove dollar signs from event names *)
-let pp_event_name oc e =
-  fprintf oc "%s" (Str.global_replace (Str.regexp_string "$") "" e)
-
-type 'a relation = ('a * 'a) list
 	  
 (** An execution is a list of named event sets and a list of named event relations *)
-type execution = {
-    sets : (string * event list) list;
-    rels : (string * event relation) list;
+type t = {
+    sets : (string * Event.t MySet.t) MySet.t;
+    rels : (string * Event.t Rel.t) MySet.t;
   }
 
 (** Basic pretty-printing of executions *)
 let pp_exec oc exec =
   let pp_set (name,tuples) =
-    fprintf oc "Set: %s={%a}\n" name (fprintf_iter "," pp_str) tuples
+    fprintf oc "Set: %s={%a}\n" name (MyList.pp "," pp_str) tuples
   in
   let pp_rel (name,tuples) =
-    fprintf oc "Rel: %s={%a}\n" name (fprintf_iter "," pp_pair) tuples
+    fprintf oc "Rel: %s={%a}\n" name (MyList.pp "," (fun oc (s,s') -> fprintf oc "(%s,%s)" s s')) tuples
   in
   List.iter pp_set exec.sets;
   List.iter pp_rel exec.rels
@@ -71,23 +63,23 @@ let get_rel x r =
 
 (** A collection of maps that identify the thread, location, value written, and value read (where applicable) of each event *)
 type execution_maps = {
-    thd_map : (event, int) map;
-    loc_map : (event, Location.t) map;
-    wval_map : (event, Value.t) map;
-    rval_map : (event, Value.t) map;
+    thd_map : (Event.t, int) Assoc.t;
+    loc_map : (Event.t, Location.t) Assoc.t;
+    wval_map : (Event.t, Value.t) Assoc.t;
+    rval_map : (Event.t, Value.t) Assoc.t;
   }
 
 (** [remove_transitive r_name x] returns a new execution in which the relation named [r_name] has been replaced with its intransitive core *)
 let remove_transitive r_name x =
   let r = List.assoc r_name x.rels in
-  let r = remove_transitive_edges r in
-  { x with rels = (r_name, r) :: (remove_assocs [r_name] x.rels) }
+  let r = Rel.remove_transitive_edges r in
+  { x with rels = (r_name, r) :: (Assoc.remove_assocs [r_name] x.rels) }
 
 (** Build a map from each write event to the value that it writes. Initial writes, if present, write zero; all other writes write positive integers. The value written by each write event corresponds to its position in the coherence order. *)
 let mk_wval_map loc_map co ws iws =
   let loc_map = List.filter (fun (e,_) -> List.mem e ws) loc_map in
-  let loc_classes = val_list (invert_map loc_map) in
-  let loc_classes = List.map (List.sort (compare co)) loc_classes in
+  let loc_classes = Assoc.val_list (Assoc.invert_map loc_map) in
+  let loc_classes = List.map (List.sort (Rel.compare co)) loc_classes in
   let rec mk_val (i,res) e = match i, List.mem e iws with
     | 0, false -> mk_val (1,res) e
     | _ -> (i+1, (e,i)::res)
@@ -100,7 +92,7 @@ let mk_wval_map loc_map co ws iws =
 (** Build a map from each read event to the value that it reads. If the event has an incoming reads-from edge, then this value is the value written by the source of that edge. If the event has no incoming reads-from edge, then this value is 0. *)
 let mk_rval_map wval_map rf =
   let find_src e = try
-      let w = List.assoc e (invert_rel rf) in
+      let w = List.assoc e (Rel.invert rf) in
       try List.assoc w wval_map
       with Not_found -> failwith "Expected write to have a value"
     with Not_found -> 0
@@ -112,11 +104,32 @@ let resolve_exec x =
   let iws = get_set x "IW" in
   let rs = get_set x "R" in
   let ws = get_set x "W" in
-  let rw = union rs ws in
-  let nI = diff (get_set x "ev") iws in
-  let thd_map = partition true (get_rel x "sthd") nI in
-  let loc_map = partition true (get_rel x "sloc") rw in
+  let rw = MySet.union rs ws in
+  let nI = MySet.diff (get_set x "ev") iws in
+  let thd_map = Rel.partition true (get_rel x "sthd") nI in
+  let loc_map = Rel.partition true (get_rel x "sloc") rw in
   let wval_map = mk_wval_map loc_map (get_rel x "co") ws iws in
   let rval_map = mk_rval_map wval_map (get_rel x "rf") rs in
   { thd_map = thd_map; loc_map = loc_map;
     wval_map = wval_map; rval_map = rval_map }
+
+(** [rectify_maps (x,xmaps) (y,ymaps) pi] returns a new set of execution maps for [y] that is consistent with the threads/locations/values used for [x] according to the mapping [pi]. For instance, if an event {i e} in [x] has location {i l} according to [xmaps], and [pi] relates {i e} to {i e'} in [y], then {i e'} will also have location {i l} in the returned execution maps. *)
+let rectify_maps (x,xmaps) (y,ymaps) pi =
+  let xev = get_set x "ev" in
+  let yev = get_set y "ev" in
+  let fix map' map e =
+    let is_mismatch e' =
+      try List.mem (e',e) pi && List.assoc e' map' <> List.assoc e map
+      with Not_found -> false
+    in
+    try
+      let e' = List.find is_mismatch xev in
+      let v = Assoc.strong_assoc map e in
+      let v' = Assoc.strong_assoc map' e' in
+      Assoc.permute_vals (v, v') map
+    with Not_found -> map
+  in
+  let thd_map = List.fold_left (fix xmaps.thd_map) ymaps.thd_map yev in
+  let loc_map = List.fold_left (fix xmaps.loc_map) ymaps.loc_map yev in
+  { ymaps with thd_map = thd_map; loc_map = loc_map }
+  
