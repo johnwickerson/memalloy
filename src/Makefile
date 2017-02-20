@@ -16,7 +16,7 @@ OCD_OPTS := $(OCD_OPTS) -docflags -css-style,mystyle.css
 
 .PHONY: all clean gen comparator doc
 
-all: gen comparator # doc
+all: gen comparator doc
 
 gen: 
 	ocamlbuild $(OCB_OPTS) gen.native

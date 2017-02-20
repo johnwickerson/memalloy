@@ -57,11 +57,12 @@ let dot_of_event x maps e =
     try asprintf "%a" Location.pp (List.assoc e maps.loc_map)
     with Not_found -> ""
   in
-  let thd =
-    try asprintf "T%d: " (List.assoc e maps.thd_map) with Not_found -> ""
-  in
+  (* let thd =
+    try asprintf "T%d: " (List.assoc e maps.thd_map)
+    with Not_found -> ""
+  in *)
   let e = asprintf "%a" Event.pp e in
-  let label = asprintf "%s: %s%s[%a]%s%s" e thd dir
+  let label = asprintf "%s: %s[%a]%s%s" e dir
 		       (MyList.pp "," pp_str) attrs loc vals
   in
   let attrs =

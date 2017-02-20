@@ -91,7 +91,11 @@ and partition_par sb = function
 
 let litmus_of_execution' x maps =
   let locs = Assoc.key_list (Assoc.invert_map maps.loc_map) in
-  let thd_classes = Assoc.val_list (Assoc.invert_map maps.thd_map) in
+  let inv_thd_map = Assoc.invert_map maps.thd_map in
+  let inv_thd_map =
+    List.sort (fun (k,_) (k',_) -> compare k k') inv_thd_map
+  in
+  let thd_classes = Assoc.val_list inv_thd_map in
   let sb = get_rel x "sb" in
   let thds = List.map (partition_seq sb) thd_classes in
   let mk_reg_map (i,res) e = (i+1, (e,i)::res) in
@@ -131,5 +135,4 @@ let litmus_of_execution_pair x y pi =
   let lit1 = litmus_of_execution' x xmaps in
   let lit2 = litmus_of_execution' y ymaps in
   lit1,lit2
-  
 

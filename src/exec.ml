@@ -37,10 +37,13 @@ type t = {
 (** Basic pretty-printing of executions *)
 let pp_exec oc exec =
   let pp_set (name,tuples) =
-    fprintf oc "Set: %s={%a}\n" name (MyList.pp "," pp_str) tuples
+    fprintf oc "Set: %s={%a}\n" name
+	    (MyList.pp "," Event.pp) tuples
   in
   let pp_rel (name,tuples) =
-    fprintf oc "Rel: %s={%a}\n" name (MyList.pp "," (fun oc (s,s') -> fprintf oc "(%s,%s)" s s')) tuples
+    fprintf oc "Rel: %s={%a}\n" name
+	    (MyList.pp "," (fparen (Pair.pp Event.pp "," Event.pp)))
+	    tuples
   in
   List.iter pp_set exec.sets;
   List.iter pp_rel exec.rels
@@ -63,11 +66,17 @@ let get_rel x r =
 
 (** A collection of maps that identify the thread, location, value written, and value read (where applicable) of each event *)
 type execution_maps = {
-    thd_map : (Event.t, int) Assoc.t;
+    thd_map : (Event.t, Tid.t) Assoc.t;
     loc_map : (Event.t, Location.t) Assoc.t;
     wval_map : (Event.t, Value.t) Assoc.t;
     rval_map : (Event.t, Value.t) Assoc.t;
   }
+
+let pp_maps oc maps =
+  fprintf
+    oc "thd_map = {%a}, loc_map = {%a}"
+    (MyList.pp "," (Pair.pp Event.pp "=" Tid.pp)) maps.thd_map
+    (MyList.pp "," (Pair.pp Event.pp "=" Location.pp)) maps.loc_map
 
 (** [remove_transitive r_name x] returns a new execution in which the relation named [r_name] has been replaced with its intransitive core *)
 let remove_transitive r_name x =
