@@ -6,4 +6,5 @@
     -arch C \
     -events 5 \
     -arch2 PPC \
-    -events2 7
+    -events2 7 \
+    -expect 1
