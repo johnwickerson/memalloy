@@ -32,6 +32,7 @@ let succ_paths = ref []
 let fail_paths = ref []
 let withinit = ref false
 let minimal = ref false
+let hint = ref None
 let eventcount = ref 0
 let eventcount2 = ref 0
 let description = ref ""
@@ -86,6 +87,15 @@ let pp_min_locs oc =
     min_classes !atleastnlocs "sloc" "R + W" oc
   )
 
+let pp_file oc path =
+  let ic = open_in path in
+  try while true do fprintf oc "%s\n" (input_line ic) done
+  with End_of_file -> close_in ic
+			      
+let pp_hint_predicate oc = match !hint with
+  | None -> ()
+  | Some hint_path -> pp_file oc hint_path
+
 (** [pp_comparator arch oc] generates an Alloy file (sent to [oc]) that can be used to find an execution of type [arch] that satisfies all the models in [!succ_paths] and violates all the models in [!fail_paths]. *)
 let pp_comparator arch oc =
   if !description != "" then fprintf oc "/* %s */\n" !description;
@@ -99,6 +109,8 @@ let pp_comparator arch oc =
     fprintf oc "  withoutinit[X]\n\n";
   pp_violated_models "X" oc;
   pp_satisfied_models "X" oc;
+  if !hint <> None then
+    fprintf oc "  hint[X]\n\n";
   if !minimal then (
     fprintf oc "  not (some e : X.ev {\n";
     for i = 1 to List.length !fail_paths do
@@ -113,6 +125,7 @@ let pp_comparator arch oc =
   pp_min_threads oc;
   pp_min_locs oc;
   fprintf oc "}\n\n";
+  pp_hint_predicate oc;
   fprintf oc "run gp for 1 Exec, %s%d E, 3 Int\n"
 	  (if !minimal then "exactly " else "")
 	  !eventcount
@@ -135,11 +148,14 @@ let pp_comparator2 arch mapping_path arch2 oc =
   fprintf oc "  withoutinit[Y]\n\n";
   pp_violated_models "X" oc;
   pp_satisfied_models "Y" oc;
+  if !hint <> None then
+    fprintf oc "  hint[X]\n\n";
   fprintf oc "  // We have a valid application of the mapping\n";
   fprintf oc "  apply_map[X, Y, map]\n\n";
   pp_min_threads oc;
   pp_min_locs oc;
   fprintf oc "}\n\n";
+  pp_hint_predicate oc;
   fprintf oc "run gp for exactly 1 M1/Exec, exactly 1 N1/Exec, %d SE, %d HE, 3 Int\n" !eventcount !eventcount2
 
 let get_args () =
@@ -164,6 +180,8 @@ let get_args () =
        "Expect to find this many unique solutions (optional)");
       ("-desc", Arg.Set_string description,
        "Textual description (optional)");
+      ("-hint", Arg.String (set_option_ref hint),
+       "An .als file containing a 'hint[X]' predicate (optional)");
       ("-atleastnthreads", Arg.Set_int atleastnthreads,
        "Find executions with at least N threads (default 0)");
       ("-atleastnlocs", Arg.Set_int atleastnlocs,
