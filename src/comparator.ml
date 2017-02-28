@@ -1,7 +1,7 @@
 (*
 MIT License
 
-Copyright (c) 2017 by John Wickerson.
+Copyright (c) 2017 by John Wickerson and Nathan Chong.
 
 Permission is hereby granted, free of charge, to any person obtaining
 a copy of this software and associated documentation files (the
@@ -38,8 +38,13 @@ let eventcount2 = ref 0
 let description = ref ""
 let iter = ref false
 let expectation = ref None
-let atleastnthreads = ref 0		      
-let atleastnlocs = ref 0
+		      
+let min_thds = ref 0
+let max_thds = ref (-1)
+let min_locs = ref 0
+let max_locs = ref (-1)
+let min_txns = ref 0
+let max_txns = ref (-1)
 
 let pp_open_modules succ_sig fail_sig oc =
   for i = 1 to List.length !succ_paths do
@@ -66,25 +71,29 @@ let pp_satisfied_models exec_sig oc =
     fprintf oc "  M%d/consistent[none,%s]\n\n" i exec_sig
   done
   
-(** [min_classes n r dom oc] generates an Alloy constraint (sent to [oc]) that requires the existence of [n] distinct events in [dom], none of which are related by [r]*)
-let min_classes n r dom oc =
+(** [min_classes ev n r dom oc] generates an Alloy constraint (sent to [oc]) that requires the existence of [n] distinct objects of type [ev], all in [dom], and none of which are related by [r]*)
+let min_classes ev n r dom oc =
   let es = List.map (sprintf "e%d") (range 1 n) in
-  fprintf oc "  some disj %a : E {\n" (MyList.pp ", " pp_str) es;
+  fprintf oc "  some disj %a : %s {\n" (MyList.pp ", " pp_str) es ev;
   fprintf oc "    %a in X.(%s)\n" (MyList.pp "+" pp_str) es dom;
   fprintf oc "    no ((sq[%a]-iden) & %s[none,X])\n"
 	  (MyList.pp "+" pp_str) es r;
   fprintf oc "  }\n"
 
-let pp_min_threads oc =
-  if 0 < !atleastnthreads then (
-    fprintf oc "  // At least %d threads\n" !atleastnthreads;
-    min_classes !atleastnthreads "sthd" "ev - IW" oc
+(** [pp_min_classes name ev n r dom oc] generates an Alloy constraint (sent to [oc]) that requires the existence of [n] distinct objects of type [ev], all in [dom], none of which are related by [r]. The [name] is for a descriptive comment.*)
+let pp_min_classes name ev n r dom oc =
+  if 0 < n then (
+    fprintf oc "  // At least %d %s\n" n name;
+    min_classes ev n r dom oc
   )
-
-let pp_min_locs oc =
-  if 0 < !atleastnlocs then (
-    fprintf oc "  // At least %d locations\n" !atleastnlocs;
-    min_classes !atleastnlocs "sloc" "R + W" oc
+	  
+(** [pp_max_classes name ev n r dom oc] generates an Alloy constraint (sent to [oc]) that requires the non-existence of [n+1] distinct objects of type [ev], all in [dom], none of which are related by [r]. The [name] is for a descriptive comment.*)
+let pp_max_classes name ev n r dom oc =
+  if 0 <= n then (
+    fprintf oc "  // At most %d %s\n" n name;
+    fprintf oc "  not (\n";
+    min_classes ev (n+1) r dom oc;
+    fprintf oc "  )\n"
   )
 
 let pp_file oc path =
@@ -122,8 +131,10 @@ let pp_comparator arch oc =
     done;
     fprintf oc "  })\n"
   );
-  pp_min_threads oc;
-  pp_min_locs oc;
+  pp_min_classes "threads" "E" !min_thds "sthd" "ev - IW" oc;
+  pp_max_classes "threads" "E" !max_thds "sthd" "ev - IW" oc;
+  pp_min_classes "locations" "E" !min_locs "sloc" "R + W" oc;
+  pp_max_classes "locations" "E" !max_locs "sloc" "R + W" oc;
   fprintf oc "}\n\n";
   pp_hint_predicate oc;
   fprintf oc "run gp for 1 Exec, %s%d E, 3 Int\n"
@@ -152,8 +163,10 @@ let pp_comparator2 arch mapping_path arch2 oc =
     fprintf oc "  hint[X]\n\n";
   fprintf oc "  // We have a valid application of the mapping\n";
   fprintf oc "  apply_map[X, Y, map]\n\n";
-  pp_min_threads oc;
-  pp_min_locs oc;
+  pp_min_classes "threads" "SE" !min_thds "sthd" "ev - IW" oc;
+  pp_max_classes "threads" "SE" !max_thds "sthd" "ev - IW" oc;
+  pp_min_classes "locations" "SE" !min_locs "sloc" "R + W" oc;
+  pp_max_classes "locations" "SE" !max_locs "sloc" "R + W" oc;
   fprintf oc "}\n\n";
   pp_hint_predicate oc;
   fprintf oc "run gp for exactly 1 M1/Exec, exactly 1 N1/Exec, %d SE, %d HE, 3 Int\n" !eventcount !eventcount2
@@ -182,10 +195,20 @@ let get_args () =
        "Textual description (optional)");
       ("-hint", Arg.String (set_option_ref hint),
        "An .als file containing a 'hint[X]' predicate (optional)");
-      ("-atleastnthreads", Arg.Set_int atleastnthreads,
+      ("-minthreads", Arg.Set_int min_thds,
        "Find executions with at least N threads (default 0)");
-      ("-atleastnlocs", Arg.Set_int atleastnlocs,
+      ("-maxthreads", Arg.Set_int max_thds,
+       "Find executions with at most N threads");
+      ("-threads",
+       Arg.Int (fun i -> assert (0 < i); min_thds := i; max_thds := i),
+       "Find executions with exactly N threads");
+      ("-minlocations", Arg.Set_int min_locs,
        "Find executions with at least N locations (default 0)");
+      ("-maxlocations", Arg.Set_int max_locs,
+       "Find executions with at most N locations");
+      ("-locations",
+       Arg.Int (fun i -> assert (0 < i); min_locs := i; max_locs := i),
+       "Find executions with exactly N locations");
       ("-iter", Arg.Set iter, "Option: find all solutions");
       ("-minimal", Arg.Set minimal, "Option: find minimal executions");
       ("-withinit", Arg.Set withinit,
