@@ -65,7 +65,7 @@ let rec pp_node oc cid = function
 
 (** Pretty-print a graphviz edge *)
 let pp_edge oc (e,e',attrs) =
-  fprintf oc "%s -> %s [%a]" e e' pp_gv_attrs attrs
+  fprintf oc "%s -> %s [%a]\n" e e' pp_gv_attrs attrs
 
 (** Pretty-print a graph *)
 let pp_graph oc g =
