@@ -12,6 +12,8 @@
 
 - Java runtime version 8 (Java SE 8).
 
+- Graphviz version 2.40.1 
+
 # Quick start
 
 1. Modify `configure.sh` to suit your OS.
