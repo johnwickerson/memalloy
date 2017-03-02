@@ -32,6 +32,7 @@ eval `opam config env`
 
 # Install new version of graphviz from source
 bash install-graphviz-2.40.1.sh
+dot -V
 
 export OS=amd64-linux
 
