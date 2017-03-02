@@ -59,9 +59,9 @@ let rec pp_node oc cid = function
     | Cluster (nodes, attrs) ->
        fprintf oc "subgraph cluster_%d {\n" cid;
        List.iter (fprintf oc "%a;\n" pp_gv_attr) attrs;
-       let cid = List.fold_left (pp_node oc) cid nodes in
+       let cid = List.fold_left (pp_node oc) (cid+1) nodes in
        fprintf oc "}\n";
-       cid+1
+       cid
 
 (** Pretty-print a graphviz edge *)
 let pp_edge oc (e,e',attrs) =
@@ -72,6 +72,7 @@ let pp_graph oc g =
   fprintf oc "digraph G {\n";
   fprintf oc "ranksep = 1.3;\n";
   fprintf oc "nodesep = 0.8;\n";
+  fprintf oc "forcelabels = true;\n";
   ignore (List.fold_left (pp_node oc) 0 g.nodes);
   List.iter (pp_edge oc) g.edges;
   fprintf oc "}\n"

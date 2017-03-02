@@ -88,7 +88,7 @@ let dot_of_rel (name, tuples) =
   in
   let gv_attrs = ("fontcolor", edge_color name) :: gv_attrs in
   let gv_attrs = ("color", edge_color name) :: gv_attrs in
-  let gv_attrs = ("label", name) :: gv_attrs in
+  let gv_attrs = ("xlabel", name) :: gv_attrs in
   let dot_of_pair (e,e') =
     let e = asprintf "%a" Event.pp e in
     let e' = asprintf "%a" Event.pp e' in
