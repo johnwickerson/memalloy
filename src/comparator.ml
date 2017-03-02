@@ -368,9 +368,10 @@ let main () =
   for i = 0 to num_solns - 1 do
     xml_to_dot stamp i;
     dot_to_png stamp i;
-    printf "Converted solution %d of %d.\n" (i + 1) num_solns;
+    printf "Converted solution %d of %d.\r" (i + 1) num_solns;
     flush stdout
   done;
+  printf "\n";
   printf "Solution(s) are in png/%s.\n" stamp;
   (match Sys.os_type, num_solns with
    | "Unix", 1 -> ignore (Sys.command "open png/_latest/test_0.png")

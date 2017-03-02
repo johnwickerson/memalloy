@@ -1,5 +1,4 @@
 install:
-	opam install xml-light
 	make -C src
 	git submodule update --init --recursive
 	make -C alloystar
