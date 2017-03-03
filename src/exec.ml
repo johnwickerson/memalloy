@@ -80,9 +80,16 @@ let pp_maps oc maps =
 
 (** [remove_transitive r_name x] returns a new execution in which the relation named [r_name] has been replaced with its intransitive core *)
 let remove_transitive r_name x =
-  let r = List.assoc r_name x.rels in
+  let r = get_rel x r_name in
   let r = Rel.remove_transitive_edges r in
   { x with rels = (r_name, r) :: (Assoc.remove_assocs [r_name] x.rels) }
+
+(** [remove_stale_rfs x] returns a new execution in which the "stale" {i rf}-edges (those that are also in {i co;rf}) have been removed *)
+let remove_stale_rfs x =
+  let rf = get_rel x "rf" in
+  let co = get_rel x "co" in
+  let r = Rel.remove_edges co rf rf in
+  { x with rels = ("rf", r) :: (Assoc.remove_assocs ["rf"] x.rels) }
 
 (** Build a map from each write event to the value that it writes. Initial writes, if present, write zero; all other writes write positive integers. The value written by each write event corresponds to its position in the coherence order. *)
 let mk_wval_map loc_map co ws iws =

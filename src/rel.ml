@@ -35,12 +35,16 @@ let invert r =
 
 let compare r e e' = if List.mem (e,e') r then -1 else 1
 
-let remove_transitive_edges r =
+(** [remove_edges r1 r2 r] returns the relation [r] but without any edges that are in [r1;r2] *)
+let remove_edges r1 r2 r =
   let is_transitive (e,e') =
     MyList.exists_pair (fun (e1,e1') (e2,e2') ->
-			e1 = e && e1' = e2 && e2' = e') r r
+			e1 = e && e1' = e2 && e2' = e') r1 r2
   in
   List.filter (fun edge -> not (is_transitive edge)) r
+
+(** [remove_transitive_edges r] returns the relation [r] but without any transitive edges. It is assumed that [r] is transitive to begin with. *)
+let remove_transitive_edges r = remove_edges r r r
 
 (** [partition true r es] returns a list of partitions of [es], with two elements of [es] being in the same partition iff they are related (in either direction) by [r]. [partition false r es] is similar, but each partitions contains elements that are {i not} related (in either direction) by [r]. *)
 let partition invert r es =

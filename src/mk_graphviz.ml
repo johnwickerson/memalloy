@@ -95,10 +95,11 @@ let dot_of_rel (name, tuples) =
     (e,e',gv_attrs)
   in
   List.map dot_of_pair tuples
-
+  
 let dot_of_execution' maps x =
   let x = remove_transitive "sb" x in
   let x = remove_transitive "co" x in
+  let x = remove_stale_rfs x in
   let thds = Assoc.val_list (Assoc.invert_map maps.thd_map) in
   let mk_cluster ns =
     Cluster (ns, ["color", "azure4"; "style", "dashed"])
