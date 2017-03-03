@@ -90,6 +90,7 @@ and partition_par sb = function
      Unseq (List.map (partition_seq sb) classes)
 
 let litmus_of_execution' x maps =
+  let x = remove_stale_rfs x in
   let locs = Assoc.key_list (Assoc.invert_map maps.loc_map) in
   let inv_thd_map = Assoc.invert_map maps.thd_map in
   let inv_thd_map =
