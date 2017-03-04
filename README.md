@@ -1,4 +1,5 @@
-[![Build Status](https://travis-ci.org/johnwickerson/memalloy.svg?branch=master)](https://travis-ci.org/johnwickerson/memalloy)
+Master branch: [![Build Status](https://travis-ci.org/johnwickerson/memalloy.svg?branch=master)](https://travis-ci.org/johnwickerson/memalloy). 
+Dev branch: [![Build Status](https://travis-ci.org/johnwickerson/memalloy.svg?branch=dev)](https://travis-ci.org/johnwickerson/memalloy).
 
 # System requirements
 
