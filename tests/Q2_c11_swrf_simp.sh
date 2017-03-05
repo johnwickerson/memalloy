@@ -7,7 +7,4 @@
     -expect 1 \
     -solver plingeling \
     -satisfies models/totalsb.cat \
-    -threads 6 \
-    -locations 2
-    #-satisfies models/c11_nosc.cat
-    # -hint execution_hints/nienhuis_example.als
+    -hint execution_hints/nienhuis_example.als
