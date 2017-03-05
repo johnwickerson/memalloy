@@ -393,9 +393,14 @@ let main () =
   done;
   printf "\n";
   printf "Solution(s) are in png/%s.\n" stamp;
-  (match Sys.os_type, num_solns with
-   | "Unix", 1 -> ignore (Sys.command "open png/_latest/test_0.png")
-   | "Unix", _ -> ignore (Sys.command "open png/_latest")
+  let os =
+    try Sys.getenv "OS"
+    with Not_found ->
+      failwith "Expected OS environment variable to be set"
+  in
+  (match os, num_solns with
+   | "x86-mac", 1 -> ignore (Sys.command "open png/_latest/*.png")
+   | "x86-mac", _ -> ignore (Sys.command "open png/_latest")
    | _, _ -> ());
   (match !expectation with
    | Some i when i <> num_solns ->
