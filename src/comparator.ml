@@ -38,6 +38,7 @@ let eventcount2 = ref 0
 let description = ref ""
 let iter = ref false
 let expectation = ref None
+let solver = ref "glucose"
 		      
 let min_thds = ref 0
 let max_thds = ref (-1)
@@ -208,6 +209,8 @@ let get_args () =
        "Expect to find this many unique solutions (optional)");
       ("-desc", Arg.Set_string description,
        "Textual description (optional)");
+      ("-solver", Arg.Set_string solver,
+       "Which SAT solver to use (optional). One of: sat4j, cryptominisat, glucose (default), plingeling, lingeling, minisatprover, or minisat.");
       ("-hint", Arg.String (set_option_ref hint),
        "An .als file containing a 'hint[X]' predicate (optional)");
       ("-minthreads", Arg.Set_int min_thds,
@@ -289,12 +292,11 @@ let run_alloy comparator_als stamp =
     sprintf "cd alloystar; ./runalloy_%s.sh"
 	    (if !iter then "iter" else "once")
   in
-  let solver = "glucose" in
   printf "Alloy started at %s.\n" (MyUnix.now ());
   flush stdout;
   let alloy_exit_code =
     Sys.command (sprintf "export SOLVER=%s; %s ../%s 0 ../xml/%s"
-			 solver alloy_cmd comparator_als stamp)
+			 !solver alloy_cmd comparator_als stamp)
   in
   printf "Alloy finished at %s.\n" (MyUnix.now ());
   if alloy_exit_code != 0 then (

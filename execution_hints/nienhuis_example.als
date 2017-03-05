@@ -1,27 +1,4 @@
-open ../models_als/c11_swrf[E] as M1
-open ../models_als/c11_simp[E] as M2
-
-sig E {}
-
-pred gp [X : Exec_C] {
-
-  withoutinit[X]
-    
-  // Prefer solutions without RMWs
-  //no_RMWs[none,X]  
-
-  // Prefer solutions with total sb per thread
-  total_sb[none,X]  
-
-  // The execution is forbidden in SRA
-  not(M1/consistent[none,X])
-  M1/dead[none,X]
-
-  // The execution is allowed (and not faulty) in the Simp model
-  M2/consistent[none,X]
-}
-
-pred hint[X:Exec_C] {
+pred hint[X:Exec] {
   /*
 e1:RMW[rel](y,2,3) || e3:R[rlx](y,4) || e6:RMW[acq](x,1,2)
 e2:W[rlx](y,4)     || e4:F[ar]
@@ -50,18 +27,3 @@ e7:RMW[acq](y,1,2) || e8:R[rlx](x,4)  || e11:RMW[rel](x,2,3)
 	X.co = ^((e1->e2) + (e5->e6) + (e6->e11) + (e11->e12) + (e10->e7) + (e7->e1))
   }
 }
-
-pred p1[X:Exec_C] {
-  gp[X]
-  //hint[X]
-}
-
-run p1 for 1 Exec, 12 E, 4 Int expect 1
-// 11 min (plingeling on benjamin)
-
-run p1 for 1 Exec, 11 E, 4 Int
-// ran for 6 days on Benjamin. Couldn't find anything.
-
-run p1 for 1 Exec, 7 E, 4 Int expect 0
-// 10 min (glucose on benjamin)
-

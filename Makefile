@@ -22,6 +22,7 @@ moretests:
 	@ tests/Q4_c11_ppc.sh
 	@ tests/Q2_c11_lidbury_partial_iter.sh
 	@ tests/Q2_c11_sra_simp_iter.sh
+#	@ tests/Q2_c11_swrf_simp.sh
 
 clean:
 	python util/rm_als.py
