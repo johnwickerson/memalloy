@@ -4,7 +4,7 @@
     -violates models/c11_lidbury.cat \
     -satisfies models/c11_partial.cat \
     -events 4 \
-    -expect 1252 \
+    -expect 5 \
     -satisfies models/c11_normws.cat \
     -satisfies models/totalsb.cat \
     -iter
