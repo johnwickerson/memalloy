@@ -125,7 +125,7 @@ let rec arch_sets = function
 let rec arch_rels = function
   | Basic ->
      ["ad"; "addr"; "cd"; "co"; "coe"; "coi"; "ctrl"; "data";
-      "dd"; "ext"; "fr"; "fre"; "fri"; "loc"; "po"; "poloc";
+      "dd"; "ext"; "fr"; "fr_init"; "fre"; "fri"; "loc"; "po"; "poloc";
       "rf"; "rfe"; "rfi"; "sb"; "sloc"; "sthd"; "thd"]
   | C -> arch_rels Basic
   | Basic_HW -> arch_rels Basic @ ["atom"; "rmw"]
