@@ -20,7 +20,7 @@ moretests:
 	@ tests/Q2_c11_repairing3.sh
 	@ tests/Q2_c11_repairing4.sh
 	@ tests/Q2_c11_repairing5.sh
-	@ tests/Q4_c11_ppc.sh
+#	@ tests/Q4_c11_ppc.sh  # currently takes too long for Travis
 	@ tests/Q2_x86_mca.sh
 	@ tests/Q2_c11_lidbury_partial_iter.sh
 	@ tests/Q2_c11_sra_simp_iter.sh
