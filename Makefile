@@ -25,6 +25,7 @@ moretests:
 	@ tests/Q2_c11_lidbury_partial_iter.sh
 	@ tests/Q2_c11_sra_simp_iter.sh
 	@ tests/Q2_c11_swrf_simp.sh
+#	@ tests/Q2_ptx.sh  #currently takes too long for Travis.
 
 clean:
 	python util/rm_als.py
