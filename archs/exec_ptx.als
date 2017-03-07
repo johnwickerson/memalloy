@@ -9,8 +9,9 @@ sig Exec_PTX extends Exec_H {
   // The membars are special kinds of fence
   membar_sys + membar_gl + membar_cta in F  
 
-  // Can only be one kind of membar
-  disj[membar_sys, membar_gl, membar_cta]
+  // A membar.sys implies a membar.gl, which implies a membar.cta
+  membar_sys in membar_gl
+  membar_gl in membar_cta
 
   // scta and sgl are equivalence relations among all events
   is_equivalence[scta, ev]

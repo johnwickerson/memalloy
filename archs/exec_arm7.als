@@ -3,12 +3,14 @@ open exec_H[E]
 
 sig Exec_Arm7 extends Exec_H {
   isb : set E, // control fence
-  dmb, dmbst, dmbld : set E, // full fences
+  dmb, dmbst, dmbld : set E, // full/store/load fences
 }{
 
-  // fences must be one (and only one) of the above kinds
-  isb + dmb + dmbst + dmbld = F
-  disj [isb, dmb, dmbst, dmbld]
+  // fences must be one of the above kinds
+  isb + dmbst + dmbld = F
+  disj [isb, dmbst, dmbld]
+  // a full fence implies a load-fence and a store-fence
+  dmb in dmbst & dmbld
     
 }
 

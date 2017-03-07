@@ -7,9 +7,11 @@ sig Exec_PPC extends Exec_H {
   lwsync, eieio : set E, // lightweight fences
 }{
 
-  // fences must be one (and only one) of the above kinds
-  isync + sync + lwsync + eieio = F
-  disj [isync, sync, lwsync, eieio]
+  // fences must be one of the above kinds
+  isync + lwsync + eieio = F
+  disj [isync, lwsync, eieio]
+  // the full fence implies both lightweight fences
+  sync in lwsync & eieio
 }
 
 fun isync[e:E, X:Exec_PPC] : set E { X.isync - e }
