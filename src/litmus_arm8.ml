@@ -34,15 +34,19 @@ type acqrel = AcqRel | Not_acqrel
 type arm8_direction = LD | ST
 			     
 type arm8_access = {
-    dir : arm8_direction;
-    dst : Register.t;
-    src : Register.t;
+    dir : arm8_direction; (** load or store *)
+    dst : Register.t; (** destination register *)
+    src : Register.t; (** source register *)
     off : Register.t option;
+    (** offset register (for address dependencies) *)
+    sta : Register.t option;
+    (** status register (only for exclusive stores) *)
     is_exclusive : bool;
     is_acq_rel : bool;
   }
 		 
-       
+type label = string
+		     
 (** Instruction in an ARM8 litmus test *)       
 type arm8_instruction =
   | Access of arm8_access (** loads and stores *)
@@ -51,8 +55,9 @@ type arm8_instruction =
   | MOV of Register.t * int (** constant *)
   | DMB of arm8_direction option (** data memory barrier *)
   | ISB (** instruction synchronisation barrier *)
-  | BNZ of Register.t * int (** branch *)
-  | LBL of int (** label *)
+  | CBNZ of Register.t * label (** compare and branch if non-zero *)
+  | B of label (** unconditional branch *)
+  | LBL of label (** label *)
 
 let pp_Xreg oc (_,r) = fprintf oc "X%d" r
 let pp_Wreg oc (_,r) = fprintf oc "W%d" r
@@ -65,27 +70,38 @@ let pp_addr oc = function
 
 let pp_ins oc = function
   | Access a ->
-     (match a.dir, a.off with
-      | LD, None ->
+     (match a.dir, a.off, a.sta with
+      | LD, None, None ->
 	 fprintf oc "LD%s%sR %a, [%a]"
 		 (if a.is_acq_rel then "A" else "")
 		 (if a.is_exclusive then "X" else "")
 		 pp_Wreg a.dst pp_Xreg a.src
-      | LD, Some off ->
+      | LD, Some off, None ->
 	 fprintf oc "LD%s%sR %a, [%a,%a,SXTW]"
 		 (if a.is_acq_rel then "A" else "")
 		 (if a.is_exclusive then "X" else "")
 		 pp_Wreg a.dst pp_Xreg a.src pp_Wreg off
-      | ST, None ->
+      | ST, None, None ->
 	 fprintf oc "ST%s%sR %a, [%a]"
 		 (if a.is_acq_rel then "L" else "")
 		 (if a.is_exclusive then "X" else "")
 		 pp_Wreg a.src pp_Xreg a.dst
-      | ST, Some off ->
+      | ST, None, Some sta ->
+	 fprintf oc "ST%s%sR %a, %a, [%a]"
+		 (if a.is_acq_rel then "L" else "")
+		 (if a.is_exclusive then "X" else "")
+		 pp_Wreg sta pp_Wreg a.src pp_Xreg a.dst
+      | ST, Some off, None ->
 	 fprintf oc "ST%s%sR %a, [%a,%a,SXTW]"
 		 (if a.is_acq_rel then "L" else "")
 		 (if a.is_exclusive then "X" else "")
-		 pp_Wreg a.src pp_Xreg a.dst pp_Wreg off)
+		 pp_Wreg a.src pp_Xreg a.dst pp_Wreg off
+      | ST, Some off, Some sta ->
+	 fprintf oc "ST%s%sR %a, %a, [%a,%a,SXTW]"
+		 (if a.is_acq_rel then "L" else "")
+		 (if a.is_exclusive then "X" else "")
+		 pp_Wreg sta pp_Wreg a.src pp_Xreg a.dst pp_Wreg off
+      | _, _, _ -> assert false)
   | ADD (dst, src, v) ->
      fprintf oc "ADD %a, %a, #%d"
 	     pp_Wreg dst pp_Wreg src v
@@ -98,8 +114,9 @@ let pp_ins oc = function
   | DMB (Some LD) -> fprintf oc "DMB LD"
   | DMB (Some ST) -> fprintf oc "DMB ST"
   | ISB -> fprintf oc "ISB"
-  | BNZ (src, lbl) -> fprintf oc "CBNZ %a, LC%2d" pp_Wreg src lbl
-  | LBL lbl -> fprintf oc "LC%2d:" lbl
+  | CBNZ (src, lbl) -> fprintf oc "CBNZ %a, %s" pp_Wreg src lbl
+  | B lbl -> fprintf oc "B %s" lbl
+  | LBL lbl -> fprintf oc "%s:" lbl
 						    
 type t = {
     name: string;
@@ -112,12 +129,14 @@ let pp oc lt =
   fprintf oc "AArch64 %s\n" lt.name;
   fprintf oc "{\n";
   let pp_loc (x,rl) =
-    fprintf oc "uint64_t %a;\n" Location.pp x;
+    (* fprintf oc "uint64_t %a;\n" Location.pp x; *)
     let pp_patch r =
       fprintf oc "%a = %a;\n" pp_Xreg_full r Location.pp x
     in
     List.iter pp_patch rl
   in
+  if List.mem (-1) (List.map fst lt.locs) then
+    fprintf oc "ok = 1;\n";
   List.iter pp_loc lt.locs;
   fprintf oc "}\n";
   let thds = List.map (List.map (asprintf "%a" pp_ins)) lt.thds in

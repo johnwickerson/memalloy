@@ -47,27 +47,25 @@ let rec combine_Ifs = function
   | Seq cs :: cs' -> combine_Ifs (cs @ cs')
   | Unseq _ :: _ -> failwith "Program-order cannot be partial!"
 
-let mk_Access dir attrs (dst, src, off) = 
+let mk_Access dir attrs (dst, src, off, sta) = 
   let a = { Litmus_arm8.dir = dir;
-	    dst = dst; src = src; off = off;
+	    dst = dst; src = src; off = off; sta = sta;
 	    is_exclusive = List.mem "X" attrs;
 	    is_acq_rel = List.mem "scacq" attrs }
   in Litmus_arm8.Access a
 
 let mk_LD attrs (dst, src, off) =
-  mk_Access Litmus_arm8.LD attrs (dst, src, off)
+  mk_Access Litmus_arm8.LD attrs (dst, src, off, None)
 
-let mk_ST attrs (src, dst, off) =
-  mk_Access Litmus_arm8.ST attrs (dst, src, off)
+let mk_ST attrs (src, dst, off, sta) =
+  mk_Access Litmus_arm8.ST attrs (dst, src, off, sta)
 			    	 
 let rec arm8_of_ins tid (locs,nr) = function
   | Load (r_dst, Just l), attrs ->
      let r_src = tid, nr in
      let nr = nr + 1 in
      let locs = (l, r_src) :: locs in
-     let il = [
-	 mk_LD attrs (r_dst, r_src, None)
-       ] in
+     let il = [mk_LD attrs (r_dst, r_src, None)] in
      locs, nr, il
   | Load (r_dst, Madd (Just l,r_dep)), attrs ->
      let r_src = tid,nr in
@@ -78,7 +76,24 @@ let rec arm8_of_ins tid (locs,nr) = function
      let il = [
 	 Litmus_arm8.EOR (r_off, r_dep, r_dep);
 	 mk_LD attrs (r_dst, r_src, Some r_off)
-       ] in
+       ]
+     in
+     locs, nr, il
+  | Store (Just l, Just v), attrs when List.mem "X" attrs ->
+     let r_src = tid,nr in
+     let nr = nr + 1 in
+     let r_dst = tid,nr in
+     let nr = nr + 1 in
+     let r_status = tid,nr in
+     let nr = nr + 1 in
+     let locs = (l, r_dst) :: locs in
+     let il = [
+	 Litmus_arm8.MOV (r_src, v);
+	 mk_ST attrs (r_src, r_dst, None, Some r_status);
+	 Litmus_arm8.CBNZ (r_status, sprintf "Fail%d" tid);
+	 Litmus_arm8.B (sprintf "Exit%d" tid)
+       ]
+     in
      locs, nr, il
   | Store (Just l, Just v), attrs ->
      let r_src = tid,nr in
@@ -88,9 +103,10 @@ let rec arm8_of_ins tid (locs,nr) = function
      let locs = (l, r_dst) :: locs in
      let il = [
 	 Litmus_arm8.MOV (r_src, v);
-	 mk_ST attrs (r_src, r_dst, None)
-       ] in
-     locs, nr, il		 
+	 mk_ST attrs (r_src, r_dst, None, None)
+       ]
+     in
+     locs, nr, il
   | Cas _, _ -> failwith "No single-event RMWs in assembly!"
   | Fence, attrs ->
      let il = match List.mem "dmbst" attrs,
@@ -117,19 +133,39 @@ let rec flatten = function
 and flatten_list = function
   | [] -> []
   | c :: cs -> flatten c @ flatten_list cs
-			 					
-let rec arm8_of_components tid (locs,nr,nl) = function
-  | [] -> locs,nr,nl,[]
+
+let can_fail il =
+  let is_B = function Litmus_arm8.B _ -> true | _ -> false in
+  List.exists is_B il
+					
+let rec arm8_of_components tid (locs,nr,nl,il) = function
+  | [] when can_fail il ->
+     let r_zero = tid,nr in
+     let nr = nr + 1 in
+     let r_ok = tid,nr in
+     let nr = nr + 1 in
+     let il = il @ [
+	   Litmus_arm8.LBL (sprintf "Fail%d" tid);
+	   Litmus_arm8.MOV (r_zero, 0);
+	   mk_ST [] (r_zero, r_ok, None, None);
+	   Litmus_arm8.LBL (sprintf "Exit%d" tid)
+	 ]
+     in
+     let locs = (-1, r_ok) :: locs in
+     locs,nr,nl,il
+  | [] -> locs,nr,nl,il
   | Arm8_Basic (ins,attrs) :: cs ->
      let locs,nr,il1 = arm8_of_ins tid (locs,nr) (ins,attrs) in
-     let locs,nr,nl,il2 = arm8_of_components tid (locs,nr,nl) cs in
-     locs, nr, nl, il1 @ il2
+     arm8_of_components tid (locs,nr,nl,il@il1) cs
   | [Arm8_If (r,_,cs)] ->
-     let lbl = nl in
+     let lbl = sprintf "LC%2d" nl in
      let nl = nl + 1 in
-     let locs, nr, nl, il = arm8_of_components tid (locs,nr,nl) cs in
-     let bnz_lbl = [Litmus_arm8.BNZ (r,lbl); Litmus_arm8.LBL lbl] in 
-     locs, nr, nl, bnz_lbl @ il
+     let il = il @ [
+	 Litmus_arm8.CBNZ (r,lbl);
+	 Litmus_arm8.LBL lbl
+       ]
+     in
+     arm8_of_components tid (locs,nr,nl,il) cs
   | _ -> assert false
 
 let rec next_reg n = function
@@ -142,7 +178,7 @@ let rec arm8_of_thds tid (locs,nl) = function
   | [] -> locs, nl, []
   | thd :: thds ->
      let nr = next_reg 0 thd in
-     let locs,_,nl,il1 = arm8_of_components tid (locs,nr,nl) thd in
+     let locs,_,nl,il1 = arm8_of_components tid (locs,nr,nl,[]) thd in
      let locs,nl,il2 = arm8_of_thds (tid+1) (locs,nl) thds in
      locs, nl, il1 :: il2
 
