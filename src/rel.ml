@@ -33,6 +33,9 @@ type 'a t = ('a * 'a) list
 let invert r =
   List.map (fun (e,e') -> (e',e)) r
 
+let dom r = List.map fst r
+let rng r = List.map snd r
+
 let compare r e e' = if List.mem (e,e') r then -1 else 1
 
 (** [remove_edges r1 r2 r] returns the relation [r] but without any edges that are in [r1;r2] *)

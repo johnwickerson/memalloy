@@ -47,12 +47,27 @@ let rec combine_Ifs = function
   | Seq cs :: cs' -> combine_Ifs (cs @ cs')
   | Unseq _ :: _ -> failwith "Program-order cannot be partial!"
 
+let mk_Access dir attrs (dst, src, off) = 
+  let a = { Litmus_arm8.dir = dir;
+	    dst = dst; src = src; off = off;
+	    is_exclusive = List.mem "X" attrs;
+	    is_acq_rel = List.mem "scacq" attrs }
+  in Litmus_arm8.Access a
+
+let mk_LD attrs (dst, src, off) =
+  mk_Access Litmus_arm8.LD attrs (dst, src, off)
+
+let mk_ST attrs (src, dst, off) =
+  mk_Access Litmus_arm8.ST attrs (dst, src, off)
+			    	 
 let rec arm8_of_ins tid (locs,nr) = function
   | Load (r_dst, Just l), attrs ->
-     let r_src = tid,nr in
+     let r_src = tid, nr in
      let nr = nr + 1 in
      let locs = (l, r_src) :: locs in
-     let il = [Litmus_arm8.LDR (r_dst, r_src, None)] in
+     let il = [
+	 mk_LD attrs (r_dst, r_src, None)
+       ] in
      locs, nr, il
   | Load (r_dst, Madd (Just l,r_dep)), attrs ->
      let r_src = tid,nr in
@@ -62,7 +77,7 @@ let rec arm8_of_ins tid (locs,nr) = function
      let locs = (l, r_src) :: locs in
      let il = [
 	 Litmus_arm8.EOR (r_off, r_dep, r_dep);
-	 Litmus_arm8.LDR (r_dst, r_src, Some r_off)
+	 mk_LD attrs (r_dst, r_src, Some r_off)
        ] in
      locs, nr, il
   | Store (Just l, Just v), attrs ->
@@ -73,7 +88,7 @@ let rec arm8_of_ins tid (locs,nr) = function
      let locs = (l, r_dst) :: locs in
      let il = [
 	 Litmus_arm8.MOV (r_src, v);
-	 Litmus_arm8.STR (r_src, r_dst, None)
+	 mk_ST attrs (r_src, r_dst, None)
        ] in
      locs, nr, il		 
   | Cas _, _ -> failwith "No single-event RMWs in assembly!"
@@ -81,9 +96,9 @@ let rec arm8_of_ins tid (locs,nr) = function
      let il = match List.mem "dmbst" attrs,
 		    List.mem "dmbld" attrs,
 		    List.mem "isb" attrs with
-       | true, true, false -> [Litmus_arm8.DMB]
-       | true, false, false -> [Litmus_arm8.DMB_ST]
-       | false, true, false -> [Litmus_arm8.DMB_LD]
+       | true, true, false -> [Litmus_arm8.DMB None]
+       | true, false, false -> [Litmus_arm8.DMB (Some Litmus_arm8.ST)]
+       | false, true, false -> [Litmus_arm8.DMB (Some Litmus_arm8.LD)]
        | false, false, true -> [Litmus_arm8.ISB]
        | _ -> failwith "Invalid fence attributes!"
      in locs, nr, il

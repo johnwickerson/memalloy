@@ -6,11 +6,14 @@ sig Exec_H extends Exec {
 }{
 
   // the atom relation relates a consecutively-sequenced read/write pair
-  atom in (R->W) & imm[sb] & sloc
+  atom in (R->W) & sb & sloc
   no (R&W)
 
   // sequenced-before is total within a thread
   sthd in *sb + ~*sb
+
+  // control dependencies are defined differently in assembly
+  cd.sb in cd
 
   // there are no such things as "atomic" and "non-atomic" locations
   no naL

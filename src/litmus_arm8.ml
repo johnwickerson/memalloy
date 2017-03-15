@@ -28,23 +28,31 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 open Format
 open General_purpose
 
-(** Instruction in an ARM8 litmus test *)
+type exclusivity = Exclusive | Not_exclusive
+type acqrel = AcqRel | Not_acqrel
+
+type arm8_direction = LD | ST
+			     
+type arm8_access = {
+    dir : arm8_direction;
+    dst : Register.t;
+    src : Register.t;
+    off : Register.t option;
+    is_exclusive : bool;
+    is_acq_rel : bool;
+  }
+		 
+       
+(** Instruction in an ARM8 litmus test *)       
 type arm8_instruction =
-  | LDR of Register.t * Register.t * Register.t option (** load *)
-  | STR of Register.t * Register.t * Register.t option (** store *)
-  | LDAR of Register.t * Register.t (** load acquire *)
-  | STLR of Register.t * Register.t (** store release *)
-  | LDXR of Register.t * Register.t (** load exclusive *)
-  | STXR of Register.t * Register.t (** store exclusive *)
+  | Access of arm8_access (** loads and stores *)
   | ADD of Register.t * Register.t * int (** addition *)
   | EOR of Register.t * Register.t * Register.t (** exclusive or *)
   | MOV of Register.t * int (** constant *)
-  | DMB (** data memory barrier *)
-  | DMB_ST (** data memory barrier on stores *)
-  | DMB_LD (** data memory barrier on loads *)
+  | DMB of arm8_direction option (** data memory barrier *)
   | ISB (** instruction synchronisation barrier *)
-  | BNZ of Register.t * int (** branch + label *)
-  | LBL of int
+  | BNZ of Register.t * int (** branch *)
+  | LBL of int (** label *)
 
 let pp_Xreg oc (_,r) = fprintf oc "X%d" r
 let pp_Wreg oc (_,r) = fprintf oc "W%d" r
@@ -56,24 +64,28 @@ let pp_addr oc = function
   | Litmus.Loc l -> Location.pp oc l
 
 let pp_ins oc = function
-  | LDR (dst, src, None) ->
-     fprintf oc "LDR %a, [%a]" pp_Wreg dst pp_Xreg src
-  | LDR (dst, src, Some off) ->
-     fprintf oc "LDR %a, [%a,%a,SXTW]" pp_Wreg dst
-	     pp_Xreg src pp_Wreg off
-  | STR (src, dst, None) ->
-     fprintf oc "STR %a, [%a]" pp_Wreg src pp_Xreg dst
-  | STR (src, dst, Some off) ->
-     fprintf oc "STR %a, [%a,%a,SXTW]" pp_Wreg src
-	     pp_Xreg dst pp_Wreg off
-  | LDAR (dst, src) ->
-     fprintf oc "LDAR %a, [%a]" pp_Wreg dst pp_Xreg src
-  | STLR (src, dst) ->
-     fprintf oc "STLR %a, [%a]" pp_Wreg src pp_Xreg dst
-  | LDXR (dst, src) ->
-     fprintf oc "LDXR %a, [%a]" pp_Wreg dst pp_Xreg src
-  | STXR (src, dst) ->
-     fprintf oc "STXR %a, [%a]" pp_Wreg src pp_Xreg dst
+  | Access a ->
+     (match a.dir, a.off with
+      | LD, None ->
+	 fprintf oc "LD%s%sR %a, [%a]"
+		 (if a.is_acq_rel then "A" else "")
+		 (if a.is_exclusive then "X" else "")
+		 pp_Wreg a.dst pp_Xreg a.src
+      | LD, Some off ->
+	 fprintf oc "LD%s%sR %a, [%a,%a,SXTW]"
+		 (if a.is_acq_rel then "A" else "")
+		 (if a.is_exclusive then "X" else "")
+		 pp_Wreg a.dst pp_Xreg a.src pp_Wreg off
+      | ST, None ->
+	 fprintf oc "ST%s%sR %a, [%a]"
+		 (if a.is_acq_rel then "L" else "")
+		 (if a.is_exclusive then "X" else "")
+		 pp_Wreg a.src pp_Xreg a.dst
+      | ST, Some off ->
+	 fprintf oc "ST%s%sR %a, [%a,%a,SXTW]"
+		 (if a.is_acq_rel then "L" else "")
+		 (if a.is_exclusive then "X" else "")
+		 pp_Wreg a.src pp_Xreg a.dst pp_Wreg off)
   | ADD (dst, src, v) ->
      fprintf oc "ADD %a, %a, #%d"
 	     pp_Wreg dst pp_Wreg src v
@@ -82,9 +94,9 @@ let pp_ins oc = function
 	     pp_Wreg dst pp_Wreg src1 pp_Wreg src2
   | MOV (dst, v) ->
      fprintf oc "MOV %a, #%d" pp_Wreg dst v
-  | DMB -> fprintf oc "DMB SY"
-  | DMB_ST -> fprintf oc "DMB ST, SY"
-  | DMB_LD -> fprintf oc "DMB LD, SY"
+  | DMB None -> fprintf oc "DMB SY"
+  | DMB (Some LD) -> fprintf oc "DMB LD"
+  | DMB (Some ST) -> fprintf oc "DMB ST"
   | ISB -> fprintf oc "ISB"
   | BNZ (src, lbl) -> fprintf oc "CBNZ %a, LC%2d" pp_Wreg src lbl
   | LBL lbl -> fprintf oc "LC%2d:" lbl

@@ -34,6 +34,9 @@ open Litmus
 let mk_instr x maps reg_map e =
   let ignored_attrs = ["ev";"R";"W";"F";"IW"] in
   let attrs = MySet.diff (get_sets x e) ignored_attrs in
+  let atom = get_rel x "atom" in
+  let atomic = MySet.union (Rel.dom atom) (Rel.rng atom) in
+  let attrs = (if List.mem e atomic then ["X"] else []) @ attrs in
   let ev = get_set x "ev" in
   let src r_name e' = List.mem (e',e) (get_rel x r_name) in
   let reg_of e = List.assoc e reg_map in
