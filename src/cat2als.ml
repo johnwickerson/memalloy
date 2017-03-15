@@ -233,7 +233,7 @@ let als_of_expr defs oc e =
     | Arg x -> fprintf oc "%s" x
     | App (f,es) ->
        let withsc = List.assoc f defs in
-       fprintf oc "%s[%a,e,X%s]" f (MyList.pp "," als_of_expr') es
+       fprintf oc "%s[%a,e,X%s]" f (MyList.pp_gen "," als_of_expr') es
 	       (if withsc then ",s" else "")
     | Op1 (Set_to_rln,e) -> fprintf oc "stor[%a]" als_of_expr' e
     | Op1 (Star,e) -> fprintf oc "*(%a)" als_of_expr' e
@@ -252,11 +252,11 @@ let als_of_expr defs oc e =
        als_of_expr' oc (Op (Inter, [e; prod]))
     | Op1 (Domain, e) -> fprintf oc "dom[%a]" als_of_expr' e
     | Op1 (Range, e) -> fprintf oc "ran[%a]" als_of_expr' e
-    | Op (Seq,es) -> MyList.pp " . " (fparen als_of_expr') oc es
-    | Op (Union,es) -> MyList.pp " + " (fparen als_of_expr') oc es
-    | Op (Diff,es) -> MyList.pp " - " (fparen als_of_expr') oc es
-    | Op (Inter,es) -> MyList.pp " & " (fparen als_of_expr') oc es
-    | Op (Cross,es) -> MyList.pp " -> " (fparen als_of_expr') oc es
+    | Op (Seq,es) -> MyList.pp_gen " . " (fparen als_of_expr') oc es
+    | Op (Union,es) -> MyList.pp_gen " + " (fparen als_of_expr') oc es
+    | Op (Diff,es) -> MyList.pp_gen " - " (fparen als_of_expr') oc es
+    | Op (Inter,es) -> MyList.pp_gen " & " (fparen als_of_expr') oc es
+    | Op (Cross,es) -> MyList.pp_gen " -> " (fparen als_of_expr') oc es
   in
   als_of_expr' oc e
 

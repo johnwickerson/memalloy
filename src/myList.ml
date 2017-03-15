@@ -36,7 +36,25 @@ let the = function
   | [x] -> x
   | _ -> raise Not_found
 
-let rec pp s f oc = function
+let rec pp_gen s f oc = function
   | [] -> ()
   | [x] -> f oc x
-  | x :: xs -> f oc x; fprintf oc "%s" s; pp s f oc xs
+  | x :: xs -> f oc x; fprintf oc "%s" s; pp_gen s f oc xs
+
+let pp f oc xs =
+  let rec pp = function
+    | [] -> ()
+    | [x] -> f oc x
+    | x :: xs -> f oc x; fprintf oc "; "; pp xs
+  in
+  fprintf oc "["; pp xs; fprintf oc "]"
+						 
+let mapi f xs =
+  let rec mapi n f = function
+    | [] -> []
+    | x :: xs -> f n x :: mapi (n+1) f xs
+  in
+  mapi 0 f xs
+					     
+let max xs =
+  hd (rev (sort compare xs))

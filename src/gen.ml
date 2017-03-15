@@ -29,17 +29,20 @@ open Format
 open General_purpose
        
 type output_type = Dot | Als | Lit
-	       
+       
 let get_args () =
   let xml_path : string list ref = ref [] in
   let out_path : string list ref = ref [] in
   let output_dot = ref false in
   let output_als = ref false in
   let output_lit = ref false in
+  let arch = ref None in
   let speclist = [
       ("-Tdot", Arg.Set output_dot, "Produce .dot output");
       ("-Tals", Arg.Set output_als, "Produce .als constraints");
       ("-Tlit", Arg.Set output_lit, "Produce litmus test");
+      ("-arch", Arg.String (set_option_ref arch),
+       "Optional: execution type");
       ("-o", Arg.String (set_list_ref out_path),
        "Output file (mandatory)");
     ] in
@@ -63,13 +66,17 @@ let get_args () =
     | false, false, true -> Lit
     | _ -> bad_arg ()
   in
-  xml_path, out_path, out_type
+  let arch = match !arch with
+    | Some arch -> Archs.parse_arch arch
+    | None -> Archs.Basic
+  in
+  xml_path, out_path, out_type, arch
 
 let check_args (xml_path, out_path, out_type) =
   assert (Filename.check_suffix xml_path ".xml")
 		  
 let main () =
-  let xml_path, out_path, out_type = get_args () in
+  let xml_path, out_path, out_type, arch = get_args () in
   check_args (xml_path, out_path, out_type);
   let exec = Xml_input.parse_file xml_path in
   let oc = open_out out_path in
@@ -103,8 +110,15 @@ let main () =
        begin
 	 match exec with
 	 | Xml_input.Single x ->
-	    let litmus = Mk_litmus.litmus_of_execution x in
-	    fprintf fmtr "%a\n" Litmus.pp litmus
+	    let lt = Mk_litmus.litmus_of_execution x in
+	    (match arch with
+	     | Archs.Arm8 ->
+		let name =
+		  Filename.chop_extension (Filename.basename out_path)
+		in
+		let arm8_lt = Mk_arm8.arm8_of_lit name lt in
+		fprintf fmtr "%a\n" Litmus_arm8.pp arm8_lt
+	     | _ -> fprintf fmtr "%a\n" Litmus.pp lt)
 	 | Xml_input.Double (x,y,pi) ->
 	    let litmus1,litmus2 =
 	      Mk_litmus.litmus_of_execution_pair x y pi

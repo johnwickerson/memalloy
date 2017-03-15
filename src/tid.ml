@@ -30,4 +30,4 @@ open General_purpose
 
 type t = int
 
-let pp oc tid = fprintf oc "T%d" tid
+let pp oc tid = fprintf oc "%d" tid

@@ -49,7 +49,7 @@ type graphviz = {
 let pp_gv_attr oc (k,v) = fprintf oc "%s=\"%s\"" k v
 	   
 (** Pretty-printing a list of Graphviz attributes *)
-let pp_gv_attrs oc attrs = MyList.pp "," pp_gv_attr oc attrs
+let pp_gv_attrs oc attrs = MyList.pp_gen "," pp_gv_attr oc attrs
 
 (** Pretty-print a graphviz node (single node or cluster node) *)
 let rec pp_node oc cid = function

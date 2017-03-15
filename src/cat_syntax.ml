@@ -123,9 +123,9 @@ let pp_instr oc = function
      fprintf oc "let %a\n\n" pp_binding (x,e)
   | Let (x,args,e) ->
      fprintf oc "let %s(%a) = %a\n\n"
-	     x (MyList.pp "," pp_var) args pp_expr e
+	     x (MyList.pp_gen "," pp_var) args pp_expr e
   | LetRec xes ->
-     fprintf oc "let %a\n\n" (MyList.pp " and " pp_binding) xes
+     fprintf oc "let %a\n\n" (MyList.pp_gen " and " pp_binding) xes
   | Axiom (c,t,e,n) ->
      fprintf oc "%a %a(%a) as %s\n\n"
        pp_cnstrnt c pp_shape t pp_expr e n

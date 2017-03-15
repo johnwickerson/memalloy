@@ -63,7 +63,7 @@ let dot_of_event x maps e =
   in *)
   let e = asprintf "%a" Event.pp e in
   let label = asprintf "%s: %s[%a]%s%s" e dir
-		       (MyList.pp "," pp_str) attrs loc vals
+		       (MyList.pp_gen "," pp_str) attrs loc vals
   in
   let attrs =
     ["label", label;

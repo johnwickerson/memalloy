@@ -38,11 +38,11 @@ type t = {
 let pp_exec oc exec =
   let pp_set (name,tuples) =
     fprintf oc "Set: %s={%a}\n" name
-	    (MyList.pp "," Event.pp) tuples
+	    (MyList.pp_gen "," Event.pp) tuples
   in
   let pp_rel (name,tuples) =
     fprintf oc "Rel: %s={%a}\n" name
-	    (MyList.pp "," (fparen (Pair.pp Event.pp "," Event.pp)))
+	    (MyList.pp_gen "," (fparen (Pair.pp Event.pp "," Event.pp)))
 	    tuples
   in
   List.iter pp_set exec.sets;
@@ -75,8 +75,8 @@ type execution_maps = {
 let pp_maps oc maps =
   fprintf
     oc "thd_map = {%a}, loc_map = {%a}"
-    (MyList.pp "," (Pair.pp Event.pp "=" Tid.pp)) maps.thd_map
-    (MyList.pp "," (Pair.pp Event.pp "=" Location.pp)) maps.loc_map
+    (MyList.pp_gen "," (Pair.pp Event.pp "=" Tid.pp)) maps.thd_map
+    (MyList.pp_gen "," (Pair.pp Event.pp "=" Location.pp)) maps.loc_map
 
 (** [remove_transitive r_name x] returns a new execution in which the relation named [r_name] has been replaced with its intransitive core *)
 let remove_transitive r_name x =

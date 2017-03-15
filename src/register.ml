@@ -28,6 +28,8 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 open Format
 open General_purpose
 
-type t = int
+type t = int * int
 	   
-let pp oc reg = fprintf oc "r%d" reg
+let pp oc (_,reg) = fprintf oc "r%d" reg
+
+let pp_full oc (tid,reg) = fprintf oc "%d:r%d" tid reg

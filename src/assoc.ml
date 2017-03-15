@@ -53,5 +53,13 @@ let invert_map kvs =
   in
   fold_left add_entry [] kvs
 
+(** Example: [group_map [(k1,v1);(k1,v2);(k2,v3)] = [(k1,[v1;v2]);(k2,[v3])]] *)
+let group_map kvs =
+  let add_entry kvs (k,v) =
+    let vs = try assoc k kvs with Not_found -> [] in
+    (k, v :: vs) :: remove_assocs [k] kvs
+  in
+  fold_left add_entry [] kvs
+
 let key_list kvs = map fst kvs
 let val_list kvs = map snd kvs

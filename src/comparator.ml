@@ -90,10 +90,11 @@ let pp_satisfied_models exec_sig oc =
 (** [min_classes ev n r dom oc] generates an Alloy constraint (sent to [oc]) that requires the existence of [n] distinct objects of type [ev], all in [dom], and none of which are related by [r]*)
 let min_classes ev n r dom oc =
   let es = List.map (sprintf "e%d") (range 1 n) in
-  fprintf oc "  some disj %a : %s {\n" (MyList.pp ", " pp_str) es ev;
-  fprintf oc "    %a in X.(%s)\n" (MyList.pp "+" pp_str) es dom;
+  fprintf oc "  some disj %a : %s {\n"
+	  (MyList.pp_gen ", " pp_str) es ev;
+  fprintf oc "    %a in X.(%s)\n" (MyList.pp_gen "+" pp_str) es dom;
   fprintf oc "    no ((sq[%a]-iden) & %s[none,X])\n"
-	  (MyList.pp "+" pp_str) es r;
+	  (MyList.pp_gen "+" pp_str) es r;
   fprintf oc "  }\n"
 
 (** [pp_min_classes name ev n r dom oc] generates an Alloy constraint (sent to [oc]) that requires the existence of [n] distinct objects of type [ev], all in [dom], none of which are related by [r]. The [name] is for a descriptive comment.*)
@@ -404,7 +405,7 @@ let main () =
   mk_fresh_dir_in "xml" stamp;
   let num_solns_incl_dups = run_alloy comparator_als stamp in
   if num_solns_incl_dups = 0 then exit 0;
-  let num_unreduced_solns = remove_dups stamp in
+  let _num_unreduced_solns = remove_dups stamp in
   let num_solns = reduce_tests stamp in
   mk_fresh_dir_in "dot" stamp;
   mk_fresh_dir_in "png" stamp;
