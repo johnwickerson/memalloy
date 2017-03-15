@@ -47,6 +47,7 @@ type arm8_instruction =
   | LBL of int
 
 let pp_Xreg oc (_,r) = fprintf oc "X%d" r
+let pp_Wreg oc (_,r) = fprintf oc "W%d" r
 
 let pp_Xreg_full oc (t,r) = fprintf oc "%d:X%d" t r
 
@@ -56,36 +57,36 @@ let pp_addr oc = function
 
 let pp_ins oc = function
   | LDR (dst, src, None) ->
-     fprintf oc "LDR %a, [%a]" pp_Xreg dst pp_Xreg src
+     fprintf oc "LDR %a, [%a]" pp_Wreg dst pp_Xreg src
   | LDR (dst, src, Some off) ->
-     fprintf oc "LDR %a, [%a,%a,SXTW]" pp_Xreg dst
-	     pp_Xreg src pp_Xreg off
+     fprintf oc "LDR %a, [%a,%a,SXTW]" pp_Wreg dst
+	     pp_Xreg src pp_Wreg off
   | STR (src, dst, None) ->
-     fprintf oc "STR %a, [%a]" pp_Xreg src pp_Xreg dst
+     fprintf oc "STR %a, [%a]" pp_Wreg src pp_Xreg dst
   | STR (src, dst, Some off) ->
-     fprintf oc "STR %a, [%a,%a,SXTW]" pp_Xreg src
-	     pp_Xreg dst pp_Xreg off
+     fprintf oc "STR %a, [%a,%a,SXTW]" pp_Wreg src
+	     pp_Xreg dst pp_Wreg off
   | LDAR (dst, src) ->
-     fprintf oc "LDAR %a, [%a]" pp_Xreg dst pp_Xreg src
+     fprintf oc "LDAR %a, [%a]" pp_Wreg dst pp_Xreg src
   | STLR (src, dst) ->
-     fprintf oc "STLR %a, [%a]" pp_Xreg src pp_Xreg dst
+     fprintf oc "STLR %a, [%a]" pp_Wreg src pp_Xreg dst
   | LDXR (dst, src) ->
-     fprintf oc "LDXR %a, [%a]" pp_Xreg dst pp_Xreg src
+     fprintf oc "LDXR %a, [%a]" pp_Wreg dst pp_Xreg src
   | STXR (src, dst) ->
-     fprintf oc "STXR %a, [%a]" pp_Xreg src pp_Xreg dst
+     fprintf oc "STXR %a, [%a]" pp_Wreg src pp_Xreg dst
   | ADD (dst, src, v) ->
      fprintf oc "ADD %a, %a, #%d"
-	     pp_Xreg dst pp_Xreg src v
+	     pp_Wreg dst pp_Wreg src v
   | EOR (dst, src1, src2) ->
      fprintf oc "EOR %a, %a, %a"
-	     pp_Xreg dst pp_Xreg src1 pp_Xreg src2
+	     pp_Wreg dst pp_Wreg src1 pp_Wreg src2
   | MOV (dst, v) ->
-     fprintf oc "MOV %a, #%d" pp_Xreg dst v
+     fprintf oc "MOV %a, #%d" pp_Wreg dst v
   | DMB -> fprintf oc "DMB SY"
   | DMB_ST -> fprintf oc "DMB ST, SY"
   | DMB_LD -> fprintf oc "DMB LD, SY"
   | ISB -> fprintf oc "ISB"
-  | BNZ (src, lbl) -> fprintf oc "CBNZ %a, LC%2d" pp_Xreg src lbl
+  | BNZ (src, lbl) -> fprintf oc "CBNZ %a, LC%2d" pp_Wreg src lbl
   | LBL lbl -> fprintf oc "LC%2d:" lbl
 						    
 type t = {
