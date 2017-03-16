@@ -44,7 +44,8 @@ type arm8_access = {
     is_exclusive : bool;
     is_acq_rel : bool;
   }
-		 
+
+(** Instruction label *)
 type label = string
 		     
 (** Instruction in an ARM8 litmus test *)       
@@ -59,15 +60,21 @@ type arm8_instruction =
   | B of label (** unconditional branch *)
   | LBL of label (** label *)
 
+(** Print a register in 64-bit mode *)
 let pp_Xreg oc (_,r) = fprintf oc "X%d" r
+
+(** Print a register in 32-bit mode *)
 let pp_Wreg oc (_,r) = fprintf oc "W%d" r
 
+(** Print a register qualified with thread identifier *)
 let pp_Xreg_full oc (t,r) = fprintf oc "%d:X%d" t r
 
+(** Print a register or a location *)
 let pp_addr oc = function
   | Litmus.Reg tr -> pp_Xreg_full oc tr
   | Litmus.Loc l -> Location.pp oc l
 
+(** Print an instruction *)
 let pp_ins oc = function
   | Access a ->
      (match a.dir, a.off, a.sta with
@@ -117,7 +124,8 @@ let pp_ins oc = function
   | CBNZ (src, lbl) -> fprintf oc "CBNZ %a, %s" pp_Wreg src lbl
   | B lbl -> fprintf oc "B %s" lbl
   | LBL lbl -> fprintf oc "%s:" lbl
-						    
+
+(** Type of ARM8 litmus tests *)
 type t = {
     name: string;
     locs: (Location.t, Register.t list) Assoc.t;
@@ -125,8 +133,8 @@ type t = {
     post: (Litmus.address, Value.t) Assoc.t;
   }
 
-let pp oc lt =
-  fprintf oc "AArch64 %s\n" lt.name;
+(** Print location/register patches *)
+let pp_locs oc locs =
   fprintf oc "{\n";
   let pp_loc (x,rl) =
     (* fprintf oc "uint64_t %a;\n" Location.pp x; *)
@@ -135,30 +143,52 @@ let pp oc lt =
     in
     List.iter pp_patch rl
   in
-  if List.mem (-1) (List.map fst lt.locs) then
+  let ok = -1 in
+  if List.mem ok (List.map fst locs) then
     fprintf oc "ok = 1;\n";
-  List.iter pp_loc lt.locs;
-  fprintf oc "}\n";
-  let thds = List.map (List.map (asprintf "%a" pp_ins)) lt.thds in
-  let longest_thd = MyList.max (List.map List.length thds) in
+  List.iter pp_loc locs;
+  fprintf oc "}\n"
+
+(** Add thread identifier to top of each thread *)
+let add_heads thds =
   let add_head n thd = sprintf "P%d" n :: thd in
-  let thds = MyList.mapi add_head thds in
+  MyList.mapi add_head thds
+
+(** Make all threads have the same length by appending no-ops *)
+let add_nops longest_thd thds =
   let rec nops n = if n<=0 then [] else "" :: nops (n-1) in
   let add_nops n thd = thd @ nops (n - List.length thd + 1) in
-  let thds = List.map (add_nops longest_thd) thds in
+  List.map (add_nops longest_thd) thds
+	   
+(** Make all instructions in a thread have the same length by appending spaces *)
+let add_spaces thds =
   let longest_str l = MyList.max (List.map String.length l) in
   let rec spaces n = if n<=0 then "" else " " ^ spaces (n-1) in
   let add_spaces n s = s ^ spaces (n - String.length s) in
   let add_spaces_thd thd = List.map (add_spaces (longest_str thd)) thd in
-  let thds = List.map add_spaces_thd thds in
+  List.map add_spaces_thd thds
+
+(** Print the postcondition *)
+let pp_post oc post =
+  fprintf oc "exists\n";
+  fprintf oc "(";
+  let pp_cnstrnt oc (a,v) = fprintf oc "%a=%d" pp_addr a v in
+  MyList.pp_gen " /\\ " pp_cnstrnt oc post;
+  fprintf oc ")\n"
+	   
+(** Print an ARM8 litmus test *)
+let pp oc lt =
+  fprintf oc "AArch64 %s\n" lt.name;
+  pp_locs oc lt.locs;
+  let thds = List.map (List.map (asprintf "%a" pp_ins)) lt.thds in
+  let longest_thd = MyList.max (List.map List.length thds) in
+  let thds = add_heads thds in
+  let thds = add_nops longest_thd thds in
+  let thds = add_spaces thds in
   for i = 0 to longest_thd do
     let line = List.map (fun thd -> List.nth thd i) thds in
     MyList.pp_gen " | " pp_str oc line;
     fprintf oc " ;\n"
   done;
   fprintf oc "\n";
-  fprintf oc "exists\n";
-  fprintf oc "(";
-  let pp_cnstrnt oc (a,v) = fprintf oc "%a=%d" pp_addr a v in
-  MyList.pp_gen " /\\ " pp_cnstrnt oc lt.post;
-  fprintf oc ")\n"
+  pp_post oc lt.post
