@@ -32,9 +32,6 @@ empty atom & (fre;coe) as Atomic
 #ppo
 let ppo = WW(po) | RM(po)
 
-#mfence
-let mfence = po; [F]; po
-
 #implied barriers
 let poWR = WR(po)
 let i1 = PA(poWR)

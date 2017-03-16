@@ -20,7 +20,7 @@ available online: http://diy.inria.fr/
 
 include "basic.cat" 
   
-let ctrlisb = ctrl; [isb]; po
+let ctrlisb = ctrl & isb
 
 let dep = addr | data
 
@@ -43,9 +43,9 @@ let ppo = ppoR | ppoW
 
 let acq_ = [scacq]; po
 let rel_ = po; [screl]	 
-let syf = po;[dmb];po
-let stf = [W];po;[dmbst];po;[W]
-let ldf = [R];po;[dmbst];po
+let syf = dmb
+let stf = [W];dmbst;[W]
+let ldf = [R];dmbld
 let fence = syf | stf | ldf | acq_ | rel_
 
 let hb = ([R]; fence) | rfe | ppo
