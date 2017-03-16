@@ -47,6 +47,7 @@ let rec combine_Ifs = function
   | Seq cs :: cs' -> combine_Ifs (cs @ cs')
   | Unseq _ :: _ -> failwith "Program-order cannot be partial!"
 
+(** Builds various flavours of load/store instructions *)
 let mk_Access dir attrs (dst, src, off, sta) = 
   let a = { Litmus_arm8.dir = dir;
 	    dst = dst; src = src; off = off; sta = sta;
@@ -54,17 +55,20 @@ let mk_Access dir attrs (dst, src, off, sta) =
 	    is_acq_rel = List.mem "scacq" attrs }
   in Litmus_arm8.Access a
 
+(** Builds a load instruction *)
 let mk_LD attrs (dst, src, off) =
   mk_Access Litmus_arm8.LD attrs (dst, src, off, None)
 
+(** Builds a store instruction *)
 let mk_ST attrs (src, dst, off, sta) =
   mk_Access Litmus_arm8.ST attrs (dst, src, off, sta)
 
+(** Builds a MOV or an ADD instruction, depending on whether or not there is a data-dependency *)
 let mk_MOV_or_ADD (r_src, v) = function
   | None -> Litmus_arm8.MOV (r_src, v)
   | Some r_off_d -> Litmus_arm8.ADD (r_src, r_off_d, v)
 	    
-
+(** Builds fake dependencies using exclusive-or instructions. Currently an instruction can have an address or data dependency only on a single instruction, but there's no good reason not to generalise to any number of instructions if required. *)
 let arm8_of_exp tid nr = function
   | Just n -> nr, [], n, None
   | Madd (Just n, r_dep) ->
@@ -73,7 +77,8 @@ let arm8_of_exp tid nr = function
      let il = [Litmus_arm8.EOR (r_off, r_dep, r_dep)] in
      nr, il, n, Some r_off
   | _ -> failwith "Not yet implemented!"
-	    
+
+(** [arm8_of_ins tid (locs, nr) ins] builds a sequence of ARM8 instructions from a single generic instruction [ins]. The current thread identifier is [tid], the correspondence between locations and registers is in [locs], and [nr] is the next register to use. *)
 let rec arm8_of_ins tid (locs,nr) = function
   | Load (r_dst, le), attrs ->
      let nr, il, l, r_off = arm8_of_exp tid nr le in
@@ -126,10 +131,12 @@ let rec arm8_of_ins tid (locs,nr) = function
      in locs, nr, il
   | _, _ -> failwith "Not yet implemented!"
 
+(** A simpler version of the [Litmus.component] type that does not allow non-total sequencing within threads. *)
 type 'a arm8_component =
   | Arm8_Basic of 'a
   | Arm8_If of Register.t * Value.t * 'a arm8_component list
 
+(** Convert a generic litmus test component into an ARM8 litmus test component, by removing any unsequenced instructions. In fact, we expect there are already no unsequenced instructions, and fail if there are. *)
 let rec flatten = function
   | Basic (ins,attrs) -> [Arm8_Basic (ins,attrs)]
   | Seq cs -> flatten_list cs
@@ -140,10 +147,12 @@ and flatten_list = function
   | [] -> []
   | c :: cs -> flatten c @ flatten_list cs
 
+(** [can_fail il] holds iff the instruction list [il] contains an unconditional branch. Unconditional branches are only inserted to handle possibly-failing code (i.e. store-exclusives), so this function tests for the presence of possibly-failing code. *)
 let can_fail il =
   let is_B = function Litmus_arm8.B _ -> true | _ -> false in
   List.exists is_B il
-					
+
+(** [arm8_of_components tid (locs,nr,nl,il) cs] convert a list [cs] of ARM8 litmus test components into a list of ARM8 instructions. The current thread identifier is [tid], the correspondence between locations and registers is in [locs], [nr] is the next register to use, [nl] is the next label to use, and [il] is the list of instructions produced so far. *)
 let rec arm8_of_components tid (locs,nr,nl,il) = function
   | [] when can_fail il ->
      let r_zero = tid,nr in
@@ -174,12 +183,14 @@ let rec arm8_of_components tid (locs,nr,nl,il) = function
      arm8_of_components tid (locs,nr,nl,il) cs
   | _ -> assert false
 
+(** Calculate the first unused register in a thread *)
 let rec next_reg n = function
   | [] -> n
   | Arm8_Basic (Load((_,r),_),_) :: cs ->
      next_reg (max (r+1) n) cs
   | _ :: cs -> next_reg n cs
-		
+
+(** [arm8_of_thds tid (locs,nl) thds] generates a list of ARM8 threads from a list [thds] of generic litmus test threads. The current thread identifier is [tid], the correspondence between locations and registers is in [locs], and [nl] is the next label to use. *)
 let rec arm8_of_thds tid (locs,nl) = function
   | [] -> locs, nl, []
   | thd :: thds ->
@@ -188,6 +199,7 @@ let rec arm8_of_thds tid (locs,nl) = function
      let locs,nl,il2 = arm8_of_thds (tid+1) (locs,nl) thds in
      locs, nl, il1 :: il2
 
+(** [arm8_of_lit name lt] converts the generic litmus test [lt] into an ARM8 litmus test, named [name] *)
 let arm8_of_lit name lt =
   let thds = List.map flatten lt.thds in 
   let locs, _, thds = arm8_of_thds 0 ([], 0) thds in
