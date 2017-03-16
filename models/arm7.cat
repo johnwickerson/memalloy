@@ -21,7 +21,7 @@ https://github.com/herd/herdtools/blob/master/herd/arm.cat
 (* Model for ARM, ie with po-loc ommited from ppo *)
 
 include "basic.cat"
-let ctrlisync = ctrl; [ISB]; po
+let ctrlisync = ctrl & ISB
 	  
 (* Uniproc *)
 acyclic po-loc | rf | fr | co as Uniproc
@@ -55,19 +55,14 @@ let ppo = RW(ic) | RR(ii)
 (**********)
 (* fences *)
 (**********)
-
-let dmbstREL = po; [DMB.ST]; po
-let dsbstREL = po; [DSB.ST]; po
-let dmbREL = po; [DMB]; po
-let dsbREL = po; [DSB]; po
-
+	      
 (* ARM *)
-let dmbstW=WW(dmbstREL)
-let dsbstW=WW(dsbstREL)
-show dmbREL,dsbREL,dmbstW,dsbstW
+let dmbstW=WW(DMBST)
+let dsbstW=WW(DSBST)
+show DMB,DSB,dmbstW,dsbstW
 
 (* Common, all arm barriers are strong *)
-let strong = dmbREL|dsbREL|dmbstREL|dsbstREL
+let strong = DMB|DSB|dmbstW|dsbstW
 let light = 0
 
 let fence = strong|light
@@ -90,3 +85,4 @@ let prop = WW(propbase)| (chapo? ; propbase*; strong; hbstar)
 acyclic co|prop as Propagation
 irreflexive fre;prop;hbstar as Causality
 
+empty atom & (fre;coe) as Atomic

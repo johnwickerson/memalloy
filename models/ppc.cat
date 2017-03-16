@@ -21,7 +21,7 @@ PPC
 (* Model for Power *)
 
 include "basic.cat"
-let ctrlisync = ctrl; [isync]; po
+let ctrlisync = ctrl & isync
 
 (* Uniproc *)
 acyclic po-loc | rf | fr | co as Uniproc
@@ -55,13 +55,12 @@ let ppo = ppoR | ppoW
 show ppo
 
 (* fences *)
-let syncREL=po;[sync];po
-let lwsyncREL=WW(po;[lwsync];po)|RR(po;[lwsync];po)|RW(po;[lwsync];po)
-let eieioREL=WW(po;[eieio];po)
-show syncREL, lwsyncREL, eieioREL
+let lwsyncREL=WW(lwsync)|RR(lwsync)|RW(lwsync)
+let eieioREL=WW(eieio)
+show sync, lwsyncREL, eieioREL
 
 (* All arm barriers are strong *)
-let strong = syncREL
+let strong = sync
 let light = lwsyncREL|eieioREL
 let fence = strong|light
 

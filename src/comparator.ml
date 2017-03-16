@@ -29,6 +29,7 @@ open Format
 open General_purpose
 
 let succ_paths = ref []
+let also_succ_paths = ref []
 let fail_paths = ref []
 let withinit = ref false
 let minimal = ref false
@@ -63,13 +64,19 @@ let read_file filename =
     List.rev !lines ;;
 
 let pp_open_modules succ_sig fail_sig oc =
+  let chop_extn = Filename.chop_extension in
   for i = 1 to List.length !succ_paths do
-    let model = Filename.chop_extension (List.nth !succ_paths (i-1)) in
+    let model = chop_extn (List.nth !succ_paths (i-1)) in
     fprintf oc "open %s[%s] as M%d\n" model succ_sig i
   done;
   for i = 1 to List.length !fail_paths do
-    let model = Filename.chop_extension (List.nth !fail_paths (i-1)) in
+    let model = chop_extn (List.nth !fail_paths (i-1)) in
     fprintf oc "open %s[%s] as N%d\n" model fail_sig i
+  done;
+  for i = 1 to List.length !also_succ_paths do
+    let model = chop_extn (List.nth !also_succ_paths (i-1)) in
+    let i = i + List.length !succ_paths in
+    fprintf oc "open %s[%s] as M%d\n" model fail_sig i
   done
 
 let pp_all_events_used ev_sig oc =
@@ -84,6 +91,12 @@ let pp_violated_models exec_sig oc =
 
 let pp_satisfied_models exec_sig oc =
   for i = 1 to List.length !succ_paths do
+    fprintf oc "  M%d/consistent[none,%s]\n\n" i exec_sig
+  done
+
+let pp_also_satisfied_models exec_sig oc =
+  for i = 1 to List.length !also_succ_paths do
+    let i = i + List.length !succ_paths in
     fprintf oc "  M%d/consistent[none,%s]\n\n" i exec_sig
   done
   
@@ -135,6 +148,7 @@ let pp_comparator arch oc =
     fprintf oc "  withoutinit[X]\n\n";
   pp_violated_models "X" oc;
   pp_satisfied_models "X" oc;
+  pp_also_satisfied_models "X" oc;
   if !hint <> None then
     fprintf oc "  hint[X]\n\n";
   if !minimal then (
@@ -176,6 +190,7 @@ let pp_comparator2 arch mapping_path arch2 oc =
   fprintf oc "  withoutinit[Y]\n\n";
   pp_violated_models "X" oc;
   pp_satisfied_models "Y" oc;
+  pp_also_satisfied_models "X" oc;
   if !hint <> None then
     fprintf oc "  hint[X]\n\n";
   fprintf oc "  // We have a valid application of the mapping\n";
@@ -206,6 +221,8 @@ let get_args () =
        "Type of target execution (required iff -mapping is given)");
       ("-events2", Arg.Set_int eventcount2,
        "Max number of target events (required iff -mapping is given)");
+      ("-alsosatisfies", Arg.String (set_list_ref also_succ_paths),
+       "Execution should also satisfy this model (repeatable; always refers to the 'source' model when checking compilers)");
       ("-expect", Arg.Int (set_option_ref expectation),
        "Expect to find this many unique solutions (optional)");
       ("-desc", Arg.Set_string description,
