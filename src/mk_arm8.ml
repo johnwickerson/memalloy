@@ -99,8 +99,7 @@ let rec arm8_of_ins tid (locs,nr) = function
      let il = il @ [
 	   Litmus_arm8.MOV (r_src, v);
 	   mk_ST attrs (r_src, r_dst, r_off, Some r_status);
-	   Litmus_arm8.CBNZ (r_status, sprintf "Fail%d" tid);
-	   Litmus_arm8.B (sprintf "Exit%d" tid)
+	   Litmus_arm8.CBNZ (r_status, sprintf "Fail%d" tid)
 	 ]
      in
      locs, nr, il
@@ -149,8 +148,11 @@ and flatten_list = function
 
 (** [can_fail il] holds iff the instruction list [il] contains an unconditional branch. Unconditional branches are only inserted to handle possibly-failing code (i.e. store-exclusives), so this function tests for the presence of possibly-failing code. *)
 let can_fail il =
-  let is_B = function Litmus_arm8.B _ -> true | _ -> false in
-  List.exists is_B il
+  let is_branch_to_Fail = function
+    | Litmus_arm8.CBNZ (_,str) when String.sub str 0 4 = "Fail" -> true
+    | _ -> false
+  in
+  List.exists is_branch_to_Fail il
 
 (** [arm8_of_components tid (locs,nr,nl,il) cs] convert a list [cs] of ARM8 litmus test components into a list of ARM8 instructions. The current thread identifier is [tid], the correspondence between locations and registers is in [locs], [nr] is the next register to use, [nl] is the next label to use, and [il] is the list of instructions produced so far. *)
 let rec arm8_of_components tid (locs,nr,nl,il) = function
@@ -160,6 +162,7 @@ let rec arm8_of_components tid (locs,nr,nl,il) = function
      let r_ok = tid,nr in
      let nr = nr + 1 in
      let il = il @ [
+	   Litmus_arm8.B (sprintf "Exit%d" tid);
 	   Litmus_arm8.LBL (sprintf "Fail%d" tid);
 	   Litmus_arm8.MOV (r_zero, 0);
 	   mk_ST [] (r_zero, r_ok, None, None);
