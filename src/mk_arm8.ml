@@ -59,27 +59,26 @@ let mk_LD attrs (dst, src, off) =
 
 let mk_ST attrs (src, dst, off, sta) =
   mk_Access Litmus_arm8.ST attrs (dst, src, off, sta)
-			    	 
+
+let arm8_of_loc_exp tid nr = function
+  | Just l -> nr, [], l, None
+  | Madd (Just l, r_dep) ->
+     let r_off = tid, nr in
+     let nr = nr + 1 in
+     let il = [Litmus_arm8.EOR (r_off, r_dep, r_dep)] in
+     nr, il, l, Some r_off
+  | _ -> failwith "Not yet implemented!"
+	    
 let rec arm8_of_ins tid (locs,nr) = function
-  | Load (r_dst, Just l), attrs ->
+  | Load (r_dst, le), attrs ->
+     let nr, il, l, r_off = arm8_of_loc_exp tid nr le in
      let r_src = tid, nr in
      let nr = nr + 1 in
      let locs = (l, r_src) :: locs in
-     let il = [mk_LD attrs (r_dst, r_src, None)] in
+     let il = il @ [mk_LD attrs (r_dst, r_src, r_off)] in
      locs, nr, il
-  | Load (r_dst, Madd (Just l,r_dep)), attrs ->
-     let r_src = tid,nr in
-     let nr = nr + 1 in
-     let r_off = tid,nr in
-     let nr = nr + 1 in
-     let locs = (l, r_src) :: locs in
-     let il = [
-	 Litmus_arm8.EOR (r_off, r_dep, r_dep);
-	 mk_LD attrs (r_dst, r_src, Some r_off)
-       ]
-     in
-     locs, nr, il
-  | Store (Just l, Just v), attrs when List.mem "X" attrs ->
+  | Store (le, Just v), attrs when List.mem "X" attrs ->
+     let nr, il, l, r_off = arm8_of_loc_exp tid nr le in
      let r_src = tid,nr in
      let nr = nr + 1 in
      let r_dst = tid,nr in
@@ -87,24 +86,25 @@ let rec arm8_of_ins tid (locs,nr) = function
      let r_status = tid,nr in
      let nr = nr + 1 in
      let locs = (l, r_dst) :: locs in
-     let il = [
-	 Litmus_arm8.MOV (r_src, v);
-	 mk_ST attrs (r_src, r_dst, None, Some r_status);
-	 Litmus_arm8.CBNZ (r_status, sprintf "Fail%d" tid);
-	 Litmus_arm8.B (sprintf "Exit%d" tid)
-       ]
+     let il = il @ [
+	   Litmus_arm8.MOV (r_src, v);
+	   mk_ST attrs (r_src, r_dst, r_off, Some r_status);
+	   Litmus_arm8.CBNZ (r_status, sprintf "Fail%d" tid);
+	   Litmus_arm8.B (sprintf "Exit%d" tid)
+	 ]
      in
      locs, nr, il
-  | Store (Just l, Just v), attrs ->
+  | Store (le, Just v), attrs ->
+     let nr, il, l, r_off = arm8_of_loc_exp tid nr le in
      let r_src = tid,nr in
      let nr = nr + 1 in
      let r_dst = tid,nr in
      let nr = nr + 1 in
      let locs = (l, r_dst) :: locs in
-     let il = [
-	 Litmus_arm8.MOV (r_src, v);
-	 mk_ST attrs (r_src, r_dst, None, None)
-       ]
+     let il = il @ [
+	   Litmus_arm8.MOV (r_src, v);
+	   mk_ST attrs (r_src, r_dst, r_off, None)
+	 ]
      in
      locs, nr, il
   | Cas _, _ -> failwith "No single-event RMWs in assembly!"
@@ -158,7 +158,7 @@ let rec arm8_of_components tid (locs,nr,nl,il) = function
      let locs,nr,il1 = arm8_of_ins tid (locs,nr) (ins,attrs) in
      arm8_of_components tid (locs,nr,nl,il@il1) cs
   | [Arm8_If (r,_,cs)] ->
-     let lbl = sprintf "LC%2d" nl in
+     let lbl = sprintf "LC%02d" nl in
      let nl = nl + 1 in
      let il = il @ [
 	 Litmus_arm8.CBNZ (r,lbl);
