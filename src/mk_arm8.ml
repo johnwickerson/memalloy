@@ -60,25 +60,30 @@ let mk_LD attrs (dst, src, off) =
 let mk_ST attrs (src, dst, off, sta) =
   mk_Access Litmus_arm8.ST attrs (dst, src, off, sta)
 
-let arm8_of_loc_exp tid nr = function
-  | Just l -> nr, [], l, None
-  | Madd (Just l, r_dep) ->
-     let r_off = tid, nr in
+let mk_MOV_or_ADD (r_src, v) = function
+  | None -> Litmus_arm8.MOV (r_src, v)
+  | Some r_off_d -> Litmus_arm8.ADD (r_src, r_off_d, v)
+	    
+
+let arm8_of_exp tid nr = function
+  | Just n -> nr, [], n, None
+  | Madd (Just n, r_dep) ->
+     let r_off = tid,nr in
      let nr = nr + 1 in
      let il = [Litmus_arm8.EOR (r_off, r_dep, r_dep)] in
-     nr, il, l, Some r_off
+     nr, il, n, Some r_off
   | _ -> failwith "Not yet implemented!"
 	    
 let rec arm8_of_ins tid (locs,nr) = function
   | Load (r_dst, le), attrs ->
-     let nr, il, l, r_off = arm8_of_loc_exp tid nr le in
+     let nr, il, l, r_off = arm8_of_exp tid nr le in
      let r_src = tid, nr in
      let nr = nr + 1 in
      let locs = (l, r_src) :: locs in
      let il = il @ [mk_LD attrs (r_dst, r_src, r_off)] in
      locs, nr, il
   | Store (le, Just v), attrs when List.mem "X" attrs ->
-     let nr, il, l, r_off = arm8_of_loc_exp tid nr le in
+     let nr, il, l, r_off = arm8_of_exp tid nr le in
      let r_src = tid,nr in
      let nr = nr + 1 in
      let r_dst = tid,nr in
@@ -94,16 +99,17 @@ let rec arm8_of_ins tid (locs,nr) = function
 	 ]
      in
      locs, nr, il
-  | Store (le, Just v), attrs ->
-     let nr, il, l, r_off = arm8_of_loc_exp tid nr le in
+  | Store (le, ve), attrs when not (List.mem "X" attrs) ->
+     let nr, il, l, r_off_a = arm8_of_exp tid nr le in
+     let nr, il, v, r_off_d = arm8_of_exp tid nr ve in
      let r_src = tid,nr in
      let nr = nr + 1 in
      let r_dst = tid,nr in
      let nr = nr + 1 in
      let locs = (l, r_dst) :: locs in
      let il = il @ [
-	   Litmus_arm8.MOV (r_src, v);
-	   mk_ST attrs (r_src, r_dst, r_off, None)
+	   mk_MOV_or_ADD (r_src, v) r_off_d;
+	   mk_ST attrs (r_src, r_dst, r_off_a, None)
 	 ]
      in
      locs, nr, il
@@ -118,7 +124,7 @@ let rec arm8_of_ins tid (locs,nr) = function
        | false, false, true -> [Litmus_arm8.ISB]
        | _ -> failwith "Invalid fence attributes!"
      in locs, nr, il
-  | _, _ -> failwith "Not implemented yet!"
+  | _, _ -> failwith "Not yet implemented!"
 
 type 'a arm8_component =
   | Arm8_Basic of 'a
