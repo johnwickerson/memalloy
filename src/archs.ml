@@ -114,7 +114,7 @@ let rec arch_rels = function
 	      "poloc"; "rf"; "rfe"; "rfi"; "sb"; "sloc"; "sthd"; "thd"]
   | C -> arch_rels Basic
   | Basic_HW -> arch_rels Basic @ ["atom"; "rmw"]
-  | X86 -> arch_rels Basic_HW
+  | X86 -> arch_rels Basic_HW @ ["mfence"]
   | Power -> arch_rels Basic_HW @
 	       ["sync"; "lwsync"; "eieio"; "isync";
 		"SYNC"; "LWSYNC"; "EIEIO"; "ISYNC"]
