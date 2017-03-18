@@ -74,17 +74,17 @@ let pp_open_modules succ_sig fail_sig oc =
 
 let pp_all_events_used ev_sig oc =
   fprintf oc "  // Every event is a read, write or a fence\n";
-  fprintf oc "  %s in R[none,X] + W[none,X] + F[none,X]\n\n" ev_sig
+  fprintf oc "  %s in R[none,X,ad,cd,dd] + W[none,X,ad,cd,dd] + F[none,X,ad,cd,dd]\n\n" ev_sig
 
 let pp_violated_models exec_sig oc =
   for i = 1 to List.length !fail_paths do
-    fprintf oc "  not(N%d/consistent[none,%s])\n" i exec_sig;
-    fprintf oc "  N%d/dead[none,%s]\n\n" i exec_sig
+    fprintf oc "  not(N%d/consistent[none,%s,ad,cd,dd])\n" i exec_sig;
+    fprintf oc "  N%d/dead[none,%s,ad,cd,dd]\n\n" i exec_sig
   done
 
 let pp_satisfied_models exec_sig oc =
   for i = 1 to List.length !succ_paths do
-    fprintf oc "  M%d/consistent[none,%s]\n\n" i exec_sig
+    fprintf oc "  M%d/consistent[none,%s,ad,cd,dd]\n\n" i exec_sig
   done
   
 (** [min_classes ev n r dom oc] generates an Alloy constraint (sent to [oc]) that requires the existence of [n] distinct objects of type [ev], all in [dom], and none of which are related by [r]*)
@@ -93,7 +93,7 @@ let min_classes ev n r dom oc =
   fprintf oc "  some disj %a : %s {\n"
 	  (MyList.pp_gen ", " pp_str) es ev;
   fprintf oc "    %a in X.(%s)\n" (MyList.pp_gen "+" pp_str) es dom;
-  fprintf oc "    no ((sq[%a]-iden) & %s[none,X])\n"
+  fprintf oc "    no ((sq[%a]-iden) & %s[none,X,ad,cd,dd])\n"
 	  (MyList.pp_gen "+" pp_str) es r;
   fprintf oc "  }\n"
 
@@ -127,27 +127,46 @@ let pp_comparator arch oc =
   if !description != "" then fprintf oc "/* %s */\n" !description;
   pp_open_modules "E" "E" oc;
   fprintf oc "sig E {}\n\n";
-  fprintf oc "pred gp [X:%a] {\n\n" Archs.pp_Arch arch;
+  fprintf oc "pred gp [X:%a, ad,cd,dd:E->E] {\n\n" Archs.pp_Arch arch;
   pp_all_events_used "E" oc;
   if !withinit then
     fprintf oc "  withinit[X]\n\n"
   else
     fprintf oc "  withoutinit[X]\n\n";
+  fprintf oc "  wf_%a[X,ad,cd,dd]\n\n" Archs.pp_Arch arch;
   pp_violated_models "X" oc;
   pp_satisfied_models "X" oc;
   if !hint <> None then
-    fprintf oc "  hint[X]\n\n";
+    fprintf oc "  hint[X,ad,cd,dd]\n\n";
   if !minimal then (
     fprintf oc "  not (some e : X.ev {\n";
     for i = 1 to List.length !fail_paths do
-      fprintf oc "    not(N%d/consistent[e,X])\n" i;
-      fprintf oc "    N%d/dead[e,X]\n" i
+      fprintf oc "    not(N%d/consistent[e,X,ad,cd,dd])\n" i;
+      fprintf oc "    N%d/dead[e,X,ad,cd,dd]\n" i
     done;
     for i = 1 to List.length !succ_paths do
-      fprintf oc "    M%d/consistent[e,X]\n" i
+      fprintf oc "    M%d/consistent[e,X,ad,cd,dd]\n" i
     done;
     fprintf oc "  })\n"
   );
+  fprintf oc "  not (some e1, e2 : X.ev {\n";
+  fprintf oc "    (e1 -> e2) in ad\n";
+  for i = 1 to List.length !fail_paths do
+    fprintf oc "    not(N%d/consistent[none,X,ad-(e1->e2),cd,dd])\n" i
+  done;
+  fprintf oc "  })\n";
+  fprintf oc "  not (some e1, e2 : X.ev {\n";
+  fprintf oc "    (e1 -> e2) in cd\n";
+  for i = 1 to List.length !fail_paths do
+    fprintf oc "    not(N%d/consistent[none,X,ad,cd-(e1->e2),dd])\n" i
+  done;
+  fprintf oc "  })\n";
+  fprintf oc "  not (some e1, e2 : X.ev {\n";
+  fprintf oc "    (e1 -> e2) in dd\n";
+  for i = 1 to List.length !fail_paths do
+    fprintf oc "    not(N%d/consistent[none,X,ad,cd,dd-(e1->e2)])\n" i
+  done;
+  fprintf oc "  })\n";
   pp_min_classes "threads" "E" !min_thds "sthd" "ev - IW" oc;
   pp_max_classes "threads" "E" !max_thds "sthd" "ev - IW" oc;
   pp_min_classes "locations" "E" !min_locs "sloc" "R + W" oc;

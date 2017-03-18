@@ -188,7 +188,7 @@ let rec extract_defs path =
   let _, withsc, model = parse_file path in
   List.fold_left (extract_defs_instr withsc) [] model
 
-(** [extract_defs_instr defs ins] updates the definition list [axs] with any new definitions introduced by the instruction [ins] *)
+(** [extract_defs_instr defs ins] updates the definition list [defs] with any new definitions introduced by the instruction [ins] *)
 and extract_defs_instr withsc defs = function
   | Let (x,_,_) -> (x,withsc) :: defs
   | LetRec xes -> (List.map (fun (x,_) -> (x,withsc)) xes) @ defs
@@ -229,11 +229,12 @@ let als_of_expr defs oc e =
 	 try List.assoc x defs
 	 with Not_found -> failwith "Unbound variable %s" x
        in
-       fprintf oc "%s[e,X%s]" x (if withsc then ",s" else "")
+       fprintf oc "%s[e,X,ad,cd,dd%s]" x (if withsc then ",s" else "")
     | Arg x -> fprintf oc "%s" x
     | App (f,es) ->
        let withsc = List.assoc f defs in
-       fprintf oc "%s[%a,e,X%s]" f (MyList.pp_gen "," als_of_expr') es
+       fprintf oc "%s[%a,e,X,ad,cd,dd%s]" f
+	       (MyList.pp_gen "," als_of_expr') es
 	       (if withsc then ",s" else "")
     | Op1 (Set_to_rln,e) -> fprintf oc "stor[%a]" als_of_expr' e
     | Op1 (Star,e) -> fprintf oc "*(%a)" als_of_expr' e
@@ -288,13 +289,13 @@ let preamble cat_path model_name arch oc =
 (** Generates the final part of the Alloy file *)
 let postamble withsc arch axs oc c =
   let axs = List.filter (fun (_,c',_) -> c = c') axs in
-  fprintf oc "pred %a[e:E, X:%a] {\n"
+  fprintf oc "pred %a[e:E, X:%a, ad,cd,dd:E->E] {\n"
 	  als_of_cnstrnt c Archs.pp_Arch arch;
   if withsc then fprintf oc "  some s:E->E {\n";
-  if withsc then fprintf oc "    wf_s[e,X,s]\n";
+  if withsc then fprintf oc "    wf_s[e,X,ad,cd,dd,s]\n";
   let indent = if withsc then "    " else "  " in
   let pp_ax (n,_,withsc) =
-    fprintf oc "%s%s[e,X%s]\n" indent n (if withsc then ",s" else "")
+    fprintf oc "%s%s[e,X,ad,cd,dd%s]\n" indent n (if withsc then ",s" else "")
   in
   List.iter pp_ax (List.rev axs);
   if withsc then fprintf oc "  }\n";
@@ -308,7 +309,7 @@ let rec als_of_instr withsc arch unrolling oc (env, axs, defs) = function
      let e = if withsc then replace_vars_with_args ["s"] e else e in
      let def_type = type_of env e in
      let args_str = List.fold_left (sprintf "%s%s:E->E,") "" args in
-     fprintf oc "fun %s [%se:E, X:%a%s] : %s {\n"
+     fprintf oc "fun %s [%se:E, X:%a, ad,cd,dd:E->E%s] : %s {\n"
 	     x args_str Archs.pp_Arch arch
 	     (if withsc then ", s:E->E" else "")
 	     (alloy_type_of def_type);
@@ -319,7 +320,8 @@ let rec als_of_instr withsc arch unrolling oc (env, axs, defs) = function
   | LetRec _ ->
      failwith "Recursive definition should have already been removed."
   | Axiom (c,s,e,n) ->
-     fprintf oc "pred %s [e:E, X:%a%s] {\n" n Archs.pp_Arch arch
+     fprintf oc "pred %s [e:E, X:%a, ad,cd,dd:E->E%s] {\n" n
+	     Archs.pp_Arch arch
 	     (if withsc then ", s:E->E" else "");
      let e = if withsc then replace_vars_with_args ["s"] e else e in
      fprintf oc "  %a\n" (als_of_axiom defs) (s, e);

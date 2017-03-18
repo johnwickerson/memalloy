@@ -32,16 +32,20 @@ sig Exec_PTX extends Exec_H {
     
 }
 
-fun membar_sys[e:E, X:Exec_PTX] : set E { X.membar_sys - e }
-fun membar_gl[e:E, X:Exec_PTX] : set E { X.membar_gl - e }
-fun membar_cta[e:E, X:Exec_PTX] : set E { X.membar_cta - e }
+pred wf_Exec_PTX[X:Exec_PTX, ad,cd,dd:E->E] {
 
-fun scta[e:E, X:Exec_PTX] : E->E { X.scta - (univ -> e) - (e -> univ) }
-fun sgl[e:E, X:Exec_PTX] : E->E { X.sgl - (univ -> e) - (e -> univ) }
+  wf_Exec_H[X,ad,cd,dd]
+    
+}
+
+fun membar_sys[e:E, X:Exec_PTX, ad,cd,dd:E->E] : set E { X.membar_sys - e }
+fun membar_gl[e:E, X:Exec_PTX, ad,cd,dd:E->E] : set E { X.membar_gl - e }
+fun membar_cta[e:E, X:Exec_PTX, ad,cd,dd:E->E] : set E { X.membar_cta - e }
+
+fun scta[e:E, X:Exec_PTX, ad,cd,dd:E->E] : E->E { X.scta - (univ -> e) - (e -> univ) }
+fun sgl[e:E, X:Exec_PTX, ad,cd,dd:E->E] : E->E { X.sgl - (univ -> e) - (e -> univ) }
 
 // Synonyms
-fun membarsys[e:E, X:Exec_PTX] : set E { membar_sys[e,X] }
-fun membargl[e:E, X:Exec_PTX] : set E { membar_gl[e,X] }
-fun membarcta[e:E, X:Exec_PTX] : set E { membar_cta[e,X] }
-
-run storebuffering_H for exactly 1 Exec, 4 E
+fun membarsys[e:E, X:Exec_PTX, ad,cd,dd:E->E] : set E { membar_sys[e,X,ad,cd,dd] }
+fun membargl[e:E, X:Exec_PTX, ad,cd,dd:E->E] : set E { membar_gl[e,X,ad,cd,dd] }
+fun membarcta[e:E, X:Exec_PTX, ad,cd,dd:E->E] : set E { membar_cta[e,X,ad,cd,dd] }
