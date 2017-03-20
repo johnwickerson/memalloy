@@ -95,43 +95,33 @@ let all =
 
 (** Pre-defined event sets for given architecture *)
 let rec arch_sets = function
-  | Basic ->
-     ["ev"; "W"; "R"; "F"; "naL"; "M"; "IW"]
-  | C ->
-     arch_sets Basic @ ["A"; "acq"; "rel"; "sc"]
-  | Basic_HW ->
-     arch_sets Basic
-  | X86 ->
-     arch_sets Basic_HW @ ["locked"]
-  | Power ->
-     arch_sets Basic_HW @
-       ["sync"; "lwsync"; "eieio"; "isync";
-	"SYNC"; "LWSYNC"; "EIEIO"; "ISYNC"]
-  | Arm7 ->
-     arch_sets Basic_HW @
-       ["dmb"; "DMB"; "DSB"; "DMBSY"; "dmbst"; "DMBST";
-	"dmbld"; "DMBLD"; "isb"; "ISB"; "DSBST"]
-  | Arm8 ->
-     arch_sets Arm7 @ ["screl"; "scacq"]
-  | PTX ->
-     arch_sets Basic_HW @
-       ["membarcta"; "membargl"; "membarsys"]
-  | OpenCL ->
-     arch_sets C @
-       ["L"; "G"; "fga"; "rem"; "entry_fence";
-	"exit_fence"; "wg"; "dv"; "sy"]
+  | Basic -> ["ev"; "W"; "R"; "F"; "naL"; "M"; "IW"]
+  | C -> arch_sets Basic @ ["A"; "acq"; "rel"; "sc"]
+  | Basic_HW -> arch_sets Basic
+  | X86 -> arch_sets Basic_HW @ ["locked"]
+  | Power -> arch_sets Basic_HW
+  | Arm7 -> arch_sets Basic_HW
+  | Arm8 -> arch_sets Arm7 @ ["screl"; "scacq"]
+  | PTX -> arch_sets Basic_HW 
+  | OpenCL -> arch_sets C @
+		["L"; "G"; "fga"; "rem"; "entry_fence";
+		 "exit_fence"; "wg"; "dv"; "sy"]
 
 (** Pre-defined event relations for given architecture *)
 let rec arch_rels = function
-  | Basic ->
-     ["ad"; "addr"; "cd"; "co"; "coe"; "coi"; "ctrl"; "data";
-      "dd"; "ext"; "fr"; "fr_init"; "fre"; "fri"; "loc"; "po"; "poloc";
-      "rf"; "rfe"; "rfi"; "sb"; "sloc"; "sthd"; "thd"]
+  | Basic -> ["ad"; "addr"; "cd"; "co"; "coe"; "coi"; "ctrl"; "data";
+	      "dd"; "ext"; "fr"; "fr_init"; "fre"; "fri"; "loc"; "po";
+	      "poloc"; "rf"; "rfe"; "rfi"; "sb"; "sloc"; "sthd"; "thd"]
   | C -> arch_rels Basic
   | Basic_HW -> arch_rels Basic @ ["atom"; "rmw"]
-  | X86
-  | Power
-  | Arm7
-  | Arm8 -> arch_rels Basic_HW
-  | PTX -> arch_rels Basic_HW @ ["scta"; "sgl"]
+  | X86 -> arch_rels Basic_HW @ ["mfence"]
+  | Power -> arch_rels Basic_HW @
+	       ["sync"; "lwsync"; "eieio"; "isync";
+		"SYNC"; "LWSYNC"; "EIEIO"; "ISYNC"]
+  | Arm7 -> arch_rels Basic_HW @
+	      ["dmb"; "DMB"; "DSB"; "DMBSY"; "dmbst"; "DMBST";
+	       "dmbld"; "DMBLD"; "isb"; "ISB"; "DSBST"]
+  | Arm8 -> arch_rels Arm7
+  | PTX -> arch_rels Basic_HW @
+	     ["scta"; "sgl"; "membarcta"; "membargl"; "membarsys"]
   | OpenCL -> arch_rels C @ ["swg"; "sdv"; "sbar"]

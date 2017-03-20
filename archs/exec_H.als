@@ -8,8 +8,12 @@ sig Exec_H extends Exec {
   // the atom relation relates a consecutively-sequenced read/write pair
   atom in (R->W) & sb & sloc
     
+  // there are no single-event RMWs
   no (R&W)
 
+  // there are no fence events (only fence relations)
+  no F
+    
   // sequenced-before is total within a thread
   sthd in *sb + ~*sb
 
@@ -37,6 +41,15 @@ fun fre[e:E, x : Exec_H, ad,cd,dd:E->E] : E -> E {
 
 fun fri[e:E, x : Exec_H, ad,cd,dd:E->E] : E -> E {
   fr[e,x,ad,cd,dd] & sthd[e,x,ad,cd,dd]
+}
+
+pred is_fence_rel[fence_rel:E->E, sb:E->E] {
+    
+  // Consistent with program order
+  fence_rel in sb
+
+  // Preserved by pre- or post-composition with program order  
+  *sb . fence_rel . *sb in fence_rel
 }
 
 fun rfe[e:E, x : Exec_H, ad,cd,dd:E->E] : E -> E {

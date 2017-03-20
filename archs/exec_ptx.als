@@ -2,16 +2,8 @@ module exec_ptx[E]
 open exec_H[E]
 
 sig Exec_PTX extends Exec_H {
-  membar_sys, membar_gl, membar_cta : set E, // memory barriers
   scta, sgl : E->E // same CTA, same global
 }{
-  
-  // The membars are special kinds of fence
-  membar_sys + membar_gl + membar_cta in F  
-
-  // A membar.sys implies a membar.gl, which implies a membar.cta
-  membar_sys in membar_gl
-  membar_gl in membar_cta
 
   // scta and sgl are equivalence relations among all events
   is_equivalence[scta, ev]
@@ -32,20 +24,27 @@ sig Exec_PTX extends Exec_H {
     
 }
 
-pred wf_Exec_PTX[X:Exec_PTX, ad,cd,dd:E->E] {
-
+pred wf_Exec_PTX[X:Exec_PTX, ad,cd,dd,membar_cta,membar_gl,membar_sys:E->E] {
+    
   wf_Exec_H[X,ad,cd,dd]
+
+  is_fence_rel[membar_sys, X.sb]
+  is_fence_rel[membar_gl, X.sb]
+  is_fence_rel[membar_cta, X.sb]
+
+  // A membar.sys implies a membar.gl, which implies a membar.cta
+  membar_sys in membar_gl
+  membar_gl in membar_cta
     
 }
 
-fun membar_sys[e:E, X:Exec_PTX, ad,cd,dd:E->E] : set E { X.membar_sys - e }
-fun membar_gl[e:E, X:Exec_PTX, ad,cd,dd:E->E] : set E { X.membar_gl - e }
-fun membar_cta[e:E, X:Exec_PTX, ad,cd,dd:E->E] : set E { X.membar_cta - e }
-
-fun scta[e:E, X:Exec_PTX, ad,cd,dd:E->E] : E->E { X.scta - (univ -> e) - (e -> univ) }
-fun sgl[e:E, X:Exec_PTX, ad,cd,dd:E->E] : E->E { X.sgl - (univ -> e) - (e -> univ) }
+fun scta[e:E, X:Exec_PTX, ad,cd,dd,membar_cta,membar_gl,membar_sys:E->E] : E->E { X.scta - (univ -> e) - (e -> univ) }
+fun sgl[e:E, X:Exec_PTX, ad,cd,dd,membar_cta,membar_gl,membar_sys:E->E] : E->E { X.sgl - (univ -> e) - (e -> univ) }
+fun membar_sys[e:E, X:Exec_PTX, ad,cd,dd,membar_cta,membar_gl,membar_sys:E->E] : set E { membar_sys - (univ -> e) - (e -> univ) }
+fun membar_gl[e:E, X:Exec_PTX, ad,cd,dd,membar_cta,membar_gl,membar_sys:E->E] : set E { membar_gl - (univ -> e) - (e -> univ) }
+fun membar_cta[e:E, X:Exec_PTX, ad,cd,dd,membar_cta,membar_gl,membar_sys:E->E] : set E { membar_cta - (univ -> e) - (e -> univ) }
 
 // Synonyms
-fun membarsys[e:E, X:Exec_PTX, ad,cd,dd:E->E] : set E { membar_sys[e,X,ad,cd,dd] }
-fun membargl[e:E, X:Exec_PTX, ad,cd,dd:E->E] : set E { membar_gl[e,X,ad,cd,dd] }
-fun membarcta[e:E, X:Exec_PTX, ad,cd,dd:E->E] : set E { membar_cta[e,X,ad,cd,dd] }
+fun membarsys[e:E, X:Exec_PTX, ad,cd,dd,membar_cta,membar_gl,membar_sys:E->E] : set E { membar_sys[e,X,ad,cd,dd,membar_cta,membar_gl,membar_sys] }
+fun membargl[e:E, X:Exec_PTX, ad,cd,dd,membar_cta,membar_gl,membar_sys:E->E] : set E { membar_gl[e,X,ad,cd,dd,membar_cta,membar_gl,membar_sys] }
+fun membarcta[e:E, X:Exec_PTX, ad,cd,dd,membar_cta,membar_gl,membar_sys:E->E] : set E { membar_cta[e,X,ad,cd,dd,membar_cta,membar_gl,membar_sys] }

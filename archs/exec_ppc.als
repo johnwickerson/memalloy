@@ -2,25 +2,26 @@ module exec_ppc[E]
 open exec_H[E]
 
 sig Exec_PPC extends Exec_H {
-  isync : set E, // control fence
-  sync : set E, // full fence
-  lwsync, eieio : set E, // lightweight fences
+  isync : E -> E, // control fence
+  sync : E -> E, // full fence
+  lwsync, eieio : E -> E, // lightweight fences
 }{
+  is_fence_rel[isync, sb]
+  is_fence_rel[sync, sb]
+  is_fence_rel[lwsync, sb]
+  is_fence_rel[eieio, sb]
 
-  // fences must be one of the above kinds
-  isync + lwsync + eieio = F
-  disj [isync, lwsync, eieio]
   // the full fence implies both lightweight fences
   sync in lwsync & eieio
 }
 
-fun isync[e:E, X:Exec_PPC] : set E { X.isync - e }
-fun sync[e:E, X:Exec_PPC] : set E { X.sync - e }
-fun lwsync[e:E, X:Exec_PPC] : set E { X.lwsync - e }
-fun eieio[e:E, X:Exec_PPC] : set E { X.eieio - e }
+fun isync[e:E, X:Exec_PPC] : E->E { X.isync - (univ -> e) - (e -> univ) }
+fun sync[e:E, X:Exec_PPC] : E->E { X.sync - (univ -> e) - (e -> univ) }
+fun lwsync[e:E, X:Exec_PPC] : E->E { X.lwsync - (univ -> e) - (e -> univ) }
+fun eieio[e:E, X:Exec_PPC] : E->E { X.eieio - (univ -> e) - (e -> univ) }
 
 // Synonyms:
-fun ISYNC[e:E, X:Exec_PPC] : set E { isync[e,X] }
-fun SYNC[e:E, X:Exec_PPC] : set E { sync[e,X] }
-fun LWSYNC[e:E, X:Exec_PPC] : set E { lwsync[e,X] }
-fun EIEIO[e:E, X:Exec_PPC] : set E { eieio[e,X] }
+fun ISYNC[e:E, X:Exec_PPC] : E->E { isync[e,X] }
+fun SYNC[e:E, X:Exec_PPC] : E->E { sync[e,X] }
+fun LWSYNC[e:E, X:Exec_PPC] : E->E { lwsync[e,X] }
+fun EIEIO[e:E, X:Exec_PPC] : E->E { eieio[e,X] }

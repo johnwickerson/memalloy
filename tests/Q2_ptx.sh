@@ -3,7 +3,7 @@
     -satisfies models/ptx_orig.cat \
     -violates models/ptx_cumul.cat \
     -arch PTX \
-    -events 7 \
+    -events 5 \
     -minimal \
     -satisfies models/normws.cat \
     -satisfies models/ptx_singlegl.cat
