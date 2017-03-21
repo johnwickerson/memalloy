@@ -48,3 +48,10 @@ fun membar_cta[e:E, X:Exec_PTX, ad,cd,dd,membar_cta,membar_gl,membar_sys:E->E] :
 fun membarsys[e:E, X:Exec_PTX, ad,cd,dd,membar_cta,membar_gl,membar_sys:E->E] : E->E { membar_sys - (univ -> e) - (e -> univ) }
 fun membargl[e:E, X:Exec_PTX, ad,cd,dd,membar_cta,membar_gl,membar_sys:E->E] : E->E { membar_gl - (univ -> e) - (e -> univ) }
 fun membarcta[e:E, X:Exec_PTX, ad,cd,dd,membar_cta,membar_gl,membar_sys:E->E] : E->E { membar_cta - (univ -> e) - (e -> univ) }
+
+
+/*
+W y 2   R y 2       R x 1
+        membar.gl   membar.cta
+        W x 1       W y 1
+*/
