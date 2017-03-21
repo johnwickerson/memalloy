@@ -61,7 +61,14 @@ let read_file filename =
     done; !lines
   with End_of_file ->
     close_in chan;
-    List.rev !lines ;;
+    List.rev !lines
+
+(** Parse architecture from given .cat file *)
+let arch_of cat_path =
+  let ic = open_in cat_path in
+  let lexbuf = Lexing.from_channel ic in
+  let model_type,_,_ = Cat_parser.main Cat_lexer.token lexbuf in
+  Archs.parse_arch model_type
 
 let pp_open_modules succ_sig fail_sig oc =
   let chop_extn = Filename.chop_extension in
@@ -79,26 +86,54 @@ let pp_open_modules succ_sig fail_sig oc =
     fprintf oc "open %s[%s] as M%d\n" model fail_sig i
   done
 
+let pp_extra_rels oc arch =
+  let extra_rels = Archs.arch_rels_min arch in
+  List.iter (fprintf oc ",%s") extra_rels
+
+let pp_extra_rels_minus j oc rels =
+  let pp_rel i rel =
+    if i=j
+    then fprintf oc ",%s - (e1 -> e2)" rel
+    else fprintf oc ",%s" rel in
+  MyList.iteri pp_rel rels
+
+let pp_extra_rels_with_type oc arch =
+  let rec pp_extra_rels_with_type = function
+    | [] -> fprintf oc ""
+    | [rel] -> fprintf oc ",%s:E->E" rel
+    | rel::rels -> fprintf oc ",%s" rel; pp_extra_rels_with_type rels
+  in pp_extra_rels_with_type (Archs.arch_rels_min arch)
+
 let pp_all_events_used ev_sig oc =
   fprintf oc "  // Every event is a read, write or a fence\n";
   fprintf oc "  %s in R[none,X,ad,cd,dd] + W[none,X,ad,cd,dd] + F[none,X,ad,cd,dd]\n\n" ev_sig
 
 let pp_violated_models exec_sig oc =
-  for i = 1 to List.length !fail_paths do
-    fprintf oc "  not(N%d/consistent[none,%s,ad,cd,dd])\n" i exec_sig;
-    fprintf oc "  N%d/dead[none,%s,ad,cd,dd]\n\n" i exec_sig
-  done
+  let pp_model i path =
+    let arch = arch_of path in
+    fprintf oc "  not(N%d/consistent[none,%s%a])\n"
+	    (i+1) exec_sig pp_extra_rels arch;
+    fprintf oc "  N%d/dead[none,%s%a]\n\n"
+	    (i+1) exec_sig pp_extra_rels arch
+  in
+  MyList.iteri pp_model !fail_paths
 
 let pp_satisfied_models exec_sig oc =
-  for i = 1 to List.length !succ_paths do
-    fprintf oc "  M%d/consistent[none,%s,ad,cd,dd]\n\n" i exec_sig
-  done
+  let pp_model i path =
+    let arch = arch_of path in
+    fprintf oc "  M%d/consistent[none,%s%a]\n\n"
+	    (i+1) exec_sig pp_extra_rels arch
+  in
+  MyList.iteri pp_model !succ_paths
 
 let pp_also_satisfied_models exec_sig oc =
-  for i = 1 to List.length !also_succ_paths do
+  let pp_model i path =
+    let arch = arch_of path in
     let i = i + List.length !succ_paths in
-    fprintf oc "  M%d/consistent[none,%s]\n\n" i exec_sig
-  done
+    fprintf oc "  M%d/consistent[none,%s%a]\n\n"
+	    (i+1) exec_sig pp_extra_rels arch
+  in
+  MyList.iteri pp_model !also_succ_paths
   
 (** [min_classes ev n r dom oc] generates an Alloy constraint (sent to [oc]) that requires the existence of [n] distinct objects of type [ev], all in [dom], and none of which are related by [r]*)
 let min_classes ev n r dom oc =
@@ -125,7 +160,7 @@ let pp_max_classes name ev n r dom oc =
     min_classes ev (n+1) r dom oc;
     fprintf oc "  )\n"
   )
-
+		   
 let pp_file oc path =
   let ic = open_in path in
   try while true do fprintf oc "%s\n" (input_line ic) done
@@ -140,47 +175,51 @@ let pp_comparator arch oc =
   if !description != "" then fprintf oc "/* %s */\n" !description;
   pp_open_modules "E" "E" oc;
   fprintf oc "sig E {}\n\n";
-  fprintf oc "pred gp [X:%a, ad,cd,dd:E->E] {\n\n" Archs.pp_Arch arch;
+  fprintf oc "pred gp [X:%a%a] {\n\n"
+	  Archs.pp_Arch arch
+	  pp_extra_rels_with_type arch;
   pp_all_events_used "E" oc;
   if !withinit then
     fprintf oc "  withinit[X]\n\n"
   else
     fprintf oc "  withoutinit[X]\n\n";
-  fprintf oc "  wf_%a[X,ad,cd,dd]\n\n" Archs.pp_Arch arch;
+  fprintf oc "  wf_%a[X%a]\n\n"
+	  Archs.pp_Arch arch pp_extra_rels arch;
   pp_violated_models "X" oc;
   pp_satisfied_models "X" oc;
   pp_also_satisfied_models "X" oc;
   if !hint <> None then
-    fprintf oc "  hint[X,ad,cd,dd]\n\n";
+    fprintf oc "  hint[X%a]\n\n" pp_extra_rels arch;
   if !minimal then (
     fprintf oc "  not (some e : X.ev {\n";
-    for i = 1 to List.length !fail_paths do
-      fprintf oc "    not(N%d/consistent[e,X,ad,cd,dd])\n" i;
-      fprintf oc "    N%d/dead[e,X,ad,cd,dd]\n" i
-    done;
-    for i = 1 to List.length !succ_paths do
-      fprintf oc "    M%d/consistent[e,X,ad,cd,dd]\n" i
-    done;
+    MyList.iteri (
+	fun i path ->
+	let arch = arch_of path in
+	fprintf oc "    not(N%d/consistent[e,X%a])\n"
+		(i+1) pp_extra_rels arch;
+	fprintf oc "    N%d/dead[e,X%a]\n"
+		(i+1) pp_extra_rels arch
+      ) !fail_paths;
+    MyList.iteri (
+	fun i path ->
+	let arch = arch_of path in
+	fprintf oc "    M%d/consistent[e,X%a]\n"
+		(i+1) pp_extra_rels arch
+      ) !succ_paths;
     fprintf oc "  })\n"
   );
-  fprintf oc "  not (some e1, e2 : X.ev {\n";
-  fprintf oc "    (e1 -> e2) in ad\n";
-  for i = 1 to List.length !fail_paths do
-    fprintf oc "    not(N%d/consistent[none,X,ad-(e1->e2),cd,dd])\n" i
-  done;
-  fprintf oc "  })\n";
-  fprintf oc "  not (some e1, e2 : X.ev {\n";
-  fprintf oc "    (e1 -> e2) in cd\n";
-  for i = 1 to List.length !fail_paths do
-    fprintf oc "    not(N%d/consistent[none,X,ad,cd-(e1->e2),dd])\n" i
-  done;
-  fprintf oc "  })\n";
-  fprintf oc "  not (some e1, e2 : X.ev {\n";
-  fprintf oc "    (e1 -> e2) in dd\n";
-  for i = 1 to List.length !fail_paths do
-    fprintf oc "    not(N%d/consistent[none,X,ad,cd,dd-(e1->e2)])\n" i
-  done;
-  fprintf oc "  })\n";
+  let min_rels = Archs.arch_rels_min arch in
+  let pp_rel j rel =
+    fprintf oc "  not (some e1, e2 : X.ev {\n";
+    fprintf oc "    (e1 -> e2) in %s\n" rel;
+    MyList.iteri (
+	fun i path ->
+	fprintf oc "    not(N%d/consistent[none,X%a])\n" (i+1)
+		(pp_extra_rels_minus j) min_rels
+      ) !fail_paths;
+    fprintf oc "  })\n"
+  in
+  MyList.iteri pp_rel min_rels;
   pp_min_classes "threads" "E" !min_thds "sthd" "ev - IW" oc;
   pp_max_classes "threads" "E" !max_thds "sthd" "ev - IW" oc;
   pp_min_classes "locations" "E" !min_locs "sloc" "R + W" oc;

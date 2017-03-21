@@ -52,9 +52,16 @@ let pp f oc xs =
 let mapi f xs =
   let rec mapi n f = function
     | [] -> []
-    | x :: xs -> f n x :: mapi (n+1) f xs
+    | x::xs -> f n x :: mapi (n+1) f xs
   in
   mapi 0 f xs
+
+let iteri f xs =
+  let rec iteri n f = function
+    | [] -> ()
+    | x::xs -> f n x; iteri (n+1) f xs
+  in
+  iteri 0 f xs
 					     
 let max xs =
   hd (rev (sort compare xs))

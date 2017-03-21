@@ -77,6 +77,17 @@ let rec unfold_instrs u = function
 				  
 (** {2 Determining Alloy types} *)
 
+type def_info = {
+    withsc : bool;
+    extra_rels : string list;
+  }
+
+type ax_info = {
+    cnstrnt : cnstrnt;
+    withsc_ax : bool;
+    extra_rels_ax : string list;
+  }
+
 (** Create a typing environment and list of definitions containing the pre-defined sets and relations for the given architecture *)
 let build_env withsc arch =
   let rels = Archs.arch_rels arch in
@@ -86,10 +97,9 @@ let build_env withsc arch =
     (List.map (fun a -> (a,([],Rel))) rels) @
       (List.map (fun a -> (a,([],Set))) sets)
   in
-  let defs =
-    (List.map (fun a -> (a,false)) rels) @
-      (List.map (fun a -> (a,false)) sets)
-  in
+  let extra_rels = Archs.arch_rels_min arch in
+  let mk_def a = a, {withsc = false; extra_rels} in
+  let defs = (List.map mk_def rels) @ (List.map mk_def sets) in
   env, defs
 
   let alloy_type_of = function Set -> "set E" | Rel -> "E->E"
@@ -185,24 +195,32 @@ and type_instr env = function
 
 (** Returns the list of definitions in the given .cat file, and whether each is in 'withsc' mode *)
 let rec extract_defs path =
-  let _, withsc, model = parse_file path in
-  List.fold_left (extract_defs_instr withsc) [] model
+  let model_type, withsc, model = parse_file path in
+  let arch = Archs.parse_arch model_type in
+  List.fold_left (extract_defs_instr arch withsc) [] model
 
 (** [extract_defs_instr defs ins] updates the definition list [defs] with any new definitions introduced by the instruction [ins] *)
-and extract_defs_instr withsc defs = function
-  | Let (x,_,_) -> (x,withsc) :: defs
-  | LetRec xes -> (List.map (fun (x,_) -> (x,withsc)) xes) @ defs
+and extract_defs_instr arch withsc defs =
+  let extra_rels = Archs.arch_rels_min arch in
+  let mk_def (x,_) = x, {withsc; extra_rels} in
+  function
+  | Let (x,_,e) -> mk_def (x,e) :: defs
+  | LetRec xes -> List.map mk_def xes @ defs
   | Include path -> extract_defs path @ defs
   | _ -> defs
 
 (** Returns the list of axioms declared in the given .cat file *)
 let rec extract_axioms path =
-  let _, withsc, model = parse_file path in
-  List.fold_left (extract_axioms_instr withsc) [] model 
+  let model_type, withsc, model = parse_file path in
+  let arch = Archs.parse_arch model_type in
+  List.fold_left (extract_axioms_instr arch withsc) [] model 
 
 (** [extract_axioms_instr axs ins] updates the axiom list [axs] with any new axioms introduced by the instruction [ins] *)
-and extract_axioms_instr withsc axs = function
-  | Axiom (c,_,_,n) -> (n,c,withsc) :: axs
+and extract_axioms_instr arch withsc_ax axs =
+  let extra_rels_ax = Archs.arch_rels_min arch in
+  function
+  | Axiom (cnstrnt,_,_,n) ->
+     (n,{cnstrnt; withsc_ax; extra_rels_ax}) :: axs
   | Include path -> extract_axioms path @ axs
   | _ -> axs
 				    
@@ -220,22 +238,33 @@ let als_of_shape oc = function
   | Irreflexive -> fprintf oc "irreflexive"
   | IsEmpty -> fprintf oc "is_empty"
 
+let als_of_extra_rels oc rels =
+  List.iter (fprintf oc ",%s") rels
+
+let rec als_args_of_extra_rels oc = function
+  | [] -> fprintf oc ""
+  | [rel] -> fprintf oc ",%s:E->E" rel
+  | rel::rels -> fprintf oc ",%s" rel; als_args_of_extra_rels oc rels
+
 (** Cat expression to Alloy expression *)
 let als_of_expr defs oc e =
   let rec als_of_expr' oc = function
     | Empty_rln -> fprintf oc "none -> none"
     | Var x ->
-       let withsc =
+       let def_info =
 	 try List.assoc x defs
 	 with Not_found -> failwith "Unbound variable %s" x
        in
-       fprintf oc "%s[e,X,ad,cd,dd%s]" x (if withsc then ",s" else "")
+       fprintf oc "%s[e,X%a%s]" x
+	       als_of_extra_rels def_info.extra_rels
+	       (if def_info.withsc then ",s" else "")
     | Arg x -> fprintf oc "%s" x
     | App (f,es) ->
-       let withsc = List.assoc f defs in
-       fprintf oc "%s[%a,e,X,ad,cd,dd%s]" f
+       let def_info = List.assoc f defs in
+       fprintf oc "%s[%a,e,X%a%s]" f
 	       (MyList.pp_gen "," als_of_expr') es
-	       (if withsc then ",s" else "")
+	       als_of_extra_rels def_info.extra_rels
+	       (if def_info.withsc then ",s" else "")
     | Op1 (Set_to_rln,e) -> fprintf oc "stor[%a]" als_of_expr' e
     | Op1 (Star,e) -> fprintf oc "*(%a)" als_of_expr' e
     | Op1 (Plus,e) -> fprintf oc "^(%a)" als_of_expr' e
@@ -285,17 +314,22 @@ let preamble cat_path model_name arch oc =
 	  cat_path (MyUnix.today ()) (MyUnix.now ());
   fprintf oc "module %s[E]\n" model_name;
   fprintf oc "open %a[E]\n\n" Archs.pp_arch arch
-
+	  
 (** Generates the final part of the Alloy file *)
 let postamble withsc arch axs oc c =
-  let axs = List.filter (fun (_,c',_) -> c = c') axs in
-  fprintf oc "pred %a[e:E, X:%a, ad,cd,dd:E->E] {\n"
-	  als_of_cnstrnt c Archs.pp_Arch arch;
+  let axs = List.filter (fun (_,ax_info) -> ax_info.cnstrnt = c) axs in
+  let extra_rels = Archs.arch_rels_min arch in
+  fprintf oc "pred %a[e:E, X:%a%a] {\n"
+	  als_of_cnstrnt c Archs.pp_Arch arch
+	  als_args_of_extra_rels extra_rels;
   if withsc then fprintf oc "  some s:E->E {\n";
-  if withsc then fprintf oc "    wf_s[e,X,ad,cd,dd,s]\n";
+  if withsc then fprintf oc "    wf_s[e,X%a,s]\n"
+			 als_of_extra_rels extra_rels;
   let indent = if withsc then "    " else "  " in
-  let pp_ax (n,_,withsc) =
-    fprintf oc "%s%s[e,X,ad,cd,dd%s]\n" indent n (if withsc then ",s" else "")
+  let pp_ax (n,ax_info) =
+    fprintf oc "%s%s[e,X%a%s]\n" indent n
+	    als_of_extra_rels ax_info.extra_rels_ax
+	    (if ax_info.withsc_ax then ",s" else "")
   in
   List.iter pp_ax (List.rev axs);
   if withsc then fprintf oc "  }\n";
@@ -309,24 +343,28 @@ let rec als_of_instr withsc arch unrolling oc (env, axs, defs) = function
      let e = if withsc then replace_vars_with_args ["s"] e else e in
      let def_type = type_of env e in
      let args_str = List.fold_left (sprintf "%s%s:E->E,") "" args in
-     fprintf oc "fun %s [%se:E, X:%a, ad,cd,dd:E->E%s] : %s {\n"
+     let extra_rels = Archs.arch_rels_min arch in
+     fprintf oc "fun %s [%se:E, X:%a%a%s] : %s {\n"
 	     x args_str Archs.pp_Arch arch
+	     als_args_of_extra_rels extra_rels
 	     (if withsc then ", s:E->E" else "")
 	     (alloy_type_of def_type);
      fprintf oc "  %a\n" (als_of_expr defs) e;
      fprintf oc "}\n\n";
      let new_env = (x, (List.map (fun _ -> Rel) args, def_type)) in
-     (new_env :: env, axs, (x,withsc) :: defs)
+     (new_env :: env, axs, (x,{withsc; extra_rels}) :: defs)
   | LetRec _ ->
      failwith "Recursive definition should have already been removed."
-  | Axiom (c,s,e,n) ->
-     fprintf oc "pred %s [e:E, X:%a, ad,cd,dd:E->E%s] {\n" n
+  | Axiom (cnstrnt,s,e,n) ->
+     let extra_rels_ax = Archs.arch_rels_min arch in
+     fprintf oc "pred %s [e:E, X:%a%a%s] {\n" n
 	     Archs.pp_Arch arch
+	     als_args_of_extra_rels extra_rels_ax
 	     (if withsc then ", s:E->E" else "");
      let e = if withsc then replace_vars_with_args ["s"] e else e in
      fprintf oc "  %a\n" (als_of_axiom defs) (s, e);
      fprintf oc "}\n\n";
-     (env, (n,c,withsc) :: axs, defs)
+     (env, (n,{cnstrnt;withsc_ax=withsc;extra_rels_ax}) :: axs, defs)
   | Include cat_path ->
      als_of_file true unrolling cat_path;
      let env' = type_file cat_path in

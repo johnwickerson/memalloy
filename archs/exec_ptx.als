@@ -40,11 +40,11 @@ pred wf_Exec_PTX[X:Exec_PTX, ad,cd,dd,membar_cta,membar_gl,membar_sys:E->E] {
 
 fun scta[e:E, X:Exec_PTX, ad,cd,dd,membar_cta,membar_gl,membar_sys:E->E] : E->E { X.scta - (univ -> e) - (e -> univ) }
 fun sgl[e:E, X:Exec_PTX, ad,cd,dd,membar_cta,membar_gl,membar_sys:E->E] : E->E { X.sgl - (univ -> e) - (e -> univ) }
-fun membar_sys[e:E, X:Exec_PTX, ad,cd,dd,membar_cta,membar_gl,membar_sys:E->E] : set E { membar_sys - (univ -> e) - (e -> univ) }
-fun membar_gl[e:E, X:Exec_PTX, ad,cd,dd,membar_cta,membar_gl,membar_sys:E->E] : set E { membar_gl - (univ -> e) - (e -> univ) }
-fun membar_cta[e:E, X:Exec_PTX, ad,cd,dd,membar_cta,membar_gl,membar_sys:E->E] : set E { membar_cta - (univ -> e) - (e -> univ) }
+fun membar_sys[e:E, X:Exec_PTX, ad,cd,dd,membar_cta,membar_gl,membar_sys:E->E] : E->E { membar_sys - (univ -> e) - (e -> univ) }
+fun membar_gl[e:E, X:Exec_PTX, ad,cd,dd,membar_cta,membar_gl,membar_sys:E->E] : E->E { membar_gl - (univ -> e) - (e -> univ) }
+fun membar_cta[e:E, X:Exec_PTX, ad,cd,dd,membar_cta,membar_gl,membar_sys:E->E] : E->E { membar_cta - (univ -> e) - (e -> univ) }
 
 // Synonyms
-fun membarsys[e:E, X:Exec_PTX, ad,cd,dd,membar_cta,membar_gl,membar_sys:E->E] : set E { membar_sys[e,X,ad,cd,dd,membar_cta,membar_gl,membar_sys] }
-fun membargl[e:E, X:Exec_PTX, ad,cd,dd,membar_cta,membar_gl,membar_sys:E->E] : set E { membar_gl[e,X,ad,cd,dd,membar_cta,membar_gl,membar_sys] }
-fun membarcta[e:E, X:Exec_PTX, ad,cd,dd,membar_cta,membar_gl,membar_sys:E->E] : set E { membar_cta[e,X,ad,cd,dd,membar_cta,membar_gl,membar_sys] }
+fun membarsys[e:E, X:Exec_PTX, ad,cd,dd,membar_cta,membar_gl,membar_sys:E->E] : E->E { membar_sys - (univ -> e) - (e -> univ) }
+fun membargl[e:E, X:Exec_PTX, ad,cd,dd,membar_cta,membar_gl,membar_sys:E->E] : E->E { membar_gl - (univ -> e) - (e -> univ) }
+fun membarcta[e:E, X:Exec_PTX, ad,cd,dd,membar_cta,membar_gl,membar_sys:E->E] : E->E { membar_cta - (univ -> e) - (e -> univ) }

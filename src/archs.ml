@@ -123,5 +123,21 @@ let rec arch_rels = function
 	       "dmbld"; "DMBLD"; "isb"; "ISB"; "DSBST"]
   | Arm8 -> arch_rels Arm7
   | PTX -> arch_rels Basic_HW @
-	     ["scta"; "sgl"; "membarcta"; "membargl"; "membarsys"]
+	     ["scta"; "sgl"; "membar_cta"; "membar_gl"; "membar_sys";
+	      "membarcta"; "membargl"; "membarsys"]
   | OpenCL -> arch_rels C @ ["swg"; "sdv"; "sbar"]
+
+(** The pre-defined event relations that can be 'minimised'; that is, generated executions should not include an edge from one of these relations if the edge can be removed without making an inconsistent execution consistent. Make sure that [arch_rels_min arch] is a subset of [arch_rels arch]. *)
+let rec arch_rels_min = function
+  | Basic -> ["ad"; "cd"; "dd"]
+  | C -> arch_rels_min Basic
+  | Basic_HW -> arch_rels_min Basic (* could include 'atom' here *)
+  | X86 -> arch_rels_min Basic_HW @ ["mfence"]
+  | Power -> arch_rels_min Basic_HW @
+	       ["sync"; "lwsync"; "eieio"; "isync"]
+  | Arm7 -> arch_rels_min Basic_HW @ ["dmb"; "dmbst"; "dmbld"; "isb"]
+  | Arm8 -> arch_rels_min Arm7
+  | PTX -> arch_rels_min Basic_HW @
+	     ["membar_cta"; "membar_gl"; "membar_sys"]
+  | OpenCL -> arch_rels_min C
+  
