@@ -5,6 +5,7 @@
     -arch PTX \
     -events 5 \
     -minimal \
+    -iter \
     -satisfies models/normws.cat \
     -satisfies models/ptx_singlegl.cat
-#    -satisfies models/nodeps.cat
+#    -hint execution_hints/ptx_diff.als

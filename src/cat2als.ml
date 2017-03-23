@@ -88,6 +88,18 @@ type ax_info = {
     extra_rels_ax : string list;
   }
 
+let rec mk_defs = function
+  | None -> []
+  | Some arch ->
+     let parent = Archs.parent_arch arch in
+     let rels = Archs.arch_rels arch in
+     let rels = MySet.diff rels (Archs.arch_rels_o parent) in
+     let sets = Archs.arch_sets arch in
+     let sets = MySet.diff sets (Archs.arch_sets_o parent) in
+     let extra_rels = Archs.arch_rels_min arch in
+     let mk_def a = a, {withsc = false; extra_rels} in
+     (List.map mk_def rels) @ (List.map mk_def sets) @ mk_defs parent
+		 
 (** Create a typing environment and list of definitions containing the pre-defined sets and relations for the given architecture *)
 let build_env withsc arch =
   let rels = Archs.arch_rels arch in
@@ -97,12 +109,10 @@ let build_env withsc arch =
     (List.map (fun a -> (a,([],Rel))) rels) @
       (List.map (fun a -> (a,([],Set))) sets)
   in
-  let extra_rels = Archs.arch_rels_min arch in
-  let mk_def a = a, {withsc = false; extra_rels} in
-  let defs = (List.map mk_def rels) @ (List.map mk_def sets) in
+  let defs = mk_defs (Some arch) in
   env, defs
 
-  let alloy_type_of = function Set -> "set E" | Rel -> "E->E"
+let alloy_type_of = function Set -> "set E" | Rel -> "E->E"
 
 (** Print environment (for debugging) *)
 let pp_env oc =

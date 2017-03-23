@@ -107,6 +107,10 @@ let rec arch_sets = function
 		["L"; "G"; "fga"; "rem"; "entry_fence";
 		 "exit_fence"; "wg"; "dv"; "sy"]
 
+let arch_sets_o = function
+  | None -> []
+  | Some arch -> arch_sets arch
+
 (** Pre-defined event relations for given architecture *)
 let rec arch_rels = function
   | Basic -> ["ad"; "addr"; "cd"; "co"; "coe"; "coi"; "ctrl"; "data";
@@ -127,6 +131,10 @@ let rec arch_rels = function
 	      "membarcta"; "membargl"; "membarsys"]
   | OpenCL -> arch_rels C @ ["swg"; "sdv"; "sbar"]
 
+let arch_rels_o = function
+  | None -> []
+  | Some arch -> arch_rels arch
+
 (** The pre-defined event relations that can be 'minimised'; that is, generated executions should not include an edge from one of these relations if the edge can be removed without making an inconsistent execution consistent. Make sure that [arch_rels_min arch] is a subset of [arch_rels arch]. *)
 let rec arch_rels_min = function
   | Basic -> ["ad"; "cd"; "dd"]
@@ -140,4 +148,11 @@ let rec arch_rels_min = function
   | PTX -> arch_rels_min Basic_HW @
 	     ["membar_cta"; "membar_gl"; "membar_sys"]
   | OpenCL -> arch_rels_min C
-  
+
+let parent_arch = function
+  | Basic -> None
+  | C -> Some Basic
+  | Basic_HW -> Some Basic
+  | X86 | Power | Arm7 | PTX -> Some Basic_HW
+  | Arm8 -> Some Arm7
+  | OpenCL -> Some C

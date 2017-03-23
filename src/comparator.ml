@@ -212,6 +212,8 @@ let pp_comparator arch oc =
   let pp_rel j rel =
     fprintf oc "  not (some e1, e2 : X.ev {\n";
     fprintf oc "    (e1 -> e2) in %s\n" rel;
+    fprintf oc "    wf_%a[X%a]\n"
+	  Archs.pp_Arch arch (pp_extra_rels_minus j) min_rels;
     MyList.iteri (
 	fun i path ->
 	fprintf oc "    not(N%d/consistent[none,X%a])\n" (i+1)
