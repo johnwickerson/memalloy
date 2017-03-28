@@ -38,15 +38,19 @@ sig Exec_C extends Exec {
 
 }
 
-fun A[e:E, X:Exec_C] : set E { X.A - e }
-fun acq[e:E, X:Exec_C] : set E { X.acq - e }
-fun rel[e:E, X:Exec_C] : set E { X.rel - e }
-fun sc[e:E, X:Exec_C] : set E { X.sc - e }
+pred wf_Exec_C[X:Exec_C, ad,cd,dd:E->E] {
+  wf_Exec[X,ad,cd,dd]
+}
 
-pred wf_s[e:E, x : Exec_C, s : E -> E] { 
+fun A[e:E, X:Exec_C, ad,cd,dd:E->E] : set E { X.A - e }
+fun acq[e:E, X:Exec_C, ad,cd,dd:E->E] : set E { X.acq - e }
+fun rel[e:E, X:Exec_C, ad,cd,dd:E->E] : set E { X.rel - e }
+fun sc[e:E, X:Exec_C, ad,cd,dd:E->E] : set E { X.sc - e }
+
+pred wf_s[e:E, X:Exec_C, ad,cd,dd,s:E->E] { 
 
   // s is restricted to sc events
-  s in sc[e,x] -> sc[e,x]
+  s in sc[e,X,ad,cd,dd] -> sc[e,X,ad,cd,dd]
     
   // s is acylic
   is_acyclic[s]
@@ -55,88 +59,5 @@ pred wf_s[e:E, x : Exec_C, s : E -> E] {
   transitive[s]
 
   // s is a strict total relation on sc events
-  (all e1, e2 : (sc[e,x]) | (e1 != e2) iff (e1 -> e2 in (s + ~s)))
+  (all e1, e2 : (sc[e,X,ad,cd,dd]) | (e1 != e2) iff (e1 -> e2 in (s + ~s)))
 }
-
-/*************************/
-/*      TESTS            */
-/*************************/
-
-pred messagepassing_C[x : Exec_C] {
-  /*
-  e1: Wx=1   e3: Ry=1
-  e2: Wy=1   e4: Rx=0
-  */
-  some disj e1, e2, e3, e4 : E {
-    x.ev = e1 + e2 + e3 + e4
-    x.sb = (e1 -> e2) + (e3 -> e4)
-    x.cd = (e3 -> e4)
-    x.ad = none->none
-    x.dd = none->none
-    x.A = e2 + e3
-    x.W = e1 + e2
-    x.R = e3 + e4
-    x.rel = e2
-    x.acq = e3
-    x.sc = none
-    x.F = none
-    x.sthd = sq[e1 + e2] + sq[e3 + e4]
-    x.sloc = sq[e1 + e4] + sq[e2 + e3]
-    x.naL = e1 + e4
-    x.rf = (e2 -> e3)
-    x.co = none->none
-  }
-}
-
-pred storebuffering_C [x : Exec_C] {
-  /*
-  e1: Wx=1  e3: Wy=1
-  e2: Ry=0  e4: Rx=0
-  */
-  some disj e1, e2, e3, e4 : E {
-    x.ev = e1 + e2 + e3 + e4
-    x.sb = (e1 -> e2) + (e3 -> e4)
-    x.A = e1 + e2 + e3 + e4
-    x.W = e1 + e3
-    x.R = e2 + e4
-    x.F = none
-    x.sthd = sq[e1 + e2] + sq[e3 + e4]
-    x.sloc = sq[e1 + e4] + sq[e2 + e3]
-    x.rf = none->none
-    x.co = none->none
-    x.naL = none
-    x.acq = e2 + e4
-    x.rel = e1 + e3
-    x.sc = e1 + e2 + e3 + e4
-  }
-}
-
-pred iriw_C [x : Exec_C] {
-  /*
-  e1: Wx=1  e2: Wy=1  e3: Rx=1  e5: Ry=1
-                      e4: Ry=0  e6: Rx=0
-  */
-  some disj e1, e2, e3, e4, e5, e6 : E {
-    x.ev = e1 + e2 + e3 + e4 + e5 + e6
-    x.sb = (e3 -> e4) + (e5 -> e6)
-    x.ad = none->none
-    x.cd = none->none
-    x.dd = none->none
-    x.A = x.ev
-    x.W = e1 + e2
-    x.R = e3 + e4 + e5 + e6
-    x.F = none
-    x.sthd = sq[e1] + sq[e2] + sq[e3 + e4] + sq[e5 + e6]
-    x.sloc = sq[e1 + e3 + e6] + sq[e2 + e4 + e5]
-    x.rf = (e1 -> e3) + (e2 -> e5)
-    x.co = none->none
-    x.naL = none
-    x.acq = x.R
-    x.rel = x.W
-    x.sc = x.ev
-  }
-}
-
-run messagepassing_C for exactly 1 Exec, 4 E
-run storebuffering_C for exactly 1 Exec, 4 E
-run iriw_C for exactly 1 Exec, 6 E

@@ -22,13 +22,13 @@ moretests:
 	@ tests/Q2_c11_repairing4.sh
 	@ tests/Q2_c11_repairing5.sh
 	@ tests/Q4_c11_ppc.sh
+	@ tests/Q4_c11_arm7.sh
 	@ tests/Q4_opencl_ptx_orig.sh
 	@ tests/Q4_opencl_ptx_cumul.sh
 	@ tests/Q2_x86_mca.sh
 	@ tests/Q2_c11_lidbury_partial_iter.sh
 	@ tests/Q2_c11_sra_simp_iter.sh
 	@ tests/Q2_c11_swrf_simp.sh
-#	@ tests/Q4_c11_arm7.sh
 
 clean:
 	python util/rm_als.py

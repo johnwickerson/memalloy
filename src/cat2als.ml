@@ -251,10 +251,18 @@ let als_of_shape oc = function
 let als_of_extra_rels oc rels =
   List.iter (fprintf oc ",%s") rels
 
+let als_of_extra_rels_ oc rels =
+  List.iter (fprintf oc ",%s_") rels
+
 let rec als_args_of_extra_rels oc = function
   | [] -> fprintf oc ""
   | [rel] -> fprintf oc ",%s:E->E" rel
   | rel::rels -> fprintf oc ",%s" rel; als_args_of_extra_rels oc rels
+
+let rec als_args_of_extra_rels_ oc = function
+  | [] -> fprintf oc ""
+  | [rel] -> fprintf oc ",%s_:E->E" rel
+  | rel::rels -> fprintf oc ",%s_" rel; als_args_of_extra_rels_ oc rels
 
 (** Cat expression to Alloy expression *)
 let als_of_expr defs oc e =
@@ -266,14 +274,14 @@ let als_of_expr defs oc e =
 	 with Not_found -> failwith "Unbound variable %s" x
        in
        fprintf oc "%s[e,X%a%s]" x
-	       als_of_extra_rels def_info.extra_rels
+	       als_of_extra_rels_ def_info.extra_rels
 	       (if def_info.withsc then ",s" else "")
     | Arg x -> fprintf oc "%s" x
     | App (f,es) ->
        let def_info = List.assoc f defs in
        fprintf oc "%s[%a,e,X%a%s]" f
 	       (MyList.pp_gen "," als_of_expr') es
-	       als_of_extra_rels def_info.extra_rels
+	       als_of_extra_rels_ def_info.extra_rels
 	       (if def_info.withsc then ",s" else "")
     | Op1 (Set_to_rln,e) -> fprintf oc "stor[%a]" als_of_expr' e
     | Op1 (Star,e) -> fprintf oc "*(%a)" als_of_expr' e
@@ -356,7 +364,7 @@ let rec als_of_instr withsc arch unrolling oc (env, axs, defs) = function
      let extra_rels = Archs.arch_rels_min arch in
      fprintf oc "fun %s [%se:E, X:%a%a%s] : %s {\n"
 	     x args_str Archs.pp_Arch arch
-	     als_args_of_extra_rels extra_rels
+	     als_args_of_extra_rels_ extra_rels
 	     (if withsc then ", s:E->E" else "")
 	     (alloy_type_of def_type);
      fprintf oc "  %a\n" (als_of_expr defs) e;
@@ -369,7 +377,7 @@ let rec als_of_instr withsc arch unrolling oc (env, axs, defs) = function
      let extra_rels_ax = Archs.arch_rels_min arch in
      fprintf oc "pred %s [e:E, X:%a%a%s] {\n" n
 	     Archs.pp_Arch arch
-	     als_args_of_extra_rels extra_rels_ax
+	     als_args_of_extra_rels_ extra_rels_ax
 	     (if withsc then ", s:E->E" else "");
      let e = if withsc then replace_vars_with_args ["s"] e else e in
      fprintf oc "  %a\n" (als_of_axiom defs) (s, e);

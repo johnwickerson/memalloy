@@ -120,12 +120,19 @@ let main () =
 		fprintf fmtr "%a\n" Litmus_arm8.pp arm8_lt
 	     | _ -> fprintf fmtr "%a\n" Litmus.pp lt)
 	 | Xml_input.Double (x,y,pi) ->
-	    let litmus1,litmus2 =
+	    let lt_src,lt =
 	      Mk_litmus.litmus_of_execution_pair x y pi
 	    in
-	    fprintf fmtr "%a\n" Litmus.pp litmus1;
+	    fprintf fmtr "%a\n" Litmus.pp lt_src;
 	    fprintf fmtr "\n";
-	    fprintf fmtr "%a\n" Litmus.pp litmus2
+	    (match arch with
+	     | Archs.Arm8 ->
+		let name =
+		  Filename.chop_extension (Filename.basename out_path)
+		in
+		let arm8_lt = Mk_arm8.arm8_of_lit name lt in
+		fprintf fmtr "%a\n" Litmus_arm8.pp arm8_lt
+	     | _ -> fprintf fmtr "%a\n" Litmus.pp lt)
        end
   end;
   close_out oc;

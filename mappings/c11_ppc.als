@@ -8,7 +8,8 @@ open ../archs/exec_ppc[HE] as HW
 module c11_ppc[SE,HE]
 
 pred apply_map[
-  X : SW/Exec_C, X' : HW/Exec_PPC, 
+  X : SW/Exec_C, ad,cd,dd:SE->SE,
+  X' : HW/Exec_PPC, ad',cd',dd',sync',lwsync',eieio',isync':HE->HE, 
   map : SE -> HE
 ] {
 
@@ -31,7 +32,7 @@ pred apply_map[
   all e : X.((R - W) & acq - sc) | let e1 = e.map {
     one e1 
     e1 in X'.R
-    e1 <: (X'.sb) in X'.(cd & isync)
+    e1 <: (X'.sb) in cd' & isync'
   }
   
   // an SC read compiles to a full fence followed by a read 
@@ -40,8 +41,8 @@ pred apply_map[
   all e : X.((R - W) & sc) | let e1 = e.map {
     one e1
     e1 in X'.R
-    (X'.sb) :> e1 in X'.sync
-    e1 <: (X'.sb) in X'.(cd & isync)  
+    (X'.sb) :> e1 in sync'
+    e1 <: (X'.sb) in cd' & isync' 
   }
   
   // a non-atomic or relaxed write compiles to a single write
@@ -55,14 +56,14 @@ pred apply_map[
   all e : X.((W - R) & rel - sc) | let e1 = e.map {
     one e1
     e1 in X'.W
-    (X'.sb) :> e1 in X'.lwsync
+    (X'.sb) :> e1 in lwsync'
   }
   
   // an SC write compiles to a full fence followed by a write
   all e : X.((W - R) & sc) | let e1 = e.map {
     one e1
     e1 in X'.W
-    (X'.sb) :> e1 in X'.sync
+    (X'.sb) :> e1 in sync'
   }
   
   // a relaxed RMW compiles to a read followed by a write, with 
@@ -73,7 +74,7 @@ pred apply_map[
     e1 in X'.R
     e2 in X'.W
     (e1 -> e2) in X'.atom & imm[X'.sb]
-    e1 <: (X'.sb) in X'.cd  
+    e1 <: (X'.sb) in cd'  
   }
 
   // an acquire RMW compiles to a read followed by a write, 
@@ -84,7 +85,8 @@ pred apply_map[
     e1 in X'.R
     e2 in X'.W
     (e1 -> e2) in X'.atom & imm[X'.sb]
-    e1 <: (X'.sb) in X'.(cd & isync)  
+    e1 <: (X'.sb) in cd'
+    e2 <: (X'.sb) in isync'
   }
 
   // a release RMW compiles to an lwsync, followed by a read, followed by
@@ -95,8 +97,8 @@ pred apply_map[
     e1 in X'.R
     e2 in X'.W
     (e1 -> e2) in X'.atom & imm[X'.sb]
-    (X'.sb) :> e1 in X'.lwsync
-    e1 <: (X'.sb) in X'.cd
+    (X'.sb) :> e1 in lwsync'
+    e1 <: (X'.sb) in cd'
   }
 
   // an acquire/release RMW compiles to an lwsync, followed by a read,
@@ -108,8 +110,9 @@ pred apply_map[
     e1 in X'.R
     e2 in X'.W
     (e1 -> e2) in X'.atom & imm[X'.sb]
-    (X'.sb) :> e1 in X'.lwsync
-    e1 <: (X'.sb) in X'.(cd & isync)
+    (X'.sb) :> e1 in lwsync'
+    e1 <: (X'.sb) in cd'
+    e2 <: (X'.sb) in isync'
   }
 
   // an SC RMW compiles to an sync, followed by a read, followed by
@@ -120,18 +123,19 @@ pred apply_map[
     e1 in X'.R
     e2 in X'.W
     (e1 -> e2) in X'.atom & imm[X'.sb]
-    (X'.sb) :> e1 in X'.sync
-    e1 <: (X'.sb) in X'.(cd & isync)
+    (X'.sb) :> e1 in sync'
+    e1 <: (X'.sb) in cd'
+    e2 <: (X'.sb) in isync'
   }
 
   // release/acquire fences compile to lightweight fences
   all e : X.(F & (acq + rel) - sc) {
-    (X.sb) . (stor[e]) . (X.sb) = map . (X'.lwsync) . ~map
+    (X.sb) . (stor[e]) . (X.sb) = map . lwsync' . ~map
   }
       
   // SC fences compile to full fences
   all e : X.(F & sc) {
-    (X.sb) . (stor[e]) . (X.sb) = map . (X'.sync) . ~map
+    (X.sb) . (stor[e]) . (X.sb) = map . sync' . ~map
   }
  
   // sb edges are preserved (but more may be introduced)
@@ -144,16 +148,16 @@ pred apply_map[
   X.co = map . (X'.co) . ~map
 
   // the mapping preserves address dependencies
-  X.ad = map . (X'.ad) . ~map
+  ad = map . ad' . ~map
 
   // the mapping preserves data dependencies
-  X.dd = map . (X'.dd) . ~map
+  dd = map . dd' . ~map
 
   // the mapping preserves locations
   X.sloc = map . (X'.sloc) . ~map
     
   // ctrl dependencies are preserved (but more may be introduced)
-  X.cd in map . (X'.cd) . ~map
+  cd in map . cd' . ~map
 
   // the mapping preserves threads
   X.sthd = map . (X'.sthd) . ~map

@@ -1,26 +1,31 @@
 module exec_arm7[E]
 open exec_H[E]
 
-sig Exec_Arm7 extends Exec_H {
-  isb : E -> E, // control fence
-  dmbst, dmbld, dmb : E -> E, // store, load, full fences
-}{
-  is_fence_rel[dmbst, sb]
-  is_fence_rel[dmbld, sb]
-  is_fence_rel[dmb, sb]
-  is_fence_rel[isb, sb]  
+sig Exec_Arm7 extends Exec_H {}{}
+
+pred wf_Exec_Arm7 [X:Exec_Arm7, ad,cd,dd,dmbst,dmbld,dmb,isb:E->E] {
+
+  wf_Exec_H[X,ad,cd,dd]
+
+  is_fence_rel[dmbst, X.sb]
+  is_fence_rel[dmbld, X.sb]
+  is_fence_rel[dmb, X.sb]
+  is_fence_rel[isb, X.sb]
+
+  dmb in dmbst
+  dmb in dmbld 
 }
 
-fun isb[e:E, X:Exec_Arm7] : E->E { X.isb - (univ -> e) - (e -> univ) }
-fun dmbst[e:E, X:Exec_Arm7] : E->E { X.dmbst - (univ -> e) - (e -> univ) }
-fun dmbld[e:E, X:Exec_Arm7] : E->E { X.dmbld - (univ -> e) - (e -> univ) }
-fun dmb[e:E, X:Exec_Arm7] : E->E { X.dmb - (univ -> e) - (e -> univ) }
+fun isb[e:E, X:Exec_Arm7, ad,cd,dd,dmbst,dmbld,dmb,isb:E->E] : E->E { isb - (univ -> e) - (e -> univ) }
+fun dmbst[e:E, X:Exec_Arm7, ad,cd,dd,dmbst,dmbld,dmb,isb:E->E] : E->E { dmbst - (univ -> e) - (e -> univ) }
+fun dmbld[e:E, X:Exec_Arm7, ad,cd,dd,dmbst,dmbld,dmb,isb:E->E] : E->E { dmbld - (univ -> e) - (e -> univ) }
+fun dmb[e:E, X:Exec_Arm7, ad,cd,dd,dmbst,dmbld,dmb,isb:E->E] : E->E { dmb - (univ -> e) - (e -> univ) }
 
 // Synonyms:
-fun ISB[e:E, X:Exec_Arm7] : E->E { isb[e,X] }
-fun DMB[e:E, X:Exec_Arm7] : E->E { dmb[e,X] }
-fun DSB[e:E, X:Exec_Arm7] : E->E { dmb[e,X] } // dsb = dmb
-fun DMBSY[e:E, X:Exec_Arm7] : E->E { dmb[e,X] }
-fun DMBST[e:E, X:Exec_Arm7] : E->E { dmbst[e,X] }
-fun DMBLD[e:E, X:Exec_Arm7] : E->E { dmbld[e,X] }
-fun DSBST[e:E, X:Exec_Arm7] : E->E { dmbst[e,X] } // dsb = dmb
+fun ISB[e:E, X:Exec_Arm7, ad,cd,dd,dmbst,dmbld,dmb,isb':E->E] : E->E { isb[e,X,ad,cd,dd,dmbst,dmbld,dmb,isb'] }
+fun DMB[e:E, X:Exec_Arm7, ad,cd,dd,dmbst,dmbld,dmb',isb:E->E] : E->E { dmb[e,X,ad,cd,dd,dmbst,dmbld,dmb',isb] }
+fun DSB[e:E, X:Exec_Arm7, ad,cd,dd,dmbst,dmbld,dmb',isb:E->E] : E->E { dmb[e,X,ad,cd,dd,dmbst,dmbld,dmb',isb] } // dsb = dmb
+fun DMBSY[e:E, X:Exec_Arm7, ad,cd,dd,dmbst,dmbld,dmb',isb:E->E] : E->E { dmb[e,X,ad,cd,dd,dmbst,dmbld,dmb',isb] }
+fun DMBST[e:E, X:Exec_Arm7, ad,cd,dd,dmbst',dmbld,dmb,isb:E->E] : E->E { dmbst[e,X,ad,cd,dd,dmbst',dmbld,dmb,isb] }
+fun DMBLD[e:E, X:Exec_Arm7, ad,cd,dd,dmbst,dmbld',dmb,isb:E->E] : E->E { dmbld[e,X,ad,cd,dd,dmbst,dmbld',dmb,isb] }
+fun DSBST[e:E, X:Exec_Arm7, ad,cd,dd,dmbst',dmbld,dmb,isb:E->E] : E->E { dmbst[e,X,ad,cd,dd,dmbst',dmbld,dmb,isb] } // dsb = dmb

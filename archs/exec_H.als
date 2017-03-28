@@ -50,6 +50,9 @@ pred is_fence_rel[fence_rel:E->E, sb:E->E] {
 
   // Preserved by pre- or post-composition with program order  
   *sb . fence_rel . *sb in fence_rel
+
+  // Can be traced back to an immediate sb-pair
+  no ((sb - fence_rel) . (sb - fence_rel)) & fence_rel
 }
 
 fun rfe[e:E, x : Exec_H, ad,cd,dd:E->E] : E -> E {

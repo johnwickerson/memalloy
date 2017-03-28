@@ -119,13 +119,18 @@ let rec arm8_of_ins tid (locs,nr) = function
      locs, nr, il
   | Cas _, _ -> failwith "No single-event RMWs in assembly!"
   | Fence, attrs ->
-     let il = match List.mem "dmbst" attrs,
+     let il = match List.mem "dmb" attrs,
+		    List.mem "dmbst" attrs,
 		    List.mem "dmbld" attrs,
 		    List.mem "isb" attrs with
-       | true, true, false -> [Litmus_arm8.DMB None]
-       | true, false, false -> [Litmus_arm8.DMB (Some Litmus_arm8.ST)]
-       | false, true, false -> [Litmus_arm8.DMB (Some Litmus_arm8.LD)]
-       | false, false, true -> [Litmus_arm8.ISB]
+       | true, false, false, false ->
+	  [Litmus_arm8.DMB None]
+       | false, true, false, false ->
+	  [Litmus_arm8.DMB (Some Litmus_arm8.ST)]
+       | false, false, true, false ->
+	  [Litmus_arm8.DMB (Some Litmus_arm8.LD)]
+       | false, false, false, true ->
+	  [Litmus_arm8.ISB]
        | _ -> failwith "Invalid fence attributes!"
      in locs, nr, il
   | _, _ -> failwith "Not yet implemented!"

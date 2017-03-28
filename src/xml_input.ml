@@ -48,6 +48,12 @@ let parse_file xml_path =
   let entities = Xml.children instance in
   let tag_is s e = Xml.tag e = s in
   let label_of e = Xml.attrib e "label" in
+  let simp_label_of e =
+    let l = label_of e in
+    let l = MyStr.chop_prefix "$gp_" l in
+    let l = MyStr.chop_suffix "&apos;" l in
+    l
+  in
   let label_is s e = label_of e = s in
   let field_nodes = List.filter (tag_is "field") entities in
   let skolem_nodes = List.filter (tag_is "skolem") entities in
@@ -107,7 +113,7 @@ let parse_file xml_path =
     | _ -> failwith "Unexpected arity %d" arity
   in
   let add_field xo exec field_node =
-    let field_name = label_of field_node in
+    let field_name = simp_label_of field_node in
     match mk_field xo field_node with
     | Set tuples ->
        let sets = add_assocs exec.Exec.sets (field_name, tuples) in
@@ -124,11 +130,24 @@ let parse_file xml_path =
   let exec1 =
     List.fold_left (add_field (Some x1)) Exec.empty_exec field_nodes
   in
+  let rel_name_of e = Scanf.sscanf (label_of e) "$gp_%s" iden in
+  let is_primed e = MyStr.endswith (label_of e) "&apos;" in
+  let is_extra_rel1 e =
+    not (List.mem (rel_name_of e) ["map"; "X"; "Y"]) && not(is_primed e)
+  in
+  let extra_rels1 = List.filter is_extra_rel1 skolem_nodes in
+  let extra_rels2 = List.filter is_primed skolem_nodes in
+  let exec1 =
+    List.fold_left (add_field None) exec1 extra_rels1
+  in
   match find_exec "$gp_Y" with
   | None -> Single exec1
   | Some x2 ->   
      let exec2 =
        List.fold_left (add_field (Some x2)) Exec.empty_exec field_nodes
+     in
+     let exec2 =
+       List.fold_left (add_field None) exec2 extra_rels2
      in
      let pi_node = List.find (label_is "$gp_map") skolem_nodes in
      match mk_field None pi_node with

@@ -90,6 +90,10 @@ let pp_extra_rels oc arch =
   let extra_rels = Archs.arch_rels_min arch in
   List.iter (fprintf oc ",%s") extra_rels
 
+let pp_extra_rels' oc arch =
+  let extra_rels = Archs.arch_rels_min arch in
+  List.iter (fprintf oc ",%s'") extra_rels
+
 let pp_extra_rels_minus j oc rels =
   let pp_rel i rel =
     if i=j
@@ -97,13 +101,20 @@ let pp_extra_rels_minus j oc rels =
     else fprintf oc ",%s" rel in
   MyList.iteri pp_rel rels
 
-let pp_extra_rels_with_type oc arch =
+let pp_extra_rels_with_type ev_sig oc arch =
   let rec pp_extra_rels_with_type = function
     | [] -> fprintf oc ""
-    | [rel] -> fprintf oc ",%s:E->E" rel
+    | [rel] -> fprintf oc ",%s:%s->%s" rel ev_sig ev_sig
     | rel::rels -> fprintf oc ",%s" rel; pp_extra_rels_with_type rels
   in pp_extra_rels_with_type (Archs.arch_rels_min arch)
 
+let pp_extra_rels_with_type' ev_sig oc arch =
+  let rec pp_extra_rels_with_type = function
+    | [] -> fprintf oc ""
+    | [rel] -> fprintf oc ",%s':%s->%s" rel ev_sig ev_sig
+    | rel::rels -> fprintf oc ",%s'" rel; pp_extra_rels_with_type rels
+  in pp_extra_rels_with_type (Archs.arch_rels_min arch)
+			     
 let pp_all_events_used ev_sig oc =
   fprintf oc "  // Every event is a read, write or a fence\n";
   fprintf oc "  %s in R[none,X,ad,cd,dd] + W[none,X,ad,cd,dd] + F[none,X,ad,cd,dd]\n\n" ev_sig
@@ -126,6 +137,14 @@ let pp_satisfied_models exec_sig oc =
   in
   MyList.iteri pp_model !succ_paths
 
+let pp_satisfied_models' exec_sig oc =
+  let pp_model i path =
+    let arch = arch_of path in
+    fprintf oc "  M%d/consistent[none,%s%a]\n\n"
+	    (i+1) exec_sig pp_extra_rels' arch
+  in
+  MyList.iteri pp_model !succ_paths
+	       
 let pp_also_satisfied_models exec_sig oc =
   let pp_model i path =
     let arch = arch_of path in
@@ -177,7 +196,7 @@ let pp_comparator arch oc =
   fprintf oc "sig E {}\n\n";
   fprintf oc "pred gp [X:%a%a] {\n\n"
 	  Archs.pp_Arch arch
-	  pp_extra_rels_with_type arch;
+	  (pp_extra_rels_with_type "E") arch;
   pp_all_events_used "E" oc;
   if !withinit then
     fprintf oc "  withinit[X]\n\n"
@@ -236,32 +255,65 @@ let pp_comparator arch oc =
 let pp_comparator2 arch mapping_path arch2 oc =
   if !withinit then
     failwith "Initial writes not supported in compiler mappings";
-  if !minimal then
-    failwith "Minimality not supported in compiler mappings";
   if !description != "" then fprintf oc "/* %s */\n" !description;
   pp_open_modules "HE" "SE" oc;
   let mapping = Filename.chop_extension mapping_path in
   fprintf oc "open %s[SE,HE] as mapping\n\n" mapping;
   fprintf oc "sig SE, HE {}\n\n";
-  fprintf oc "pred gp [X:%a, Y:%a, map:SE->HE] {\n\n"
-	  Archs.pp_Arch arch Archs.pp_Arch arch2;
+  fprintf oc "pred gp [X:%a%a, Y:%a%a, map:SE->HE] {\n\n"
+	  Archs.pp_Arch arch
+	  (pp_extra_rels_with_type "SE") arch
+	  Archs.pp_Arch arch2
+	  (pp_extra_rels_with_type' "HE") arch2;
   pp_all_events_used "SE" oc;
   fprintf oc "  withoutinit[X]\n";
   fprintf oc "  withoutinit[Y]\n\n";
+  fprintf oc "  wf_%a[X%a]\n\n"
+	  Archs.pp_Arch arch pp_extra_rels arch;
+  fprintf oc "  wf_%a[Y%a]\n\n"
+	  Archs.pp_Arch arch2 pp_extra_rels' arch2;
   pp_violated_models "X" oc;
-  pp_satisfied_models "Y" oc;
+  pp_satisfied_models' "Y" oc;
   pp_also_satisfied_models "X" oc;
   if !hint <> None then
     fprintf oc "  hint[X]\n\n";
+  if !minimal then (
+    fprintf oc "  not (some e : X.ev {\n";
+    MyList.iteri (
+	fun i path ->
+	let arch = arch_of path in
+	fprintf oc "    not(N%d/consistent[e,X%a])\n"
+		(i+1) pp_extra_rels arch;
+      ) !fail_paths;
+    fprintf oc "  })\n"
+  );
+  let min_rels = Archs.arch_rels_min arch in
+  let pp_rel j rel =
+    fprintf oc "  not (some e1, e2 : X.ev {\n";
+    fprintf oc "    (e1 -> e2) in %s\n" rel;
+    fprintf oc "    wf_%a[X%a]\n"
+	  Archs.pp_Arch arch (pp_extra_rels_minus j) min_rels;
+    MyList.iteri (
+	fun i path ->
+	fprintf oc "    not(N%d/consistent[none,X%a])\n" (i+1)
+		(pp_extra_rels_minus j) min_rels
+      ) !fail_paths;
+    fprintf oc "  })\n"
+  in
+  MyList.iteri pp_rel min_rels;
   fprintf oc "  // We have a valid application of the mapping\n";
-  fprintf oc "  apply_map[X, Y, map]\n\n";
+  fprintf oc "  apply_map[X%a, Y%a, map]\n\n"
+	  pp_extra_rels arch
+	  pp_extra_rels' arch2;
   pp_min_classes "threads" "SE" !min_thds "sthd" "ev - IW" oc;
   pp_max_classes "threads" "SE" !max_thds "sthd" "ev - IW" oc;
   pp_min_classes "locations" "SE" !min_locs "sloc" "R + W" oc;
   pp_max_classes "locations" "SE" !max_locs "sloc" "R + W" oc;
   fprintf oc "}\n\n";
   pp_hint_predicate oc;
-  fprintf oc "run gp for exactly 1 M1/Exec, exactly 1 N1/Exec, %d SE, %d HE, 3 Int\n" !eventcount !eventcount2
+  fprintf oc "run gp for %s1 M1/Exec, exactly 1 N1/Exec, %d SE, %d HE, 3 Int\n"
+	  (if !minimal then "exactly " else "")
+	  !eventcount !eventcount2
 
 let get_args () =
   let arch = ref None in
@@ -463,7 +515,7 @@ let main () =
     let path = Filename.concat Filename.parent_dir_name path in
     Cat2als.als_of_file false unrolling_factor path
   in
-  begin match !succ_paths @ !fail_paths with
+  begin match !succ_paths @ !fail_paths @ !also_succ_paths with
 	| [] -> failwith "Expected at least one model"
 	| paths -> List.iter cat2als paths
   end;

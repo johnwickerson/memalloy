@@ -39,6 +39,15 @@ type architecture =
   | PTX
   | OpenCL
 
+(** Defining a hierarchy of architectures *)
+let parent_arch = function
+  | Basic -> None
+  | C -> Some Basic
+  | Basic_HW -> Some Basic
+  | X86 | Power | Arm7 | PTX -> Some Basic_HW
+  | Arm8 -> Some Arm7
+  | OpenCL -> Some C
+
 (** Convert architecture to Alloy module name *)      
 let pp_arch oc = function
   | Basic -> fprintf oc "../archs/exec"
@@ -143,16 +152,30 @@ let rec arch_rels_min = function
   | X86 -> arch_rels_min Basic_HW @ ["mfence"]
   | Power -> arch_rels_min Basic_HW @
 	       ["sync"; "lwsync"; "eieio"; "isync"]
-  | Arm7 -> arch_rels_min Basic_HW @ ["dmb"; "dmbst"; "dmbld"; "isb"]
+  | Arm7 -> arch_rels_min Basic_HW @ ["dmbst"; "dmbld"; "dmb"; "isb"]
   | Arm8 -> arch_rels_min Arm7
   | PTX -> arch_rels_min Basic_HW @
 	     ["membar_cta"; "membar_gl"; "membar_sys"]
   | OpenCL -> arch_rels_min C
 
-let parent_arch = function
-  | Basic -> None
-  | C -> Some Basic
-  | Basic_HW -> Some Basic
-  | X86 | Power | Arm7 | PTX -> Some Basic_HW
-  | Arm8 -> Some Arm7
-  | OpenCL -> Some C
+(** List of all fence relations *)
+let all_fences =
+  ["dmb"; "dmbst"; "dmbld"; "isb";
+   "sync"; "lwsync"; "eieio"; "isync";
+   "membar_cta"; "membar_gl"; "membar_sys";
+   "mfence"]
+
+(** List of all pairs of relations [(r1,r2)] where membership of [r1] implies membership of [r2] (and hence [r2] need not be drawn) *)
+let all_implied_rels =
+  ["dmb", "dmbst";
+   "dmb", "dmbld";
+   "sync", "lwsync";
+   "sync", "eieio";
+   "membar_gl", "membar_cta";
+   "membar_sys", "membar_gl";
+   "membar_sys", "membar_cta"]
+
+(** List of all pairs of sets [(s1,s2)] where membership of [s1] implies membership of [s2] (and hence [s2] need not be drawn) *)
+let all_implied_sets =
+  ["sc", "acq"; "sc", "rel"; "sc", "A";
+   "acq", "A"; "rel", "A"]
