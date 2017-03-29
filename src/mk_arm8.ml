@@ -104,14 +104,14 @@ let rec arm8_of_ins tid (locs,nr) = function
      in
      locs, nr, il
   | Store (le, ve), attrs when not (List.mem "X" attrs) ->
-     let nr, il, l, r_off_a = arm8_of_exp tid nr le in
-     let nr, il, v, r_off_d = arm8_of_exp tid nr ve in
+     let nr, il1, l, r_off_a = arm8_of_exp tid nr le in
+     let nr, il2, v, r_off_d = arm8_of_exp tid nr ve in
      let r_src = tid,nr in
      let nr = nr + 1 in
      let r_dst = tid,nr in
      let nr = nr + 1 in
      let locs = (l, r_dst) :: locs in
-     let il = il @ [
+     let il = il1 @ il2 @ [
 	   mk_MOV_or_ADD (r_src, v) r_off_d;
 	   mk_ST attrs (r_src, r_dst, r_off_a, None)
 	 ]
