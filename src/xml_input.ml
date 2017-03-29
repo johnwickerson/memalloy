@@ -130,10 +130,9 @@ let parse_file xml_path =
   let exec1 =
     List.fold_left (add_field (Some x1)) Exec.empty_exec field_nodes
   in
-  let rel_name_of e = Scanf.sscanf (label_of e) "$gp_%s" iden in
   let is_primed e = MyStr.endswith (label_of e) "&apos;" in
   let is_extra_rel1 e =
-    not (List.mem (rel_name_of e) ["map"; "X"; "Y"]) && not(is_primed e)
+    not (List.mem (label_of e) ["$gp_map"; "$gp_X"; "$gp_Y"; "$consistent_s"]) && not(is_primed e)
   in
   let extra_rels1 = List.filter is_extra_rel1 skolem_nodes in
   let extra_rels2 = List.filter is_primed skolem_nodes in
