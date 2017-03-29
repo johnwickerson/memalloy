@@ -3,5 +3,5 @@
     -arch X86 \
     -satisfies models/x86tso.cat \
     -violates models/mca_x86.cat \
-    -events 9 \
+    -events 7 \
     -expect 0
