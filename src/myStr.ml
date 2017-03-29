@@ -23,45 +23,40 @@ OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION
 WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 *)
 
-(** Extension to the List module *)
+(** String manipulation *)
 
 open Format
-open List
 open General_purpose
-       
-let exists_pair f xs ys =
-  exists (fun x -> exists (f x) ys) xs
+open Str
 
-let the = function
-  | [x] -> x
-  | _ -> raise Not_found
+(** [startswith s t] holds if [s] starts with the substring [t] *)
+let startswith s t =
+  let s_len = String.length s in
+  let t_len = String.length t in
+  if t_len > s_len then false else
+    let s_start = String.sub s 0 t_len in
+    s_start = t
 
-let rec pp_gen s f oc = function
-  | [] -> ()
-  | [x] -> f oc x
-  | x :: xs -> f oc x; fprintf oc "%s" s; pp_gen s f oc xs
+(** [endswith s t] holds if [s] ends with the substring [t] *)
+let endswith s t =
+  let s_len = String.length s in
+  let t_len = String.length t in
+  if t_len > s_len then false else
+    let s_end = String.sub s (s_len - t_len) t_len in
+    s_end = t
 
-let pp f oc xs =
-  let rec pp = function
-    | [] -> ()
-    | [x] -> f oc x
-    | x :: xs -> f oc x; fprintf oc "; "; pp xs
-  in
-  fprintf oc "["; pp xs; fprintf oc "]"
-						 
-let mapi f xs =
-  let rec mapi n f = function
-    | [] -> []
-    | x::xs -> f n x :: mapi (n+1) f xs
-  in
-  mapi 0 f xs
+(** If [s] ends with [suf], then [chop_suffix suf s] returns [s] without [suf], otherwise it just returns [s] *)
+let chop_suffix suf s =
+  if endswith s suf then
+    let s_len = String.length s in
+    let suf_len = String.length suf in
+    String.sub s 0 (s_len - suf_len)
+  else s
 
-let iteri f xs =
-  let rec iteri n f = function
-    | [] -> ()
-    | x::xs -> f n x; iteri (n+1) f xs
-  in
-  iteri 0 f xs
-					     
-let max xs =
-  hd (rev (sort compare xs))
+(** If [s] starts with [pre], then [chop_prefix pre s] returns [s] without [pre], otherwise it just returns [s] *)
+let chop_prefix pre s =
+  if startswith s pre then
+    let s_len = String.length s in
+    let pre_len = String.length pre in
+    String.sub s pre_len (s_len - pre_len)
+  else s

@@ -34,9 +34,11 @@ type ('k,'v) t = ('k * 'v) list
 let remove_assocs ks =
   filter (fun (k,_) -> not (mem k ks))
 
+(** [strong_assoc map x] returns the value associated with key [x] in [map], and fails if that key is not present *)
 let strong_assoc map x =
   try assoc x map with Not_found -> assert false
 
+(** [permute_vals (v1,v2) kvs] updates the map [kvs] so that any key that mapped to [v1] now maps to [v2], and vice versa *)
 let permute_vals (v1,v2) kvs =
   let permute = function
     | k,v when v=v1 -> k,v2
@@ -44,6 +46,11 @@ let permute_vals (v1,v2) kvs =
     | k,v -> k,v
   in
   map permute kvs
+
+(** Update an multi-association list (in which the values are lists) *)
+let add_assocs map (k,vs) =
+  let vs' = try assoc k map with Not_found -> [] in
+  (k, vs@vs') :: remove_assocs [k] map
 			     
 (** Example: [invert_map [(k1,v1);(k2,v2);(k3;v1)] = [(v1,[k1;k3]);(v2,[k2])]] *)
 let invert_map kvs =

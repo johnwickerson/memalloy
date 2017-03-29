@@ -50,3 +50,6 @@ let rec range i j = if i > j then [] else i :: (range (i+1) j)
 let count p =
   let rec count_helper i = if p i then count_helper (i+1) else i in
   count_helper 0
+
+(** Identity function *)
+let iden x = x

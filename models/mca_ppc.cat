@@ -2,7 +2,7 @@ PPC
 (* Multi-copy atomicity, applied to Power *)
 
 include "basic.cat"
-let ctrlisync = ctrl; [isync]; po
+let ctrlisync = ctrl & isync
 
 (* Utilities *)
 let dep = addr | data

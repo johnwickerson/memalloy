@@ -71,8 +71,13 @@ let mk_instr x maps reg_map e =
        Fence
     | _ -> assert false
   in
-  let mk_If c (r,v) = If(r,v,c) in
-  List.fold_left mk_If (Basic (ins, attrs)) c_regvals
+  let cs = [Basic (ins, attrs)] in
+  let mk_fence f cs =
+    if List.mem e (Rel.rng (get_rel x f))
+    then Basic (Fence, [f]) :: cs else cs 
+  in
+  let cs = List.fold_right mk_fence Archs.all_fences cs in
+  List.fold_left (fun c (r,v) -> If(r,v,c)) (Seq cs) c_regvals
 
 (** If the list of events [es] comprises a single event, [partition_seq sb es] returns a basic component containing just that event. Otherwise, [partition_seq sb es] partitions the events in [es] into a sequence of components, such that whenever two events are in consecutive components, they are ordered by [sb]. *)
 let rec partition_seq sb = function
@@ -97,7 +102,7 @@ and partition_par sb = function
      Unseq (List.map (partition_seq sb) classes)
 
   let litmus_of_execution' x maps =
-    let x = remove_stale_rfs x in
+    let x = tidy_exec x in
     let locs = Assoc.key_list (Assoc.invert_map maps.loc_map) in
     let inv_thd_map = Assoc.invert_map maps.thd_map in
     let inv_thd_map =

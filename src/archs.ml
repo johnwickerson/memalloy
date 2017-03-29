@@ -39,6 +39,15 @@ type architecture =
   | PTX
   | OpenCL
 
+(** Defining a hierarchy of architectures *)
+let parent_arch = function
+  | Basic -> None
+  | C -> Some Basic
+  | Basic_HW -> Some Basic
+  | X86 | Power | Arm7 | PTX -> Some Basic_HW
+  | Arm8 -> Some Arm7
+  | OpenCL -> Some C
+
 (** Convert architecture to Alloy module name *)      
 let pp_arch oc = function
   | Basic -> fprintf oc "../archs/exec"
@@ -95,43 +104,78 @@ let all =
 
 (** Pre-defined event sets for given architecture *)
 let rec arch_sets = function
-  | Basic ->
-     ["ev"; "W"; "R"; "F"; "naL"; "M"; "IW"]
-  | C ->
-     arch_sets Basic @ ["A"; "acq"; "rel"; "sc"]
-  | Basic_HW ->
-     arch_sets Basic
-  | X86 ->
-     arch_sets Basic_HW @ ["locked"]
-  | Power ->
-     arch_sets Basic_HW @
-       ["sync"; "lwsync"; "eieio"; "isync";
-	"SYNC"; "LWSYNC"; "EIEIO"; "ISYNC"]
-  | Arm7 ->
-     arch_sets Basic_HW @
-       ["dmb"; "DMB"; "DSB"; "DMBSY"; "dmbst"; "DMBST";
-	"dmbld"; "DMBLD"; "isb"; "ISB"; "DSBST"]
-  | Arm8 ->
-     arch_sets Arm7 @ ["screl"; "scacq"]
-  | PTX ->
-     arch_sets Basic_HW @
-       ["membarcta"; "membargl"; "membarsys"]
-  | OpenCL ->
-     arch_sets C @
-       ["L"; "G"; "fga"; "rem"; "entry_fence";
-	"exit_fence"; "wg"; "dv"; "sy"]
+  | Basic -> ["ev"; "W"; "R"; "F"; "naL"; "M"; "IW"]
+  | C -> arch_sets Basic @ ["A"; "acq"; "rel"; "sc"]
+  | Basic_HW -> arch_sets Basic
+  | X86 -> arch_sets Basic_HW @ ["locked"]
+  | Power -> arch_sets Basic_HW
+  | Arm7 -> arch_sets Basic_HW
+  | Arm8 -> arch_sets Arm7 @ ["screl"; "scacq"]
+  | PTX -> arch_sets Basic_HW 
+  | OpenCL -> arch_sets C @
+		["L"; "G"; "fga"; "rem"; "entry_fence";
+		 "exit_fence"; "wg"; "dv"; "sy"]
+
+let arch_sets_o = function
+  | None -> []
+  | Some arch -> arch_sets arch
 
 (** Pre-defined event relations for given architecture *)
 let rec arch_rels = function
-  | Basic ->
-     ["ad"; "addr"; "cd"; "co"; "coe"; "coi"; "ctrl"; "data";
-      "dd"; "ext"; "fr"; "fr_init"; "fre"; "fri"; "loc"; "po"; "poloc";
-      "rf"; "rfe"; "rfi"; "sb"; "sloc"; "sthd"; "thd"]
+  | Basic -> ["ad"; "addr"; "cd"; "co"; "coe"; "coi"; "ctrl"; "data";
+	      "dd"; "ext"; "fr"; "fr_init"; "fre"; "fri"; "loc"; "po";
+	      "poloc"; "rf"; "rfe"; "rfi"; "sb"; "sloc"; "sthd"; "thd"]
   | C -> arch_rels Basic
   | Basic_HW -> arch_rels Basic @ ["atom"; "rmw"]
-  | X86
-  | Power
-  | Arm7
-  | Arm8 -> arch_rels Basic_HW
-  | PTX -> arch_rels Basic_HW @ ["scta"; "sgl"]
+  | X86 -> arch_rels Basic_HW @ ["mfence"]
+  | Power -> arch_rels Basic_HW @
+	       ["sync"; "lwsync"; "eieio"; "isync";
+		"SYNC"; "LWSYNC"; "EIEIO"; "ISYNC"]
+  | Arm7 -> arch_rels Basic_HW @
+	      ["dmb"; "DMB"; "DSB"; "DMBSY"; "dmbst"; "DMBST";
+	       "dmbld"; "DMBLD"; "isb"; "ISB"; "DSBST"]
+  | Arm8 -> arch_rels Arm7
+  | PTX -> arch_rels Basic_HW @
+	     ["scta"; "sgl"; "membar_cta"; "membar_gl"; "membar_sys";
+	      "membarcta"; "membargl"; "membarsys"]
   | OpenCL -> arch_rels C @ ["swg"; "sdv"; "sbar"]
+
+let arch_rels_o = function
+  | None -> []
+  | Some arch -> arch_rels arch
+
+(** The pre-defined event relations that can be 'minimised'; that is, generated executions should not include an edge from one of these relations if the edge can be removed without making an inconsistent execution consistent. Make sure that [arch_rels_min arch] is a subset of [arch_rels arch]. *)
+let rec arch_rels_min = function
+  | Basic -> ["ad"; "cd"; "dd"]
+  | C -> arch_rels_min Basic
+  | Basic_HW -> arch_rels_min Basic (* could include 'atom' here *)
+  | X86 -> arch_rels_min Basic_HW @ ["mfence"]
+  | Power -> arch_rels_min Basic_HW @
+	       ["sync"; "lwsync"; "eieio"; "isync"]
+  | Arm7 -> arch_rels_min Basic_HW @ ["dmbst"; "dmbld"; "dmb"; "isb"]
+  | Arm8 -> arch_rels_min Arm7
+  | PTX -> arch_rels_min Basic_HW @
+	     ["membar_cta"; "membar_gl"; "membar_sys"]
+  | OpenCL -> arch_rels_min C
+
+(** List of all fence relations *)
+let all_fences =
+  ["dmb"; "dmbst"; "dmbld"; "isb";
+   "sync"; "lwsync"; "eieio"; "isync";
+   "membar_cta"; "membar_gl"; "membar_sys";
+   "mfence"]
+
+(** List of all pairs of relations [(r1,r2)] where membership of [r1] implies membership of [r2] (and hence [r2] need not be drawn) *)
+let all_implied_rels =
+  ["dmb", "dmbst";
+   "dmb", "dmbld";
+   "sync", "lwsync";
+   "sync", "eieio";
+   "membar_gl", "membar_cta";
+   "membar_sys", "membar_gl";
+   "membar_sys", "membar_cta"]
+
+(** List of all pairs of sets [(s1,s2)] where membership of [s1] implies membership of [s2] (and hence [s2] need not be drawn) *)
+let all_implied_sets =
+  ["sc", "acq"; "sc", "rel"; "sc", "A";
+   "acq", "A"; "rel", "A"]
