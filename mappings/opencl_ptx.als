@@ -6,14 +6,20 @@ open ../archs/exec_OpenCL[SE] as SW
 open ../archs/exec_ptx[HE] as HW
 module opencl_ptx[SE,HE]
 
-fun mk_fence[e: SE, X : SW/Exec_OpenCL, X' : HW/Exec_PTX] : HE -> HE {
-  (e in X.sy) => X'.membar_sys else
-  (e in X.dv) => X'.membar_gl else
-                 X'.membar_cta
+fun mk_fence[e: SE,
+    X : SW/Exec_OpenCL,
+    membar_cta',membar_gl',membar_sys' : HE->HE] : HE -> HE
+{
+  (e in X.sy) => membar_sys' else
+  (e in X.dv) => membar_gl' else
+                 membar_cta'
 }
 
 pred apply_map[
-  X : SW/Exec_OpenCL, X' : HW/Exec_PTX, 
+  X : SW/Exec_OpenCL,
+  ad,cd,dd : SE->SE,
+  X' : HW/Exec_PTX,
+  ad',cd',dd',membar_cta',membar_gl',membar_sys' : HE->HE,
   map : SE -> HE]
 {
 
@@ -42,7 +48,7 @@ pred apply_map[
 
   // map fences
   all e : X.F {
-    (X.sb) . (stor[e]) . (X.sb) = map . (mk_fence[e,X,X']) . ~map
+    (X.sb) . (stor[e]) . (X.sb) = map . (mk_fence[e,X,membar_cta',membar_gl',membar_sys']) . ~map
   }
 
   // a non-atomic or relaxed write compiles to a normal write
@@ -55,7 +61,7 @@ pred apply_map[
   all e : X.(W & (rel - sc)) | let e1 = e.map {
     one e1
     e1 in X'.W
-    (X'.sb) :> e1 in mk_fence[e,X,X']
+    (X'.sb) :> e1 in mk_fence[e,X,membar_cta',membar_gl',membar_sys']
   }
 
   // a non-atomic read compiles to a regular read
@@ -68,7 +74,7 @@ pred apply_map[
   all e : X.(R & (A - sc)) | let e1 = e.map {
     one e1
     e1 in X'.R
-    e1 <: (X'.sb) in mk_fence[e,X,X']
+    e1 <: (X'.sb) in mk_fence[e,X,membar_cta',membar_gl',membar_sys']
   }
 
   // an SC read compiles to a fence followed by a
@@ -76,8 +82,8 @@ pred apply_map[
   all e : X.(R & sc) | let e1 = e.map {
     one e1
     e1 in X'.R
-    e1 <: (X'.sb) in mk_fence[e,X,X']
-    (X'.sb) :> e1 in mk_fence[e,X,X'] //comment out for buggy mapping
+    e1 <: (X'.sb) in mk_fence[e,X,membar_cta',membar_gl',membar_sys']
+    (X'.sb) :> e1 in mk_fence[e,X,membar_cta',membar_gl',membar_sys'] //comment out for buggy mapping
   }
 
   // an SC write compiles to a fence followed by a
@@ -85,8 +91,8 @@ pred apply_map[
   all e : X.(W & sc) | let e1 = e.map {
     one e1
     e1 in X'.W
-    e1 <: (X'.sb) in mk_fence[e,X,X']
-    (X'.sb) :> e1 in mk_fence[e,X,X']
+    e1 <: (X'.sb) in mk_fence[e,X,membar_cta',membar_gl',membar_sys']
+    (X'.sb) :> e1 in mk_fence[e,X,membar_cta',membar_gl',membar_sys']
   }
 
   // map workgroup to cta (semantic) scope
@@ -105,16 +111,16 @@ pred apply_map[
   X.co = map . (X'.co) . ~map
 
   // the mapping preserves address dependencies
-  X.ad = map . (X'.ad) . ~map
+  ad = map . ad' . ~map
 
   // the mapping preserves data dependencies
-  X.dd = map . (X'.dd) . ~map
+  dd = map . dd' . ~map
 
   // the mapping preserves locations
   X.sloc = map . (X'.sloc) . ~map
     
   // ctrl dependencies are preserved
-  X.cd = map . (X'.cd) . ~map
+  cd = map . cd' . ~map
 
   // the mapping preserves threads
   X.sthd = map . (X'.sthd) . ~map

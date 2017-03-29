@@ -41,14 +41,10 @@ let swra_local =
 let swra_global =
   ([G & rel]; Fsb?; [A & W]; rs; [G]; rf; [R & A]; sbF?; [G & acq])
   & incl \ thd
-  
-let bsw_local = (entry_fence * exit_fence) & sbar & swg & (L*L) \ thd
-
-let bsw_global = (entry_fence * exit_fence) & sbar & swg & (G*G) \ thd
 						  
-let sw_local = swra_local | bsw_local | (scf & swra_global)
+let sw_local = swra_local | (scf & swra_global)
 
-let sw_global = swra_global | bsw_local | (scf & swra_local)
+let sw_global = swra_global | (scf & swra_local)
 
 let ghb = ((G * G) & po | sw_global)+
 let lhb = ((L * L) & po | sw_local)+

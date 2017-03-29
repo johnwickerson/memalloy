@@ -517,11 +517,11 @@ let main () =
     let path = Filename.concat Filename.parent_dir_name path in
     Cat2als.als_of_file false unrolling_factor path
   in
+  pp_description ();
   begin match !succ_paths @ !fail_paths @ !also_succ_paths with
 	| [] -> failwith "Expected at least one model"
 	| paths -> List.iter cat2als paths
   end;
-  pp_description ();
   let comparator_als = "comparator.als" in
   let pp =
     match mapping_path, arch2, !eventcount2 with
