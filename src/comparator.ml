@@ -235,6 +235,8 @@ let pp_comparator arch oc =
 	  Archs.pp_Arch arch (pp_extra_rels_minus j) min_rels;
     MyList.iteri (
 	fun i path ->
+	let arch = arch_of path in
+	let min_rels = Archs.arch_rels_min arch in
 	fprintf oc "    not(N%d/consistent[none,X%a])\n" (i+1)
 		(pp_extra_rels_minus j) min_rels
       ) !fail_paths;
