@@ -1,0 +1,25 @@
+"OCaml"
+
+include "basic.cat"
+
+let hb = (
+  (* Happens-before between two events to the same
+     location on the same thread, if not both reads *)
+  [W]; poloc; [M] |
+  [M]; poloc; [W] |
+
+  (* Happens-before between atomic ops and other
+     operations on the same thread *)
+  po; [A] |
+  [A]; po |
+
+  (* Happens-before between atomic ops to the
+     same location, if not both reads *)
+  [A]; com; [A]
+)+
+	   
+acyclic (hb | po | rf) as Causality
+acyclic (com | (hb & sloc)) as Coherence
+							     
+deadness_requires empty if_zero as No_If_Zero 
+deadness_requires empty unforced_co as Forced_Co

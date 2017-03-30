@@ -1,12 +1,11 @@
 /*
-A C11-to-Arm7 mapping. Currently this is incorrect -- it's actually
-using the Power mapping, but Arm7 fences!
+A C11-to-Arm7 mapping.
 */
 
 open ../archs/exec_C[SE] as SW
 open ../archs/exec_arm7[HE] as HW
 
-module c11_arm7_trimmed[SE,HE]
+module c11_arm7[SE,HE]
 
 pred apply_map[
   X : SW/Exec_C,ad,cd,dd:SE->SE,

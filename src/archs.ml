@@ -38,6 +38,7 @@ type architecture =
   | Arm8
   | PTX
   | OpenCL
+  | OCaml
 
 (** Defining a hierarchy of architectures *)
 let parent_arch = function
@@ -47,6 +48,7 @@ let parent_arch = function
   | X86 | Power | Arm7 | PTX -> Some Basic_HW
   | Arm8 -> Some Arm7
   | OpenCL -> Some C
+  | OCaml -> Some Basic
 
 (** Convert architecture to Alloy module name *)      
 let pp_arch oc = function
@@ -59,6 +61,7 @@ let pp_arch oc = function
   | Arm8 -> fprintf oc "../archs/exec_arm8"
   | PTX -> fprintf oc "../archs/exec_ptx"
   | OpenCL -> fprintf oc "../archs/exec_OpenCL"
+  | OCaml -> fprintf oc "../archs/exec_OCaml"
 
 (** Convert architecture to Alloy signature name *)
 let pp_Arch oc = function
@@ -71,6 +74,7 @@ let pp_Arch oc = function
   | Arm8 -> fprintf oc "Exec_Arm8"
   | PTX -> fprintf oc "Exec_PTX"
   | OpenCL -> fprintf oc "Exec_OpenCL"
+  | OCaml -> fprintf oc "Exec_OCaml"
 
 (** Convert Alloy signature name to architecture *)
 let parse_Arch = function
@@ -83,6 +87,7 @@ let parse_Arch = function
   | "Exec_Arm8" -> Arm8
   | "Exec_PTX" -> PTX
   | "Exec_OpenCL" -> OpenCL
+  | "Exec_OCaml" -> OCaml
   | x -> failwith "Unexpected architecture %s" x
 
 (** Parse architecture name *)
@@ -96,11 +101,12 @@ let parse_arch = function
   | "ARM8" -> Arm8
   | "PTX" -> PTX
   | "OpenCL" -> OpenCL
+  | "OCaml" -> OCaml
   | x -> failwith "Unexpected architecture %s" x
 
 (** All supported architectures *)
 let all =
-  ["BASIC"; "C"; "HW"; "X86"; "PPC"; "ARM7"; "ARM8"; "PTX"; "OpenCL"]
+  ["BASIC"; "C"; "HW"; "X86"; "PPC"; "ARM7"; "ARM8"; "PTX"; "OpenCL"; "OCaml"]
 
 (** Pre-defined event sets for given architecture *)
 let rec arch_sets = function
@@ -115,6 +121,7 @@ let rec arch_sets = function
   | OpenCL -> arch_sets C @
 		["L"; "G"; "fga"; "rem"; "entry_fence";
 		 "exit_fence"; "wg"; "dv"; "sy"]
+  | OCaml -> arch_sets Basic @ ["A"]
 
 let arch_sets_o = function
   | None -> []
@@ -139,6 +146,7 @@ let rec arch_rels = function
 	     ["scta"; "sgl"; "membar_cta"; "membar_gl"; "membar_sys";
 	      "membarcta"; "membargl"; "membarsys"]
   | OpenCL -> arch_rels C @ ["swg"; "sdv"; "sbar"]
+  | OCaml -> arch_rels Basic
 
 let arch_rels_o = function
   | None -> []
@@ -157,6 +165,7 @@ let rec arch_rels_min = function
   | PTX -> arch_rels_min Basic_HW @
 	     ["membar_cta"; "membar_gl"; "membar_sys"]
   | OpenCL -> arch_rels_min C
+  | OCaml -> arch_rels_min Basic
 
 (** List of all fence relations *)
 let all_fences =
