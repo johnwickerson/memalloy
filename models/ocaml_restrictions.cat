@@ -1,3 +1,7 @@
 "OCaml"
 
-empty [F] | [R&W] as OCamlRestrictions
+empty [F] as NoFences
+empty [R&W] as NoRmws
+
+empty [A];loc;[M\A] as NoLocAccessedAtomicallyAndNonatomically
+empty [M\A];loc;[A] as NoLocAccessedNonatomicallyAndAtomically
