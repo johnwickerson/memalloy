@@ -25,6 +25,8 @@ moretests:
 	tests/Q4_opencl_ptx_orig.sh
 	tests/Q4_opencl_ptx_cumul.sh
 	tests/Q2_x86_mca.sh
+
+slowtests:
 	tests/Q2_c11_lidbury_partial_iter.sh
 	tests/Q2_c11_sra_simp_iter.sh
 	tests/Q2_c11_swrf_simp.sh
