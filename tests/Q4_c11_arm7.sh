@@ -9,7 +9,6 @@
     -events 6 \
     -alsosatisfies models/c11_normws.cat \
     -alsosatisfies models/nofences.cat \
-    -minimal \
     -expect 1
 
 # Also possible:

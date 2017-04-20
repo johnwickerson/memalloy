@@ -8,5 +8,4 @@
     -events 5 \
     -arch2 PPC \
     -events2 5 \
-    -minimal \
     -expect 0 # about 4 mins

@@ -7,5 +7,4 @@
     -events 5 \
     -arch2 PPC \
     -events2 5 \
-    -minimal \
     -expect 1

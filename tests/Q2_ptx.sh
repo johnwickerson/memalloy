@@ -4,7 +4,6 @@
     -violates models/ptx_cumul.cat \
     -arch PTX \
     -events 5 \
-    -minimal \
     -iter \
     -satisfies models/normws.cat \
     -satisfies models/ptx_singlegl.cat

@@ -107,17 +107,20 @@ let main () =
        end
     | Lit ->
        assert (Filename.check_suffix out_path ".litmus");
+       let name =
+         Filename.chop_extension (Filename.basename out_path)
+       in
        begin
 	 match exec with
 	 | Xml_input.Single x ->
 	    let lt = Mk_litmus.litmus_of_execution x in
 	    (match arch with
 	     | Archs.Arm8 ->
-		let name =
-		  Filename.chop_extension (Filename.basename out_path)
-		in
 		let arm8_lt = Mk_arm8.arm8_of_lit name lt in
-		fprintf fmtr "%a\n" Litmus_arm8.pp arm8_lt
+		fprintf fmtr "%a\n" Mk_arm8.pp arm8_lt
+             | Archs.Power ->
+		let ppc_lt = Mk_ppc.ppc_of_lit name lt in
+		fprintf fmtr "%a\n" Mk_ppc.pp ppc_lt
 	     | _ -> fprintf fmtr "%a\n" Litmus.pp lt)
 	 | Xml_input.Double (x,y,pi) ->
 	    let lt_src,lt =
@@ -127,11 +130,11 @@ let main () =
 	    fprintf fmtr "\n";
 	    (match arch with
 	     | Archs.Arm8 ->
-		let name =
-		  Filename.chop_extension (Filename.basename out_path)
-		in
 		let arm8_lt = Mk_arm8.arm8_of_lit name lt in
-		fprintf fmtr "%a\n" Litmus_arm8.pp arm8_lt
+		fprintf fmtr "%a\n" Mk_arm8.pp arm8_lt
+	     | Archs.Power ->
+		let ppc_lt = Mk_ppc.ppc_of_lit name lt in
+		fprintf fmtr "%a\n" Mk_ppc.pp ppc_lt
 	     | _ -> fprintf fmtr "%a\n" Litmus.pp lt)
        end
   end;
