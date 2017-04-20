@@ -1,7 +1,7 @@
 (*
 MIT License
 
-Copyright (c) 2017 by John Wickerson and Nathan Chong.
+Copyright (c) 2017 by John Wickerson, Nathan Chong and Tyler Sorensen
 
 Permission is hereby granted, free of charge, to any person obtaining
 a copy of this software and associated documentation files (the
@@ -32,7 +32,6 @@ let succ_paths = ref []
 let also_succ_paths = ref []
 let fail_paths = ref []
 let withinit = ref false
-let minimal = ref false
 let hint = ref None
 let eventcount = ref 0
 let eventcount2 = ref 0
@@ -209,30 +208,29 @@ let pp_comparator arch oc =
   pp_also_satisfied_models "X" oc;
   if !hint <> None then
     fprintf oc "  hint[X%a]\n\n" pp_extra_rels arch;
-  if !minimal then (
-    fprintf oc "  not (some e : X.ev {\n";
-    MyList.iteri (
-	fun i path ->
-	let arch = arch_of path in
-	fprintf oc "    not(N%d/consistent[e,X%a])\n"
-		(i+1) pp_extra_rels arch;
-	fprintf oc "    N%d/dead[e,X%a]\n"
-		(i+1) pp_extra_rels arch
-      ) !fail_paths;
-    MyList.iteri (
-	fun i path ->
-	let arch = arch_of path in
-	fprintf oc "    M%d/consistent[e,X%a]\n"
-		(i+1) pp_extra_rels arch
-      ) !succ_paths;
-    fprintf oc "  })\n"
-  );
+  fprintf oc "  not (some e : X.ev {\n";
+  MyList.iteri (
+      fun i path ->
+      let arch = arch_of path in
+      fprintf oc "    not(N%d/consistent[e,X%a])\n"
+	      (i+1) pp_extra_rels arch;
+      fprintf oc "    N%d/dead[e,X%a]\n"
+	      (i+1) pp_extra_rels arch
+    ) !fail_paths;
+  MyList.iteri (
+      fun i path ->
+      let arch = arch_of path in
+      fprintf oc "    M%d/consistent[e,X%a]\n"
+	      (i+1) pp_extra_rels arch
+    ) !succ_paths;
+  fprintf oc "  })\n";
+  
   let min_rels = Archs.arch_rels_min arch in
   let pp_rel j rel =
     fprintf oc "  not (some e1, e2 : X.ev {\n";
     fprintf oc "    (e1 -> e2) in %s\n" rel;
     fprintf oc "    wf_%a[X%a]\n"
-	  Archs.pp_Arch arch (pp_extra_rels_minus j) min_rels;
+	    Archs.pp_Arch arch (pp_extra_rels_minus j) min_rels;
     MyList.iteri (
 	fun i path ->
 	let arch = arch_of path in
@@ -249,9 +247,7 @@ let pp_comparator arch oc =
   pp_max_classes "locations" "E" !max_locs "sloc" "R + W" oc;
   fprintf oc "}\n\n";
   pp_hint_predicate oc;
-  fprintf oc "run gp for 1 Exec, %s%d E, 3 Int\n"
-	  (if !minimal then "exactly " else "")
-	  !eventcount
+  fprintf oc "run gp for 1 Exec, %d E, 3 Int\n" !eventcount
 
 (** [pp_comparator2 arch mapping_path arch2 oc] generates an Alloy file (sent to [oc]) that can be used to find an execution {i X} of type [arch] and an execution {i Y} of type [arch2] such that {i X} satisfies all the models in [!succ_paths], {i Y} violates all the models in [!fail_paths], and {i X} and {i Y} are related by the mapping in [mapping_path] *)
 let pp_comparator2 arch mapping_path arch2 oc =
@@ -279,22 +275,20 @@ let pp_comparator2 arch mapping_path arch2 oc =
   pp_also_satisfied_models "X" oc;
   if !hint <> None then
     fprintf oc "  hint[X]\n\n";
-  if !minimal then (
-    fprintf oc "  not (some e : X.ev {\n";
-    MyList.iteri (
-	fun i path ->
-	let arch = arch_of path in
-	fprintf oc "    not(N%d/consistent[e,X%a])\n"
-		(i+1) pp_extra_rels arch;
-      ) !fail_paths;
-    fprintf oc "  })\n"
-  );
+  fprintf oc "  not (some e : X.ev {\n";
+  MyList.iteri (
+      fun i path ->
+      let arch = arch_of path in
+      fprintf oc "    not(N%d/consistent[e,X%a])\n"
+	      (i+1) pp_extra_rels arch;
+    ) !fail_paths;
+  fprintf oc "  })\n";
   let min_rels = Archs.arch_rels_min arch in
   let pp_rel j rel =
     fprintf oc "  not (some e1, e2 : X.ev {\n";
     fprintf oc "    (e1 -> e2) in %s\n" rel;
     fprintf oc "    wf_%a[X%a]\n"
-	  Archs.pp_Arch arch (pp_extra_rels_minus j) min_rels;
+	    Archs.pp_Arch arch (pp_extra_rels_minus j) min_rels;
     MyList.iteri (
 	fun i path ->
 	fprintf oc "    not(N%d/consistent[none,X%a])\n" (i+1)
@@ -302,7 +296,7 @@ let pp_comparator2 arch mapping_path arch2 oc =
       ) !fail_paths;
     fprintf oc "  })\n"
   in
-  MyList.iteri pp_rel min_rels;
+  (* MyList.iteri pp_rel min_rels; *)
   fprintf oc "  // We have a valid application of the mapping\n";
   fprintf oc "  apply_map[X%a, Y%a, map]\n\n"
 	  pp_extra_rels arch
@@ -313,9 +307,7 @@ let pp_comparator2 arch mapping_path arch2 oc =
   pp_max_classes "locations" "SE" !max_locs "sloc" "R + W" oc;
   fprintf oc "}\n\n";
   pp_hint_predicate oc;
-  fprintf oc "run gp for %s1 M1/Exec, exactly 1 N1/Exec, %d SE, %d HE, 3 Int\n"
-	  (if !minimal then "exactly " else "")
-	  !eventcount !eventcount2
+  fprintf oc "run gp for exactly 1 M1/Exec, exactly 1 N1/Exec, %d SE, %d HE, 3 Int\n" !eventcount !eventcount2
 
 let get_args () =
   let arch = ref None in
@@ -360,7 +352,6 @@ let get_args () =
        Arg.Int (fun i -> assert (0 < i); min_locs := i; max_locs := i),
        "Find executions with exactly N locations");
       ("-iter", Arg.Set iter, "Option: find all solutions");
-      ("-minimal", Arg.Set minimal, "Option: find minimal executions");
       ("-withinit", Arg.Set withinit,
        "Option: explicit initial writes");
     ] in
