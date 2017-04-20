@@ -5,7 +5,7 @@
     -satisfies models/ppc.cat \
     -mapping mappings/ocaml_ppc_v2.als \
     -arch OCaml \
-    -events 5 \
+    -events 4 \
     -arch2 PPC \
-    -events2 5 \
+    -events2 4 \
     -expect 0 # about 4 mins
