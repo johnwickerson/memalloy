@@ -1,8 +1,7 @@
-[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
-Master branch: [![Build Status](https://travis-ci.org/johnwickerson/memalloy.svg?branch=master)](https://travis-ci.org/johnwickerson/memalloy). 
-Dev branch:
-[![Build Status](https://travis-ci.org/johnwickerson/memalloy.svg?branch=dev)](https://travis-ci.org/johnwickerson/memalloy).
 
+| Licence | Master branch | Dev branch |
+|---------|---------------|------------|
+| [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT) | [![Build Status](https://travis-ci.org/johnwickerson/memalloy.svg?branch=master)](https://travis-ci.org/johnwickerson/memalloy) | [![Build Status](https://travis-ci.org/johnwickerson/memalloy.svg?branch=dev)](https://travis-ci.org/johnwickerson/memalloy) |
 
 # System requirements
 
