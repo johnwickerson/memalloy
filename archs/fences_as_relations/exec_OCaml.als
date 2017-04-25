@@ -16,4 +16,8 @@ sig Exec_OCaml extends Exec {
 
 }
 
-fun A[e:E, X:Exec_OCaml] : set E { X.A - e }
+pred wf_Exec_OCaml[X:Exec_OCaml, ad,cd,dd:E->E] {
+  wf_Exec[X,ad,cd,dd]
+}
+
+fun A[e:E, X:Exec_OCaml, ad,cd,dd:E->E] : set E { X.A - e }

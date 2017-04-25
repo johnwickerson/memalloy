@@ -1,5 +1,8 @@
+[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 Master branch: [![Build Status](https://travis-ci.org/johnwickerson/memalloy.svg?branch=master)](https://travis-ci.org/johnwickerson/memalloy). 
-Dev branch: [![Build Status](https://travis-ci.org/johnwickerson/memalloy.svg?branch=dev)](https://travis-ci.org/johnwickerson/memalloy).
+Dev branch:
+[![Build Status](https://travis-ci.org/johnwickerson/memalloy.svg?branch=dev)](https://travis-ci.org/johnwickerson/memalloy).
+
 
 # System requirements
 
@@ -13,7 +16,9 @@ Dev branch: [![Build Status](https://travis-ci.org/johnwickerson/memalloy.svg?br
 
 - Java runtime version 8 (Java SE 8).
 
-- Graphviz version 2.40.1 
+- Graphviz version 2.40.1
+
+- Python packages `progressbar`
 
 # Quick start
 

@@ -19,54 +19,20 @@ sig Exec_H extends Exec {
 
   // there are no such things as "atomic" and "non-atomic" locations
   no naL
-    
-}
-
-pred wf_Exec_H[X:Exec_H, ad,cd,dd:E->E] {
-
-  wf_Exec[X,ad,cd,dd]
 
   // control dependencies are defined differently in assembly
-  cd.(X.sb) in cd  
+  cd.sb in cd 
+    
 }
 
-fun atom[e:E, X:Exec_H, ad,cd,dd:E->E] : E->E { X.atom - (univ -> e) - (e -> univ) }
+fun atom[e:E, X:Exec_H] : E->E { X.atom - (univ -> e) - (e -> univ) }
 
 // Synonyms:
-fun rmw[e:E, X:Exec_H, ad,cd,dd:E->E] : E->E { atom[e,X,ad,cd,dd] }
+fun rmw[e:E, X:Exec_H] : E->E { atom[e,X] }
 
-fun fre[e:E, x : Exec_H, ad,cd,dd:E->E] : E -> E {
-  fr[e,x,ad,cd,dd] - sthd[e,x,ad,cd,dd]
-}
-
-fun fri[e:E, x : Exec_H, ad,cd,dd:E->E] : E -> E {
-  fr[e,x,ad,cd,dd] & sthd[e,x,ad,cd,dd]
-}
-
-pred is_fence_rel[fence_rel:E->E, sb:E->E] {
-    
-  // Consistent with program order
-  fence_rel in sb
-
-  // Preserved by pre- or post-composition with program order  
-  *sb . fence_rel . *sb in fence_rel
-
-  // Can be traced back to an immediate sb-pair
-  no ((sb - fence_rel) . (sb - fence_rel)) & fence_rel
-}
-
-fun rfe[e:E, x : Exec_H, ad,cd,dd:E->E] : E -> E {
-  rf[e,x,ad,cd,dd] - sthd[e,x,ad,cd,dd]
-}
-
-fun rfi[e:E, x : Exec_H, ad,cd,dd:E->E] : E -> E {
-  rf[e,x,ad,cd,dd] & sthd[e,x,ad,cd,dd]
-}
-
-fun coe[e:E, x : Exec_H, ad,cd,dd:E->E] : E -> E {
-  co[e,x,ad,cd,dd] - sthd[e,x,ad,cd,dd]
-}
-
-fun coi[e:E, x : Exec_H, ad,cd,dd:E->E] : E -> E {
-  co[e,x,ad,cd,dd] & sthd[e,x,ad,cd,dd]
-}
+fun fre[e:E, X:Exec_H] : E->E { fr[e,X] - sthd[e,X] }
+fun fri[e:E, X:Exec_H] : E->E { fr[e,X] & sthd[e,X] }
+fun rfe[e:E, X:Exec_H] : E->E { rf[e,X] - sthd[e,X] }
+fun rfi[e:E, X:Exec_H] : E->E { rf[e,X] & sthd[e,X] }
+fun coe[e:E, X:Exec_H] : E->E { co[e,X] - sthd[e,X] }
+fun coi[e:E, X:Exec_H] : E->E { co[e,X] & sthd[e,X] }

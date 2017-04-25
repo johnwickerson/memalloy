@@ -8,3 +8,6 @@ export OS=x86-mac
 
 # Set the Java maximum heap size (default is 3 gigabytes)
 export JAVA_HEAP_SIZE=3g
+
+# MEMALLOY_ROOT_DIR is the directory that contains this script
+export MEMALLOY_ROOT_DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"

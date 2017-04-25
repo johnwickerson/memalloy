@@ -499,6 +499,7 @@ let dot_to_png stamp i =
   if exit_status <> 0 then
     failwith "Conversion from .dot to .png failed"
 
+(*
 let main () =
   if not (Sys.file_exists "alloystar") then
     failwith "Please run me from the top-level directory of the repo";
@@ -557,3 +558,4 @@ let main () =
   exit 0
        
 let _ = main ()
+ *)

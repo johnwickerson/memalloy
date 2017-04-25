@@ -1,7 +1,7 @@
 (*
 MIT License
 
-Copyright (c) 2017 by John Wickerson.
+Copyright (c) 2017 by John Wickerson and Nathan Chong
 
 Permission is hereby granted, free of charge, to any person obtaining
 a copy of this software and associated documentation files (the
@@ -29,9 +29,14 @@ open Format
 open General_purpose
 open Cat_syntax
 
+(* Nasty global variables *)
+let verbose = ref false
+let cat_dir : string ref = ref "models"
+let out_dir : string ref = ref "."
+
 (** Parse the given .cat file into an abstract syntax tree *)
 let parse_file cat_path =
-  let cat_path = Filename.concat "models" cat_path in
+  let cat_path = Filename.concat !cat_dir cat_path in
   let ic = open_in cat_path in
   let lexbuf = Lexing.from_channel ic in
   Cat_parser.main Cat_lexer.token lexbuf
@@ -396,7 +401,7 @@ and als_of_file interm_model unrolling cat_path =
     Filename.chop_extension (Filename.basename cat_path)
   in
   let als_path = sprintf "%s.als" model_name in
-  printf "Converting %s to %s.\n" cat_path als_path;
+  if !verbose then printf "Converting %s to %s.\n" cat_path als_path;
   let als_path = Filename.concat "models" als_path in
   let oc = open_out als_path in
   let ppf = formatter_of_out_channel oc in
@@ -417,66 +422,43 @@ and als_of_file interm_model unrolling cat_path =
   close_out oc
 	    
 
-	    (*	  
+	    	  
 (** {2 Processing command-line input} *)
 	       
 let get_args () =
-  let cat_path : string list ref = ref [] in
-  let default_unrolling_factor = 3 in
-  let unrolling_factor : int list ref = ref [] in
+  let cat_path : string ref = ref "" in
+  let unrolling_factor : int ref = ref 3 in
   let intermediate_model : bool ref = ref false in
   let speclist = [
-      ("-u", Arg.Int (set_list_ref unrolling_factor),
-       sprintf "Number of times to unroll recursive definitions (optional, default=%d)" default_unrolling_factor);
+      ("-u", Arg.Set_int unrolling_factor,
+       sprintf "Number of times to unroll recursive definitions (optional, default=%d)" !unrolling_factor);
       ("-i", Arg.Set intermediate_model,
-       sprintf "Intermediate model; do not generate `consistent` predicate (optional)");
+       sprintf "Intermediate model; do not generate `consistent` predicate (optional, default=%b)" !intermediate_model);
+      ("-o", Arg.Set_string out_dir,
+       sprintf "Output directory (default=%s)" !out_dir);
+      ("-verbose", Arg.Set verbose, sprintf "default=%b" !verbose);
     ]
   in
   let usage_msg =
     "A translator from the .cat format into the .als (Alloy) format.\nUsage: `cat2als [options] <cat_file.cat>`.\nOptions available:"
   in
-  Arg.parse speclist (set_list_ref cat_path) usage_msg;
-  let bad_arg () =
-    Arg.usage speclist usage_msg;
-    raise (Arg.Bad "Missing or too many arguments.")
-  in
-  let cat_path = get_only_element bad_arg !cat_path in
-  let unrolling_factor =
-    get_lone_element bad_arg default_unrolling_factor !unrolling_factor
-  in
-  (cat_path, unrolling_factor, !intermediate_model)
+  Arg.parse speclist (fun filename -> cat_path := filename) usage_msg;
+  begin match Sys.file_exists !cat_path with
+  | false -> failwith "Could not find cat file %s" !cat_path
+  | _ -> ()
+  end;
+  let dir = Filename.dirname !cat_path in
+  let cat_file = Filename.basename !cat_path in
+  let _ = cat_dir := dir in
+  cat_file, !unrolling_factor, !intermediate_model
 
 let check_args (cat_path, unrolling_factor, interm_model) =
   assert (unrolling_factor >= 0)
 		  
 let main () =
-  let (cat_path, unrolling_factor, interm_model) = get_args () in
+  let cat_path, unrolling_factor, interm_model = get_args () in
   check_args (cat_path, unrolling_factor, interm_model);
-  let model_name =
-    Filename.chop_extension (Filename.basename cat_path)
-  in
-  let als_file = sprintf "%s.als" model_name in
-  let als_dir = Filename.concat Filename.parent_dir_name "models_als" in
-  let als_path = Filename.concat als_dir als_file in
-  if Sys.file_exists als_path then
-    failwith "Target Alloy file already exists.";
-  let oc = formatter_of_out_channel (open_out als_path) in
-  let (model_type, cat_model) = parse_file cat_path in
-  let arch = Archs.parse_arch model_type in
-  let cat_model = unfold_instrs unrolling_factor cat_model in
-  preamble cat_path model_name arch oc;
-  let env = build_env arch in
-  let _,axs =
-    List.fold_left (als_of_instr arch oc) (env, []) cat_model
-  in
-  begin
-  if (not interm_model) then
-    let mk_postamble c =
-      postamble arch c (List.filter (fun (_,c') -> c = c') axs) oc
-    in
-    List.iter mk_postamble [Provision; UndefUnless; Deadness]
-  end;
+  als_of_file interm_model unrolling_factor cat_path;
   exit 0
     
-let _ = main ()     
-	     *)
+let _ = main ()

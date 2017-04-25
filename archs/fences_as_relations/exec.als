@@ -1,12 +1,11 @@
 module exec[E]
-open relations[E]
+open ../relations[E]
 
 sig Exec {
   ev : set E,      // domain of all events
   W, R, F : set E, // writes, reads, fences
   IW : set E,      // initial writes
   naL : set E,     // events accessing non-atomic locations
-  ad,cd,dd : E->E,  // address/control/data dependencies
   sb : E -> E,     // sequenced before
   sthd : E -> E,   // same thread (E.R.)
   sloc : E -> E,   // same location (partial E.R.)
@@ -54,25 +53,28 @@ sig Exec {
   // co is a union, over all atomic locations x, of strict
   // total orders on writes to x
   (co + ~co) = ((W - naL) -> (W - naL)) & sloc - iden
+  	
+}
 
+pred wf_Exec[X:Exec, ad,cd,dd:E->E] {
+    
   // Event e2 has an "address dependency" on e1 if
   // location[e2] depends on valr[e1]. Therefore "(e1,e2) in ad"
   // only makes sense when e1 is a read and e2 is a read or a write
   // sequenced after e1.
-  ad in (R -> (R + W)) & sb
+  ad in (X.R -> (X.R + X.W)) & X.sb
 
   // Event e2 has a "data dependency" on e1 if valw[e2] depends
   // on valr[e1]. Therefore "(e1,e2) in data" only makes sense when
   // e1 is a read and e2 is a write sequenced after e1.
-  dd in (R -> W) & sb
+  dd in (X.R -> X.W) & X.sb
  
   // Event e2 has a "control dependency" on e1 if
   // valr[e1] is used to make a subsequent branching decision
   // and e2 follows that branch in program order. Therefore
   // "(e1,e2) in cd" only makes sense when e1 is a read and e2
   // is sequenced after e1.
-  cd in (R -> ev) & sb
-     	
+  cd in (X.R -> X.ev) & X.sb
 }
 
 pred withinit[X:Exec] {
@@ -95,40 +97,36 @@ pred withoutinit[X:Exec] {
   no X.IW
 }
 
-fun ev [e:E, X:Exec] : set E { X.ev - e }
-fun W [e:E, X:Exec] : set E { X.W - e }
-fun IW [e:E, X:Exec] : set E { X.IW - e }
-fun R [e:E, X:Exec] : set E { X.R - e }
-fun F [e:E, X:Exec] : set E { X.F - e }
-fun M [e:E, X:Exec] : set E { X.R + X.W - e }
-fun naL [e:E, X:Exec] : set E { X.naL - e }
+fun ev [e:E, X:Exec, ad,cd,dd:E->E] : set E { X.ev - e }
+fun W [e:E, X:Exec, ad,cd,dd:E->E] : set E { X.W - e }
+fun IW [e:E, X:Exec, ad,cd,dd:E->E] : set E { X.IW - e }
+fun R [e:E, X:Exec, ad,cd,dd:E->E] : set E { X.R - e }
+fun F [e:E, X:Exec, ad,cd,dd:E->E] : set E { X.F - e }
+fun M [e:E, X:Exec, ad,cd,dd:E->E] : set E { X.R + X.W - e }
+fun naL [e:E, X:Exec, ad,cd,dd:E->E] : set E { X.naL - e }
 
-fun sb [e:E, X:Exec] : E->E { X.sb - (univ -> e) - (e -> univ) }
-fun ad [e:E, X:Exec] : E->E { X.ad - (univ -> e) - (e -> univ) }
-fun dd [e:E, X:Exec] : E->E { X.dd - (univ -> e) - (e -> univ) }
-fun cd [e:E, X:Exec] : E->E { X.cd - (univ -> e) - (e -> univ) }
-fun sthd [e:E, X:Exec] : E->E { X.sthd - (univ -> e) - (e -> univ) }
-fun sloc [e:E, X:Exec] : E->E { X.sloc - (univ -> e) - (e -> univ) }
-fun rf [e:E, X:Exec] : E->E { X.rf - (univ -> e) - (e -> univ) }
-fun co [e:E, X:Exec] : E->E { X.co - (univ -> e) - (e -> univ) }
+fun sb [e:E, X:Exec, ad,cd,dd:E->E] : E->E { X.sb - (univ -> e) - (e -> univ) }
+fun ad [e:E, X:Exec, ad,cd,dd:E->E] : E->E { ad - (univ -> e) - (e -> univ) }
+fun dd [e:E, X:Exec, ad,cd,dd:E->E] : E->E { dd - (univ -> e) - (e -> univ) }
+fun cd [e:E, X:Exec, ad,cd,dd:E->E] : E->E { cd - (univ -> e) - (e -> univ) }
+fun sthd [e:E, X:Exec, ad,cd,dd:E->E] : E->E { X.sthd - (univ -> e) - (e -> univ) }
+fun sloc [e:E, X:Exec, ad,cd,dd:E->E] : E->E { X.sloc - (univ -> e) - (e -> univ) }
+fun rf [e:E, X:Exec, ad,cd,dd:E->E] : E->E { X.rf - (univ -> e) - (e -> univ) }
+fun co [e:E, X:Exec, ad,cd,dd:E->E] : E->E { X.co - (univ -> e) - (e -> univ) }
 
 // Some synonyms
-fun po [e:E, X:Exec] : E->E { sb[e,X] }
-fun addr [e:E, X:Exec] : E->E { ad[e,X] }
-fun ctrl [e:E, X:Exec] : E->E { cd[e,X] }
-fun data [e:E, X:Exec] : E->E { dd[e,X] }
-fun loc [e:E, X:Exec] : E->E { sloc[e,X] }
-fun thd [e:E, X:Exec] : E->E { sthd[e,X] }
-fun ext [e:E, X:Exec] : E->E { (X.ev -> X.ev) - sthd[e,X] }
+fun po [e:E, X:Exec, ad,cd,dd:E->E] : E->E { sb[e,X,ad,cd,dd] }
+fun addr [e:E, X:Exec, ad,cd,dd:E->E] : E->E { ad }
+fun ctrl [e:E, X:Exec, ad,cd,dd:E->E] : E->E { cd }
+fun data [e:E, X:Exec, ad,cd,dd:E->E] : E->E { dd }
+fun loc [e:E, X:Exec, ad,cd,dd:E->E] : E->E { sloc[e,X,ad,cd,dd] }
+fun thd [e:E, X:Exec, ad,cd,dd:E->E] : E->E { sthd[e,X,ad,cd,dd] }
+fun ext [e:E, X:Exec, ad,cd,dd:E->E] : E->E { (X.ev -> X.ev) - sthd[e,X,ad,cd,dd] }
 
-fun fr_init[e:E, X:Exec] : E->E {
-  (stor[R[e,X]] - (~(rf[e,X]) . (rf[e,X]))) . (sloc[e,X]) . (stor[W[e,X]])
+fun fr_init[e:E, X:Exec, ad,cd,dd:E->E] : E->E {
+  (stor[R[e,X,ad,cd,dd]] - (~(rf[e,X,ad,cd,dd]) . (rf[e,X,ad,cd,dd]))) . (sloc[e,X,ad,cd,dd]) . (stor[W[e,X,ad,cd,dd]])
 }
 
-fun fr[e:E, X:Exec] : E -> E {
-  (fr_init[e,X] + (~(rf[e,X]) . (co[e,X]))) - iden
-}
-
-fun addsb[f:E->E, X:Exec] : E->E {
-  *(X.sb) . f . *(X.sb)
+fun fr[e:E, X:Exec, ad,cd,dd:E->E] : E -> E {
+  (fr_init[e,X,ad,cd,dd] + (~(rf[e,X,ad,cd,dd]) . (co[e,X,ad,cd,dd]))) - iden
 }

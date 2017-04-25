@@ -36,4 +36,3 @@ fun sq[s : set E] : E -> E {
 fun imm[r : E -> E] : E -> E{
   r - (r.^r)
 }
-

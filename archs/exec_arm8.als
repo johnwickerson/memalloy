@@ -14,11 +14,5 @@ sig Exec_Arm8 extends Exec_Arm7 {
     
 }
 
-pred wf_Exec_Arm8 [X:Exec_Arm8, ad,cd,dd,dmbst,dmbld,dmb,isb:E->E] {
-
-    wf_Exec_Arm7[X,ad,cd,dd,dmbst,dmbld,dmb,isb]
-    
-}
-
-fun screl[e:E, X:Exec_Arm8, ad,cd,dd,dmbst,dmbld,dmb,isb:E->E] : set E { X.screl - e }
-fun scacq[e:E, X:Exec_Arm8, ad,cd,dd,dmbst,dmbld,dmb,isb:E->E] : set E { X.scacq - e }
+fun screl[e:E, X:Exec_Arm8] : set E { X.screl - e }
+fun scacq[e:E, X:Exec_Arm8] : set E { X.scacq - e }

@@ -1,3 +1,7 @@
+ifndef MEMALLOY_ROOT_DIR
+$(error MEMALLOY_ROOT_DIR is undefined)
+endif
+
 # avoid a compiler warning
 OCB_OPTS := -use-ocamlfind
 # enable C-c C-t for inspecting types
@@ -14,17 +18,24 @@ OCD_OPTS := -docflags -t,Memalloy
 # Set custom stylesheet
 OCD_OPTS := $(OCD_OPTS) -docflags -css-style,mystyle.css
 
+# copy binaries here
+DEST := $(MEMALLOY_ROOT_DIR)/top
+
 .PHONY: all clean gen comparator doc
 
-all: gen comparator doc
+all: gen cat2als pp_comparator doc 
 
 gen: 
-	ocamlbuild $(OCB_OPTS) gen.native
-	mv gen.native ../gen
+	ocamlbuild $(OCB_OPTS) $@.native
+	mv $@.native $(DEST)/$@
 
-comparator:
-	ocamlbuild $(OCB_OPTS) comparator.native
-	mv comparator.native ../comparator
+cat2als:
+	ocamlbuild $(OCB_OPTS) $@.native
+	mv $@.native $(DEST)/$@
+
+pp_comparator:
+	ocamlbuild $(OCB_OPTS) $@.native
+	mv $@.native $(DEST)/$@
 
 doc:
 	python mk_odocl.py > comparator.odocl
@@ -36,6 +47,8 @@ doc:
 clean:
 	ocamlbuild -clean
 	@ echo ""
-	rm -f ../gen ../comparator
+	rm -f $(DEST)/gen
+	rm -f $(DEST)/cat2als
+	rm -f $(DEST)/pp_comparator
 	rm -f comparator.odocl
 	rm -rf ../doc
