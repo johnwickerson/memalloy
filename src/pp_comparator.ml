@@ -284,7 +284,7 @@ let pp_comparator2 arch mapping_path arch2 oc =
     ) !fail_paths;
   fprintf oc "  })\n";
   let min_rels = Archs.arch_rels_min arch in
-  let pp_rel j rel =
+  let _pp_rel j rel =
     fprintf oc "  not (some e1, e2 : X.ev {\n";
     fprintf oc "    (e1 -> e2) in %s\n" rel;
     fprintf oc "    wf_%a[X%a]\n"

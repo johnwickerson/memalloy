@@ -1,7 +1,3 @@
-ifndef MEMALLOY_ROOT_DIR
-$(error MEMALLOY_ROOT_DIR is undefined)
-endif
-
 # avoid a compiler warning
 OCB_OPTS := -use-ocamlfind
 # enable C-c C-t for inspecting types
@@ -19,21 +15,15 @@ OCD_OPTS := -docflags -t,Memalloy
 OCD_OPTS := $(OCD_OPTS) -docflags -css-style,mystyle.css
 
 # copy binaries here
-DEST := $(MEMALLOY_ROOT_DIR)/top
+DEST := ..
 
 .PHONY: all clean gen comparator doc
 
-all: gen cat2als pp_comparator doc 
+BINARIES = gen cat2als pp_comparator
 
-gen: 
-	ocamlbuild $(OCB_OPTS) $@.native
-	mv $@.native $(DEST)/$@
+all: $(BINARIES) doc 
 
-cat2als:
-	ocamlbuild $(OCB_OPTS) $@.native
-	mv $@.native $(DEST)/$@
-
-pp_comparator:
+$(BINARIES): 
 	ocamlbuild $(OCB_OPTS) $@.native
 	mv $@.native $(DEST)/$@
 
@@ -46,7 +36,7 @@ doc:
 
 clean:
 	ocamlbuild -clean
-	@ echo ""
+	@ echo "" # because ocamlbuild doesn't end with a newline
 	rm -f $(DEST)/gen
 	rm -f $(DEST)/cat2als
 	rm -f $(DEST)/pp_comparator

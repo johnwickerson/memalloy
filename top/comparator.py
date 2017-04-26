@@ -146,8 +146,8 @@ def main(argv=None):
 
   if platform.system() == "Darwin":
     if nsolutions == 1:
-      # BUG: does not work
-      subprocess.Popen(["open", os.path.join(png_result_dir, "*.png")])
+      for f in os.listdir(png_result_dir):
+        subprocess.Popen(["open", os.path.join(png_result_dir, f)])
     else:
       subprocess.Popen(["open", os.path.join(png_result_dir)])
 

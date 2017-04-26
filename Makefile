@@ -1,3 +1,7 @@
+ifndef MEMALLOY_ROOT_DIR
+$(error Please run 'source configure.sh')
+endif
+
 install:
 	make -C src
 	git submodule update --init --recursive

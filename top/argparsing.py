@@ -71,16 +71,6 @@ class SetNumLocsAction(argparse.Action):
     setattr(namespace, "minlocations", values)
     setattr(namespace, "maxlocations", values)
 
-def is_valid_num_txs(arg):
-  n = int(arg)
-  if 0 <= n: return n
-  raise argparse.ArgumentTypeError("Invalid number of transactions %s" % arg)
-
-class SetNumTxsAction(argparse.Action):
-  def __call__(self, parser, namespace, values, option_string):
-    setattr(namespace, "mintransactions", values)
-    setattr(namespace, "maxtransactions", values)
-
 def add_common_args(parser):
   parser.add_argument("-verbose", action="store_true")
 
@@ -123,18 +113,10 @@ def add_gen_comparator_args(parser):
                       help="Find executions with at most N locations")
   parser.add_argument("-locations", type=is_valid_num_locs, action=SetNumLocsAction,
                       help="Find executions with exactly N locations")
-  parser.add_argument("-mintransactions", type=is_valid_num_txs, default=0,
-                      help="Find executions with at least N transactions (default 0)")
-  parser.add_argument("-maxtransactions", type=is_valid_num_txs, default=None,
-                      help="Find executions with at most N transactions")
-  parser.add_argument("-transactions", type=is_valid_num_txs, action=SetNumTxsAction,
-                      help="Find executions with exactly N transactions")
   parser.add_argument("-minimal", action='store_true',
                       help="Option: find minimal executions")
   parser.add_argument("-withinit", action='store_true',
                       help="Option: explicit initial writes")
-  parser.add_argument("-emptytxs", action='store_true',
-                      help="Option: allow empty transactions")
 
 def ignore_opt(option_value):
   return option_value == None or (type(option_value) == bool and option_value == False)
@@ -148,8 +130,7 @@ def extract_gen_comparator_args(args):
     cmd_options.extend(["-violates", model])
   for opt in ["arch", "events", "mapping", "arch2", "events2", "hint",
       "minthreads", "maxthreads", "threads", "minlocations", "maxlocations",
-      "locations", "mintransactions", "maxtransactions", "transactions",
-      "minimal", "withinit", "emptytxs"]:
+      "locations", "minimal", "withinit"]:
     if not ignore_opt(d[opt]): cmd_options.extend(["-" + opt, str(d[opt])])
   return cmd_options
 
