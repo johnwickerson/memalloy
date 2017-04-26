@@ -76,8 +76,11 @@ def add_common_args(parser):
 
 def add_setup_result_dir_args(parser):
   add_common_args(parser)
+  default_result_dir = os.path.join(MEMALLOY_ROOT_DIR, "results")
+  if not os.path.exists(default_result_dir):
+    os.makedirs(default_result_dir)
   parser.add_argument("-base_result_dir", type=is_existing_dir,
-                      default=os.path.join(MEMALLOY_ROOT_DIR, "results"),
+                      default=default_result_dir,
                       help="Results will be placed in base_result_dir/<stamp>")
   parser.add_argument("-arch_dir", type=is_existing_dir,
                       default=os.path.join(MEMALLOY_ROOT_DIR, "archs"),
