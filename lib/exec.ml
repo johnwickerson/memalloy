@@ -23,19 +23,20 @@ OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION
 WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 *)
 
-(** Datatype for representing executions *)
+(** Representation of executions based on series-parallel orders *)
 
 open Format
 open General_purpose
 	  
-(** An execution is a list of named event sets and a list of named event relations *)
+(** An execution is a series-parallel order called [sb], a list of named event sets called [sets], and a list of named event relations called [rels]. Well-formedness rules: [sets] is ordered alphabetically by the names of the event sets; [rels] is ordered alphabetically by the names of the event relations; each set in [sets] is ordered by event-identifier in ascending order; each relation in [rels] is ordered lexicographically by event-identifier. *)
 type t = {
+    sb: unit Spo.t;
     sets : (string * Event.t MySet.t) MySet.t;
     rels : (string * Event.t Rel.t) MySet.t;
   }
 
 (** Basic pretty-printing of executions *)
-let pp_exec oc exec =
+let pp oc exec =
   let pp_set (name,tuples) =
     fprintf oc "Set: %s={%a}\n" name
 	    (MyList.pp_gen "," Event.pp) tuples
@@ -45,11 +46,13 @@ let pp_exec oc exec =
 	    (MyList.pp_gen "," (fparen (Pair.pp Event.pp "," Event.pp)))
 	    tuples
   in
+  Spo.pp (fun oc (n,_) -> fprintf oc "%d" n) oc exec.sb;
+  fprintf oc "\n";
   List.iter pp_set exec.sets;
   List.iter pp_rel exec.rels
 
 (** The empty execution *)
-let empty_exec = { sets = []; rels = [] }
+let empty = { sb = Spo.Br []; sets = []; rels = [] }
 
 (** {2 Setters and getters } *)
 
@@ -71,6 +74,117 @@ let update_rel x (r_name, r) =
 let update_set x (s_name, s) =
   { x with sets = (s_name, s) :: (Assoc.remove_assocs [s_name] x.sets) }
 
+(** Apply [f] to every event in every set of execution [x] *)
+let map_sets f x =
+  List.map (fun (s_name,s) -> s_name, List.map f s) x.sets
+
+(** Apply [f] to both events in every pair in every relation of execution [x] *)
+let map_rels f x =
+  List.map (fun (r_name,r) ->
+      r_name, List.map (fun (e1,e2) -> f e1, f e2) r
+    ) x.rels
+  
+(** If the list of events [es] comprises a single event, [mk_spo sb es] returns a basic component containing just that event. Otherwise, [mk_spo sb es] partitions the events in [es] into a sequence of components, such that whenever two events are in consecutive components, they are ordered by [sb]. *)
+let rec mk_spo sb = function
+  | [] -> assert false
+  | [e] -> Spo.Lf e
+  | es ->
+     (* printf "mk_spo with sb=%a and es=%a.\n"
+       (Rel.pp pp_str) sb (MyList.pp pp_str) es; *)
+     let map = Rel.partition true sb es in
+     let classes = Assoc.val_list (Assoc.invert_map map) in
+     let compare es es' =
+       if MyList.exists_pair (fun e e' -> List.mem (e,e') sb) es es'
+       then -1 else 1
+     in
+     let classes = List.sort compare classes in
+     Spo.Br (List.map (mk_pso sb) classes)
+
+(** [mk_pso sb es] partitions the events in [es] into a list of components, such that whenever two events are in different components, they are unrelated (in either direction) by [sb]. The list is sorted by the number of events in the components, in ascending order. *)
+and mk_pso sb es =
+  (* printf "mk_pso with sb=%a and es=%a.\n"
+    (Rel.pp pp_str) sb (MyList.pp pp_str) es; *)
+  let map = Rel.partition false sb es in
+  let classes = Assoc.val_list (Assoc.invert_map map) in
+  let compare es es' = compare (List.length es) (List.length es') in
+  let classes = List.sort compare classes in
+  List.map (mk_spo sb) classes
+    
+(** [sort_fields x] processes the execution [x] to ensure that all fields are ordered alphabetically, all sets are ordered by event-identifiers, and all relations are ordered lexicographically by event-identifiers *)
+let sort_fields x =
+  let cmp_names (name1, _) (name2, _) = compare name1 name2 in 
+  let sets = List.sort cmp_names x.sets in
+  let rels = List.sort cmp_names x.rels in
+  let cmp_evt_pairs (e1,e2) (e3,e4) =
+    let first = compare e1 e3 in
+    if first = 0 then compare e2 e4 else first
+  in
+  let sort_set (name,s) = (name, List.sort compare s) in
+  let sets = List.map sort_set sets in
+  let sort_rel (name,r) = (name, List.sort cmp_evt_pairs r) in
+  let rels = List.map sort_rel rels in
+  { x with sets=sets; rels=rels }
+  
+(** Convert an execution graph into an ordered execution, and also return the renaming function on event names *)
+let mk_exec' x =
+  let sb_rel = List.assoc "sb" x.Exec_graph.exec_rels in
+  let sthd = List.assoc "sthd" x.Exec_graph.exec_rels in
+  let es = List.assoc "ev" x.Exec_graph.exec_sets in
+  let iws = List.assoc "IW" x.Exec_graph.exec_sets in
+  let nI = MySet.diff es iws in
+  let thd_map = Rel.partition true sthd nI in
+  let thd_classes = Assoc.val_list (Assoc.invert_map thd_map) in
+  let cmp_thds t t' = compare (List.length t) (List.length t') in
+  let thd_classes = List.sort cmp_thds thd_classes in
+  printf "thd_classes = %a.\n"
+    (MyList.pp (MyList.pp pp_str)) thd_classes;
+  let spo = Spo.Br (List.map (mk_pso sb_rel) thd_classes) in
+  let rename = Spo.mk_rename spo in
+  let sb = Spo.map (fun _ -> ()) spo in
+  let rename_fn e = List.assoc e rename in
+  let sets = Exec_graph.map_exec_sets rename_fn x in
+  let rels = Exec_graph.map_exec_rels rename_fn x in
+  let x = { sb ; sets ; rels } in
+  sort_fields x, rename_fn
+  
+(** Convert an execution graph into an ordered execution *)
+let mk_exec xg =
+  let x,_ = mk_exec' xg in x
+
+(** Convert a pair of execution graphs into a pair of ordered executions *)
+let mk_exec_pair (xg,yg,pi) =
+  let x,rename1 = mk_exec' xg in
+  let y,rename2 = mk_exec' yg in
+  let pi = List.map (fun (e1,e2) -> (rename1 e1, rename2 e2)) pi in
+  x,y,pi
+
+
+  
+(** [subexec_concrete x y] holds iff [x] is a sub-execution of [y] *)
+let subexec_concrete x y =
+  let matches (name1,elems1) (name2,elems2) =
+    (name1 = name2) && (elems1 = elems2)
+  in
+  let sets_match = List.for_all2 matches x.sets y.sets in
+  let rels_match = List.for_all2 matches x.rels y.rels in
+  sets_match && rels_match
+  
+let exec_perms x =
+  let mk_exec_perm sb =
+    let rename = Spo.mk_rename sb in
+    let sb = Spo.map (fun _ -> ()) sb in
+    let rename_fn e = List.assoc e rename in
+    let sets = map_sets rename_fn x in
+    let rels = map_rels rename_fn x in
+    sort_fields { sb ; sets ; rels }
+  in
+  List.map mk_exec_perm (Spo.sorted_perms (Spo.add_numbers x.sb))
+  
+(** [subexec x y] holds iff [x] is a sub-execution of [y] or one of its permutations *)
+let subexec x y =
+  List.exists (subexec_concrete x) (exec_perms y)
+
+  (*
 (** {2 Removing redundant edges and event-labels } *)
     
 (** [remove_transitive r_name x] returns an execution that is the same as [x] but the relation named [r_name] has been replaced with its intransitive core *)
@@ -193,3 +307,23 @@ let rectify_maps (x,xmaps) (y,ymaps) pi =
   printf "Permuting locations!\n";
   let loc_map = List.fold_left (fix xmaps.loc_map) ymaps.loc_map yev in
   { ymaps with thd_map = thd_map; loc_map = loc_map }
+   *)
+
+(*
+    open Format;;
+    #mod_use "lib/general_purpose.ml";;
+    #mod_use "lib/myList.ml";;
+    #mod_use "lib/mySet.ml";;
+    #mod_use "lib/pair.ml";;
+    #mod_use "lib/event.ml";;
+    #mod_use "lib/rel.ml";;
+    #mod_use "lib/spo.ml";;
+    #mod_use "lib/assoc.ml";;
+    #mod_use "lib/exec_graph.ml";;
+    #use "lib/exec.ml"
+
+let x1 = {sb = Spo.Br[ [ Spo.Lf (); Spo.Lf () ]; [ Spo.Lf (); Spo.Lf () ] ]; sets = []; rels = [ ("rf", [(0,1)]) ] }
+
+
+
+*)

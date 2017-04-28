@@ -101,48 +101,48 @@ and partition_par sb = function
      let classes = Assoc.val_list (Assoc.invert_map map) in
      Unseq (List.map (partition_seq sb) classes)
 
-  let litmus_of_execution' x maps =
-    let x = tidy_exec x in
-    let locs = Assoc.key_list (Assoc.invert_map maps.loc_map) in
-    let inv_thd_map = Assoc.invert_map maps.thd_map in
-    let inv_thd_map =
-      List.sort (fun (k,_) (k',_) -> compare k k') inv_thd_map
-    in
-    let thd_classes = Assoc.val_list inv_thd_map in
-    let sb = get_rel x "sb" in
-    let thds = List.map (partition_seq sb) thd_classes in
-    let reg_evts = MySet.diff (get_set x "R") (get_set x "W") in
-    let mk_reg_map (i,res) e =
-      let thd = Assoc.strong_assoc maps.thd_map e in
-      (i+1, (e,(thd,i))::res)
-    in
-    let reg_map_thd reg_map thd =
-      let evts = MySet.inter reg_evts thd in
-      snd (List.fold_left mk_reg_map (0,reg_map) evts)
-    in
-    let reg_map = List.fold_left reg_map_thd [] thd_classes in
-    let thds = List.map (map_component (mk_instr x maps reg_map)) thds in
-    let find_reg_val e =
-      try
-	let e', _ = List.find (fun (_,e') -> e'=e) (get_rel x "rf") in
-	Assoc.strong_assoc maps.wval_map e'
+let litmus_of_execution' x maps =
+  let x = tidy_exec x in
+  let locs = Assoc.key_list (Assoc.invert_map maps.loc_map) in
+  let inv_thd_map = Assoc.invert_map maps.thd_map in
+  let inv_thd_map =
+    List.sort (fun (k,_) (k',_) -> compare k k') inv_thd_map
+  in
+  let thd_classes = Assoc.val_list inv_thd_map in
+  let sb = get_rel x "sb" in
+  let thds = List.map (partition_seq sb) thd_classes in
+  let reg_evts = MySet.diff (get_set x "R") (get_set x "W") in
+  let mk_reg_map (i,res) e =
+    let thd = Assoc.strong_assoc maps.thd_map e in
+    (i+1, (e,(thd,i))::res)
+  in
+  let reg_map_thd reg_map thd =
+    let evts = MySet.inter reg_evts thd in
+    snd (List.fold_left mk_reg_map (0,reg_map) evts)
+  in
+  let reg_map = List.fold_left reg_map_thd [] thd_classes in
+  let thds = List.map (map_component (mk_instr x maps reg_map)) thds in
+  let find_reg_val e =
+    try
+      let e', _ = List.find (fun (_,e') -> e'=e) (get_rel x "rf") in
+      Assoc.strong_assoc maps.wval_map e'
+    with Not_found -> 0
+  in
+  let find_reg e = Reg (Assoc.strong_assoc reg_map e) in
+  let reg_post =
+    List.map (fun e -> (find_reg e, find_reg_val e)) (get_set x "R")
+  in
+  let final_wval (l,es) =
+    let ws = MySet.inter (get_set x "W") es in
+    let co_after e e' = List.mem (e,e') (get_rel x "co") in
+    let co_maximal e = not (List.exists (co_after e) ws) in
+    let wval =
+      try Assoc.strong_assoc maps.wval_map (List.find co_maximal ws)
       with Not_found -> 0
-    in
-    let find_reg e = Reg (Assoc.strong_assoc reg_map e) in
-    let reg_post =
-      List.map (fun e -> (find_reg e, find_reg_val e)) (get_set x "R")
-    in
-    let final_wval (l,es) =
-      let ws = MySet.inter (get_set x "W") es in
-      let co_after e e' = List.mem (e,e') (get_rel x "co") in
-      let co_maximal e = not (List.exists (co_after e) ws) in
-      let wval =
-	try Assoc.strong_assoc maps.wval_map (List.find co_maximal ws)
-	with Not_found -> 0
-      in (Loc l, wval)
-    in
-    let loc_post = List.map final_wval (Assoc.invert_map maps.loc_map) in
-    {locs = locs; thds = thds; post = reg_post @ loc_post}
+    in (Loc l, wval)
+  in
+  let loc_post = List.map final_wval (Assoc.invert_map maps.loc_map) in
+  {locs = locs; thds = thds; post = reg_post @ loc_post}
     
 let litmus_of_execution x =
   let maps = resolve_exec x in

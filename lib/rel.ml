@@ -64,3 +64,7 @@ let partition invert r es =
     with Not_found -> (i+1, (e,i)::map)
   in
   snd (List.fold_left partition_helper (0, []) es)
+
+let pp pp_el oc r =
+  let pp_pair oc (x,y) = fprintf oc "(%a,%a)" pp_el x pp_el y in
+  fprintf oc "{%a}" (MyList.pp_gen ", " pp_pair) r

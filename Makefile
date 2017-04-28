@@ -2,10 +2,18 @@ ifndef MEMALLOY_ROOT_DIR
 $(error Please run 'source configure.sh')
 endif
 
-install:
-	make -C src
+.PHONY: all quickbuild fullbuild clean fullclean quicktest moretests slowtests
+
+#BINARIES = gen cat2als pp_comparator xml2soln
+BINARIES = xml2soln
+
+quickbuild:
+	$(foreach DIR,$(BINARIES),make -C $(DIR);)
+
+fullbuild:
 	git submodule update --init --recursive
 	make -C alloystar
+	make quickbuild
 
 quicktest: 
 	@ tests/Q2_c11_lidbury_partial.sh
@@ -39,6 +47,9 @@ slowtests:
 	tests/Q2_ptx.sh
 
 clean:
-	python util/rm_als.py
+	python etc/rm_als.py
 	rm -f comparator.als
-	make -C src clean
+	$(foreach DIR,$(BINARIES),make -C $(DIR) clean;)
+
+fullclean: clean
+	make -C alloystar clean

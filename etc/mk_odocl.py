@@ -1,9 +1,6 @@
-#!/usr/bin/env python
-# -*- coding: utf-8 -*-
-
 # MIT License
 # 
-# Copyright (c) 2017 by Nathan Chong and John Wickerson
+# Copyright (c) 2017 by John Wickerson
 # 
 # Permission is hereby granted, free of charge, to any person obtaining
 # a copy of this software and associated documentation files (the
@@ -24,31 +21,18 @@
 # OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION
 # WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
-import argparse
 import os
-import sys
-import subprocess
 
-def main(args):
-  if not os.path.exists(args.comparator_script):
-    parser.error("ERROR: could not find [%s]" % args.comparator_script)
-  comparator_script = os.path.abspath(args.comparator_script)
-  if not os.path.isdir(args.xml_result_dir):
-    parser.error("ERROR: output dir [%s] not found" % args.xml_result_dir)
-  xml_result_dir = os.path.abspath(args.xml_result_dir)
-  prevdir = os.getcwd()
-  os.chdir(args.alloystar_dir)
-  os.environ['SOLVER'] = args.solver
-  alloy_cmd = "./runalloy_%s.sh" % ("iter" if args.iter else "once")
-  cmd = [alloy_cmd, comparator_script, "0", xml_result_dir]
-  if args.verbose:
-    print " ". join(cmd)
-  code = subprocess.call(cmd)
-  os.chdir(prevdir)
-  return code
+for f in os.listdir('.'):
+    if f.endswith(".ml"):
+        f = os.path.splitext(f)[0] # remove extension
+        f = f[0].upper() + f[1:] # capitalise first letter
+        print f
 
-if __name__ == '__main__':
-  parser = argparse.ArgumentParser(description="Invoke Alloy on comparator script")
-  argparsing.add_run_alloy_args(parser)
-  args = parser.parse_args(sys.argv[1:])
-  sys.exit(main(args))
+if os.path.exists('./lib'):
+    for f in os.listdir('./lib'):
+        if f.endswith(".ml"):
+            f = os.path.splitext(f)[0] # remove extension
+            f = f[0].upper() + f[1:] # capitalise first letter
+            print "lib/" + f
+    

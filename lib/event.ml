@@ -28,8 +28,22 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 open Format
 open General_purpose
 
-type t = string
-	   
+   (*
+(** An event is a list of integers. The first integer is the thread id. The second is the sequencing order within that thread. The third identifies the event within the set of events sequenced together, and so on. *)
+type t = int list
+
+(** Pretty-print an event. For instance, [[0;1;1;2]] becomes ["0B1C"] *)
+let rec pp oc e = Spo.pp_spi oc e
+    *)
+
+       (** An event is just an integer *)
+type t = int
+       
+let pp oc e = fprintf oc "e%d" e
+           
+       (*
 (** Remove dollar signs from event names *)
 let pp oc e =
   fprintf oc "%s" (Str.global_replace (Str.regexp_string "$") "" e)
+        *)
+           

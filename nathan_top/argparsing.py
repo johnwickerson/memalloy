@@ -35,7 +35,8 @@ def check_dependencies():
   if not distutils.spawn.find_executable("dot"):
     raise Exception("Need to have dot for converting executions into images")
 check_dependencies()
-TOOL_PATH=os.path.join(MEMALLOY_ROOT_DIR, "top")
+#TOOL_PATH=os.path.join(MEMALLOY_ROOT_DIR, "top")
+TOOL_PATH=MEMALLOY_ROOT_DIR
 
 SOLVERS = ["sat4j", "cryptominisat", "glucose",
            "plingeling", "lingeling", "minisatprover", "minisat"]

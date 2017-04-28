@@ -74,7 +74,10 @@ let get_args () =
 
 let check_args (xml_path, out_path, out_type) =
   assert (Filename.check_suffix xml_path ".xml")
-		  
+
+
+    
+  (*
 let main () =
   let xml_path, out_path, out_type, arch = get_args () in
   check_args (xml_path, out_path, out_type);
@@ -98,7 +101,7 @@ let main () =
        assert (Filename.check_suffix out_path ".als");
        begin
 	 match exec with
-	 | Xml_input.Single x ->      
+	 | Xml_input.Single x ->
 	    fprintf fmtr "%a\n" Alsbackend.als_of_execution x
 	 | Xml_input.Double (x,y,pi) ->
 	    fprintf fmtr "%a\n" Alsbackend.als_of_execution x;
@@ -140,5 +143,6 @@ let main () =
   end;
   close_out oc;
   exit 0
-	    
-    let _ = main ()     
+  
+let _ = main ()    
+        *)

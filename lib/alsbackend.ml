@@ -23,45 +23,35 @@ OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION
 WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 *)
 
-(** Extension to the List module *)
+(** Converting an execution into an Alloy predicate *)
 
 open Format
-open List
 open General_purpose
-       
-let exists_pair f xs ys =
-  exists (fun x -> exists (f x) ys) xs
 
-let the = function
-  | [x] -> x
-  | _ -> raise Not_found
+(** Convert event set to Alloy constraint *)
+let als_of_set oc (name, es) =
+  fprintf oc "    X.%s = " name;
+  if es = [] then fprintf oc "none"
+  else MyList.pp_gen "+" Event.pp oc es;
+  fprintf oc "\n"
 
-let rec pp_gen s f oc = function
-  | [] -> ()
-  | [x] -> f oc x
-  | x :: xs -> f oc x; fprintf oc "%s" s; pp_gen s f oc xs
+(** Convert event pair to Alloy expression *)
+let als_of_pair oc (e,e') =
+  fprintf oc "(%a->%a)" Event.pp e Event.pp e'
 
-let pp f oc xs =
-  let rec pp = function
-    | [] -> ()
-    | [x] -> f oc x
-    | x :: xs -> f oc x; fprintf oc "; "; pp xs
-  in
-  fprintf oc "["; pp xs; fprintf oc "]"
-						 
-let mapi f xs =
-  let rec mapi n f = function
-    | [] -> []
-    | x::xs -> f n x :: mapi (n+1) f xs
-  in
-  mapi 0 f xs
+(** Convert event relation to Alloy constraint *)
+let als_of_rel oc (name, ees) =
+  fprintf oc "    X.%s = " name;
+  if ees = [] then fprintf oc "none->none"
+  else MyList.pp_gen "+" als_of_pair oc ees;
+  fprintf oc "\n"	  
 
-let iteri f xs =
-  let rec iteri n f = function
-    | [] -> ()
-    | x::xs -> f n x; iteri (n+1) f xs
-  in
-  iteri 0 f xs
-					     
-let max xs =
-  hd (rev (sort compare xs))
+(** Convert execution to Alloy predicate *)
+let als_of_execution oc x =
+  let ev = get_set x "ev" in
+  fprintf oc "pred hint[X:Exec] {\n";
+  fprintf oc "  some disj %a : E {\n" (MyList.pp_gen "," Event.pp) ev;
+  List.iter (als_of_set oc) x.sets;
+  List.iter (als_of_rel oc) x.rels;
+  fprintf oc "  }\n";
+  fprintf oc "}\n"

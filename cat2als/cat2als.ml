@@ -461,4 +461,4 @@ let main () =
   als_of_file interm_model unrolling_factor cat_path;
   exit 0
     
-let _ = main ()
+       (* let _ = main () *)

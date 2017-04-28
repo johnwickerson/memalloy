@@ -28,15 +28,10 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 open Format
 open General_purpose
 
-(** Either a single execution, or a pair of executions linked by some mapping relation *)
-type input_type =
-  | Single of Exec.t
-  | Double of Exec.t * Exec.t * Event.t Rel.t
-
 (** A field in an execution is either a set or a relation *)
 type field =
-  | Set of Event.t list
-  | Rel of (Event.t * Event.t) list				   
+  | Set of string list
+  | Rel of (string * string) list				   
     
 let parse_file xml_path =
   let alloy_soln = Xml.parse_file xml_path in
@@ -114,18 +109,18 @@ let parse_file xml_path =
     let field_name = simp_label_of field_node in
     match mk_field xo field_node with
     | Set tuples ->
-       let sets = Assoc.add_assocs exec.Exec.sets (field_name,tuples) in
-       { exec with Exec.sets = sets }
+       let sets = Assoc.add_assocs exec.Exec_graph.exec_sets (field_name,tuples) in
+       { exec with Exec_graph.exec_sets = sets }
     | Rel tuples ->
-       let rels = Assoc.add_assocs exec.Exec.rels (field_name,tuples) in
-       { exec with Exec.rels = rels }
+       let rels = Assoc.add_assocs exec.Exec_graph.exec_rels (field_name,tuples) in
+       { exec with Exec_graph.exec_rels = rels }
   in
   let x1 =
     match find_exec "$gp_X" with
     | None -> failwith "Could not find execution 'X'"
     | Some x1 -> x1
   in
-  let exec1 = Exec.empty_exec in
+  let exec1 = Exec_graph.empty in
   let exec1 = List.fold_left (add_field (Some x1)) exec1 fieldnodes in
   let is_primed e = MyStr.endswith (label_of e) "&apos;" in
   let reserved_rels = ["$gp_map"; "$gp_X"; "$gp_Y"; "$consistent_s"] in
@@ -135,12 +130,14 @@ let parse_file xml_path =
   let extra_rels2 = List.filter is_primed skolem_nodes in
   let exec1 = List.fold_left (add_field None) exec1 extra_rels1 in
   match find_exec "$gp_Y" with
-  | None -> Single exec1
+  | None -> Soln.Single (Exec.mk_exec exec1)
   | Some x2 ->
-     let exec2 = Exec.empty_exec in
+     let exec2 = Exec_graph.empty in
      let exec2 = List.fold_left (add_field (Some x2)) exec2 fieldnodes in
      let exec2 = List.fold_left (add_field None) exec2 extra_rels2 in
      let pi_node = List.find (label_is "$gp_map") skolem_nodes in
      match mk_field None pi_node with
-     | Rel pi -> Double (exec1, exec2, pi)
+     | Rel pi ->
+        let exec1,exec2,pi = Exec.mk_exec_pair (exec1, exec2, pi) in
+        Soln.Double (exec1,exec2,pi)
      | _ -> failwith "Ill-formed 'map' relation"
