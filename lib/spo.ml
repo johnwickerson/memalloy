@@ -77,13 +77,17 @@ let mk_rename o =
 let pp pp_Lf oc spo =
   let rec pp n = function
     | Lf x -> pp_Lf oc (n,x); n+1
-    | Br oss -> pp_par n oss 
+    | Br oss ->
+       fprintf oc "Br [";
+       let n = pp_par n oss in
+       fprintf oc "]";
+       n
   and pp_par n = function
     | [] -> n
     | os::oss ->
-       fprintf oc "(";
+       fprintf oc "[";
        let n = pp_seq n os in
-       fprintf oc ")";
+       fprintf oc "]";
        if oss=[] then n else (
          fprintf oc " + ";
          pp_par n oss
@@ -91,9 +95,9 @@ let pp pp_Lf oc spo =
   and pp_seq n = function
     | [] -> n
     | o::os ->
-       fprintf oc "(";
+       (* fprintf oc "["; *)
        let n = pp n o in
-       fprintf oc ")";
+       (* fprintf oc "]"; *)
        if os=[] then n else (
          fprintf oc "; ";
          pp_seq n os

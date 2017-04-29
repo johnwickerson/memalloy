@@ -38,15 +38,16 @@ type t = {
 (** Basic pretty-printing of executions *)
 let pp oc exec =
   let pp_set (name,tuples) =
-    fprintf oc "Set: %s={%a}\n" name
+    fprintf oc "set %s={%a}\n" name
 	    (MyList.pp_gen "," Event.pp) tuples
   in
   let pp_rel (name,tuples) =
-    fprintf oc "Rel: %s={%a}\n" name
+    fprintf oc "rln %s={%a}\n" name
 	    (MyList.pp_gen "," (fparen (Pair.pp Event.pp "," Event.pp)))
 	    tuples
   in
-  Spo.pp (fun oc (n,_) -> fprintf oc "%d" n) oc exec.sb;
+  fprintf oc "spo = ";
+  Spo.pp (fun oc (n,_) -> fprintf oc "e%d" n) oc exec.sb;
   fprintf oc "\n";
   List.iter pp_set exec.sets;
   List.iter pp_rel exec.rels
@@ -136,8 +137,8 @@ let mk_exec' x =
   let thd_classes = Assoc.val_list (Assoc.invert_map thd_map) in
   let cmp_thds t t' = compare (List.length t) (List.length t') in
   let thd_classes = List.sort cmp_thds thd_classes in
-  printf "thd_classes = %a.\n"
-    (MyList.pp (MyList.pp pp_str)) thd_classes;
+  (*printf "thd_classes = %a.\n"
+    (MyList.pp (MyList.pp pp_str)) thd_classes;*)
   let spo = Spo.Br (List.map (mk_pso sb_rel) thd_classes) in
   let rename = Spo.mk_rename spo in
   let sb = Spo.map (fun _ -> ()) spo in

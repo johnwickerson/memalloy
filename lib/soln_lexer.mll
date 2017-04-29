@@ -1,7 +1,7 @@
 (*
 MIT License
 
-Copyright (c) 2017 by John Wickerson and Tyler Sorensen.
+Copyright (c) 2017 by John Wickerson.
 
 Permission is hereby granted, free of charge, to any person obtaining
 a copy of this software and associated documentation files (the
@@ -23,34 +23,39 @@ OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION
 WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 *)
 
-(** Representation of an Alloy solution *)
+{
+  open Soln_parser
+  
+  let check_keyword = function
+    | "Br" -> BR | "spo" -> SPO
+    | "set" -> SET | "rln" -> REL
+    | "X" -> X | "Y" -> Y | "pi" -> PI
+    | "Single" -> SINGLE | "Double" -> DOUBLE
+    | x -> VAR x
+}
 
-open Format
-open General_purpose
+let digit = ['0'-'9']
+let alpha = ['a'-'z' 'A'-'Z']
+let name  = alpha (alpha|digit|'_')*
 
-(** Either a single execution, or a pair of executions linked by some mapping relation *)
-type t =
-  | Single of Exec.t
-  | Double of Exec.t * Exec.t * Event.t Rel.t
+rule token = parse
+| [' ''\t'] { token lexbuf }
+| ['\n']    { token lexbuf }
+| '('   { LPAR }
+| ')'   { RPAR }
+| '['   { LBRAC }
+| ']'   { RBRAC }
+| '{'   { LBRACE }
+| '}'   { RBRACE }
+| '+'   { PLUS }
+| '='   { EQUAL }
+| ';'   { SEMI }
+| ','   { COMMA }
+| 'e' (['0'-'9']+ as n) { EVENT (int_of_string n) }
+| name as x { check_keyword x }
+| eof { EOF }
+| ""  { failwith "Lexing error." }
 
-let pp oc = function
-  | Single x ->
-     fprintf oc
-       "Single {\n\
-          X = {\n\
-            %a\
-          }\n\
-        }\n"
-       Exec.pp x
-  | Double (x,y,pi) ->
-     fprintf oc
-       "Double {\n\
-          X = {\n\
-            %a\
-          }\n\
-          Y = {\n\
-            %a\
-          }\n\
-          pi = %a\n\
-        }\n"
-       Exec.pp x Exec.pp y (Rel.pp Event.pp) pi
+{
+
+}
