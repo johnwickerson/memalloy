@@ -4,8 +4,8 @@ endif
 
 .PHONY: all quickbuild fullbuild clean fullclean quicktest moretests slowtests
 
-#BINARIES = gen cat2als pp_comparator xml2soln
-BINARIES = xml2soln compare_solns
+#BINARIES = gen cat2als pp_comparator xml2soln compare_solns
+BINARIES = cat2als pp_comparator
 
 quickbuild:
 	$(foreach DIR,$(BINARIES),make -C $(DIR) clean;)

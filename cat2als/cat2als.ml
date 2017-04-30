@@ -29,10 +29,8 @@ open Format
 open General_purpose
 open Cat_syntax
 
-(* Nasty global variables *)
 let verbose = ref false
 let cat_dir : string ref = ref "models"
-let out_dir : string ref = ref "."
 
 (** Parse the given .cat file into an abstract syntax tree *)
 let parse_file cat_path =
@@ -402,7 +400,7 @@ and als_of_file interm_model unrolling cat_path =
   in
   let als_path = sprintf "%s.als" model_name in
   if !verbose then printf "Converting %s to %s.\n" cat_path als_path;
-  let als_path = Filename.concat "models" als_path in
+  let als_path = Filename.concat !cat_dir als_path in
   let oc = open_out als_path in
   let ppf = formatter_of_out_channel oc in
   let model_type, withsc, cat_model = parse_file cat_path in
@@ -420,45 +418,41 @@ and als_of_file interm_model unrolling cat_path =
       postamble false arch axs ppf Deadness
     end;
   close_out oc
-	    
-
-	    	  
+	    	    	  
 (** {2 Processing command-line input} *)
 	       
 let get_args () =
   let cat_path : string ref = ref "" in
-  let unrolling_factor : int ref = ref 3 in
+  let default_unrolling = 3 in
+  let unrolling_factor : int ref = ref default_unrolling in
   let intermediate_model : bool ref = ref false in
   let speclist = [
       ("-u", Arg.Set_int unrolling_factor,
-       sprintf "Number of times to unroll recursive definitions (optional, default=%d)" !unrolling_factor);
+       sprintf "Number of times to unroll recursive definitions \
+                (optional, default=%d)" !unrolling_factor);
       ("-i", Arg.Set intermediate_model,
-       sprintf "Intermediate model; do not generate `consistent` predicate (optional, default=%b)" !intermediate_model);
-      ("-o", Arg.Set_string out_dir,
-       sprintf "Output directory (default=%s)" !out_dir);
-      ("-verbose", Arg.Set verbose, sprintf "default=%b" !verbose);
+       sprintf "Intermediate model; do not generate `consistent` \
+                predicate (optional, default=%b)" !intermediate_model);
+      ("-verbose", Arg.Set verbose,
+       sprintf "default=%b" !verbose);
     ]
   in
   let usage_msg =
-    "A translator from the .cat format into the .als (Alloy) format.\nUsage: `cat2als [options] <cat_file.cat>`.\nOptions available:"
+    "A translator from the .cat format into the .als (Alloy) format.\n\
+     Usage: `cat2als [options] <cat_file.cat>`.\nOptions available:"
   in
-  Arg.parse speclist (fun filename -> cat_path := filename) usage_msg;
-  begin match Sys.file_exists !cat_path with
-  | false -> failwith "Could not find cat file %s" !cat_path
-  | _ -> ()
-  end;
+  Arg.parse speclist (fun path -> cat_path := path) usage_msg;
+  if not (Sys.file_exists !cat_path) then
+    failwith "Could not find cat file %s" !cat_path;
   let dir = Filename.dirname !cat_path in
   let cat_file = Filename.basename !cat_path in
-  let _ = cat_dir := dir in
+  cat_dir := dir;
   cat_file, !unrolling_factor, !intermediate_model
-
-let check_args (cat_path, unrolling_factor, interm_model) =
-  assert (unrolling_factor >= 0)
 		  
 let main () =
   let cat_path, unrolling_factor, interm_model = get_args () in
-  check_args (cat_path, unrolling_factor, interm_model);
+  assert (unrolling_factor >= 0);
   als_of_file interm_model unrolling_factor cat_path;
   exit 0
     
-       (* let _ = main () *)
+let _ = main ()
