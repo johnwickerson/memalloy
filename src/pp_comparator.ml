@@ -88,11 +88,15 @@ let pp_open_modules succ_sig fail_sig oc =
   done
 
 let pp_extra_rels oc arch =
-  let extra_rels = Archs.arch_rels_min arch in
+  let extra_rels =
+    if !fencerels then Archs.arch_rels_min arch else []
+  in
   List.iter (fprintf oc ",%s") extra_rels
 
 let pp_extra_rels' oc arch =
-  let extra_rels = Archs.arch_rels_min arch in
+  let extra_rels =
+    if !fencerels then Archs.arch_rels_min arch else []
+  in
   List.iter (fprintf oc ",%s'") extra_rels
 
 let pp_extra_rels_minus j oc rels =
@@ -100,6 +104,7 @@ let pp_extra_rels_minus j oc rels =
     if i=j
     then fprintf oc ",%s - (e1 -> e2)" rel
     else fprintf oc ",%s" rel in
+  let rels = if !fencerels then rels else [] in
   MyList.iteri pp_rel rels
 
 let pp_extra_rels_with_type ev_sig oc arch =
@@ -107,7 +112,11 @@ let pp_extra_rels_with_type ev_sig oc arch =
     | [] -> fprintf oc ""
     | [rel] -> fprintf oc ",%s:%s->%s" rel ev_sig ev_sig
     | rel::rels -> fprintf oc ",%s" rel; pp_extra_rels_with_type rels
-  in pp_extra_rels_with_type (Archs.arch_rels_min arch)
+  in
+  let extra_rels =
+    if !fencerels then Archs.arch_rels_min arch else []
+  in
+  pp_extra_rels_with_type extra_rels
 
 let pp_extra_rels_with_type' ev_sig oc arch =
   let rec pp_extra_rels_with_type = function
@@ -118,7 +127,12 @@ let pp_extra_rels_with_type' ev_sig oc arch =
 			     
 let pp_all_events_used ev_sig oc =
   fprintf oc "  // Every event is a read, write or a fence\n";
-  fprintf oc "  %s in R[none,X,ad,cd,dd] + W[none,X,ad,cd,dd] + F[none,X,ad,cd,dd]\n\n" ev_sig
+  if !fencerels then
+    fprintf oc
+      "  %s in R[none,X,ad,cd,dd] + W[none,X,ad,cd,dd]\n\n" ev_sig
+  else
+    fprintf oc
+      "  %s in R[none,X] + W[none,X] + F[none,X]\n\n" ev_sig
 
 let pp_violated_models exec_sig oc =
   let pp_model i path =
@@ -192,19 +206,19 @@ let pp_hint_predicate oc = match !hint with
 
 (** [pp_comparator arch oc] generates an Alloy file (sent to [oc]) that can be used to find an execution of type [arch] that satisfies all the models in [!succ_paths] and violates all the models in [!fail_paths]. *)
 let pp_comparator arch oc =
-  if !description != "" then fprintf oc "/* %s */\n" !description;
+  if !description <> "" then fprintf oc "/* %s */\n" !description;
   pp_open_modules "E" "E" oc;
   fprintf oc "sig E {}\n\n";
   fprintf oc "pred gp [X:%a%a] {\n\n"
-	  Archs.pp_Arch arch
-	  (pp_extra_rels_with_type "E") arch;
+    Archs.pp_Arch arch
+    (pp_extra_rels_with_type "E") arch;
   pp_all_events_used "E" oc;
   if !withinit then
     fprintf oc "  withinit[X]\n\n"
   else
     fprintf oc "  withoutinit[X]\n\n";
   if !fencerels then fprintf oc "  wf_%a[X%a]\n\n"
-	  Archs.pp_Arch arch pp_extra_rels arch;
+	               Archs.pp_Arch arch pp_extra_rels arch;
   pp_violated_models "X" oc;
   pp_satisfied_models "X" oc;
   pp_also_satisfied_models "X" oc;
@@ -215,34 +229,35 @@ let pp_comparator arch oc =
       fun i path ->
       let arch = arch_of path in
       fprintf oc "    not(N%d/consistent[e,X%a])\n"
-	      (i+1) pp_extra_rels arch;
+	(i+1) pp_extra_rels arch;
       fprintf oc "    N%d/dead[e,X%a]\n"
-	      (i+1) pp_extra_rels arch
+	(i+1) pp_extra_rels arch
     ) !fail_paths;
   MyList.iteri (
       fun i path ->
       let arch = arch_of path in
       fprintf oc "    M%d/consistent[e,X%a]\n"
-	      (i+1) pp_extra_rels arch
+	(i+1) pp_extra_rels arch
     ) !succ_paths;
   fprintf oc "  })\n";
-  
-  let min_rels = Archs.arch_rels_min arch in
-  let pp_rel j rel =
-    fprintf oc "  not (some e1, e2 : X.ev {\n";
-    fprintf oc "    (e1 -> e2) in %s\n" rel;
-    if !fencerels then fprintf oc "    wf_%a[X%a]\n"
-	    Archs.pp_Arch arch (pp_extra_rels_minus j) min_rels;
-    MyList.iteri (
-	fun i path ->
-	let arch = arch_of path in
-	let min_rels = Archs.arch_rels_min arch in
-	fprintf oc "    not(N%d/consistent[none,X%a])\n" (i+1)
-		(pp_extra_rels_minus j) min_rels
-      ) !fail_paths;
-    fprintf oc "  })\n"
-  in
-  MyList.iteri pp_rel min_rels;
+  if !fencerels then (
+    let min_rels = Archs.arch_rels_min arch in
+    let pp_rel j rel =
+      fprintf oc "  not (some e1, e2 : X.ev {\n";
+      fprintf oc "    (e1 -> e2) in %s\n" rel;
+      if !fencerels then fprintf oc "    wf_%a[X%a]\n"
+	                   Archs.pp_Arch arch (pp_extra_rels_minus j) min_rels;
+      MyList.iteri (
+	  fun i path ->
+	  let arch = arch_of path in
+	  let min_rels = Archs.arch_rels_min arch in
+	  fprintf oc "    not(N%d/consistent[none,X%a])\n" (i+1)
+	    (pp_extra_rels_minus j) min_rels
+        ) !fail_paths;
+      fprintf oc "  })\n"
+    in
+    MyList.iteri pp_rel min_rels
+  );
   pp_min_classes "threads" "E" !min_thds "sthd" "ev - IW" oc;
   pp_max_classes "threads" "E" !max_thds "sthd" "ev - IW" oc;
   pp_min_classes "locations" "E" !min_locs "sloc" "R + W" oc;
@@ -255,7 +270,7 @@ let pp_comparator arch oc =
 let pp_comparator2 arch mapping_path arch2 oc =
   if !withinit then
     failwith "Initial writes not supported in compiler mappings";
-  if !description != "" then fprintf oc "/* %s */\n" !description;
+  if !description <> "" then fprintf oc "/* %s */\n" !description;
   pp_open_modules "HE" "SE" oc;
   let mapping = Filename.chop_extension mapping_path in
   fprintf oc "open %s[SE,HE] as mapping\n\n" mapping;

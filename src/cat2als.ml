@@ -255,20 +255,26 @@ let als_of_shape oc = function
   | IsEmpty -> fprintf oc "is_empty"
 
 let als_of_extra_rels oc rels =
-  List.iter (fprintf oc ",%s") rels
+  if !fencerels then List.iter (fprintf oc ",%s") rels
 
 let als_of_extra_rels_ oc rels =
-  List.iter (fprintf oc ",%s_") rels
+  if !fencerels then List.iter (fprintf oc ",%s_") rels
 
-let rec als_args_of_extra_rels oc = function
-  | [] -> fprintf oc ""
-  | [rel] -> fprintf oc ",%s:E->E" rel
-  | rel::rels -> fprintf oc ",%s" rel; als_args_of_extra_rels oc rels
+let rec als_args_of_extra_rels oc rels =
+  if !fencerels then 
+    match rels with
+    | [] -> fprintf oc ""
+    | [rel] -> fprintf oc ",%s:E->E" rel
+    | rel::rels ->
+       fprintf oc ",%s" rel; als_args_of_extra_rels oc rels
 
-let rec als_args_of_extra_rels_ oc = function
-  | [] -> fprintf oc ""
-  | [rel] -> fprintf oc ",%s_:E->E" rel
-  | rel::rels -> fprintf oc ",%s_" rel; als_args_of_extra_rels_ oc rels
+let rec als_args_of_extra_rels_ oc rels =
+  if !fencerels then
+    match rels with
+    | [] -> fprintf oc ""
+    | [rel] -> fprintf oc ",%s_:E->E" rel
+    | rel::rels ->
+       fprintf oc ",%s_" rel; als_args_of_extra_rels_ oc rels
 
 (** Cat expression to Alloy expression *)
 let als_of_expr defs oc e =

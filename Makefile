@@ -6,11 +6,17 @@ endif
 
 rebuild:
 	make -C src
+	make comparator
 
 install:
 	git submodule update --init --recursive
 	make -C alloystar
 	make rebuild
+
+comparator:
+	rm -f $@
+	echo '#!/bin/sh\npython top/comparator.py "$$@"' > $@
+	chmod +x $@
 
 quicktest: 
 	@ tests/Q2_c11_lidbury_partial.sh
@@ -45,6 +51,6 @@ slowtests:
 
 clean:
 	python etc/rm_als.py
-	rm -f comparator.als
 	make -C src clean
 	rm -f top/*.pyc
+	rm -f comparator
