@@ -13,12 +13,15 @@ UNUSED_VAR = @20@26@27@32..39
 OCB_OPTS := $(OCB_OPTS) -cflags -w,$(UNUSED_VAR)
 
 # Set title of documentation
-OCD_OPTS := -docflags -t,Memalloy
+DOCNAME := memalloy
+OCD_OPTS := -docflags -t,$(DOCNAME)
 # Set custom stylesheet
 OCD_OPTS := $(OCD_OPTS) -docflags -css-style,mystyle.css
 
 # copy binaries here
 DEST := ..
+
+DOCDIR := ../doc
 
 .PHONY: all clean gen comparator doc
 
@@ -31,11 +34,11 @@ $(BINARIES):
 	mv $@.native $(DEST)/$@
 
 doc:
-	python mk_odocl.py > comparator.odocl
-	ocamlbuild $(OCB_OPTS) $(OCD_OPTS) comparator.docdir/index.html
-	rm -rf ../doc && mv comparator.docdir ../doc
-	cp mystyle.css ../doc/
-	@ echo "HTML documentation is in ../doc/index.html."
+	python ../etc/mk_odocl.py > $(DOCNAME).odocl
+	ocamlbuild $(OCB_OPTS) $(OCD_OPTS) $(DOCNAME).docdir/index.html
+	rm -rf $(DOCDIR) && mv $(DOCNAME).docdir $(DOCDIR)
+	cp mystyle.css $(DOCDIR)
+	@ echo "HTML documentation is in $(DOCDIR)/index.html."
 
 clean:
 	ocamlbuild -clean
@@ -43,5 +46,5 @@ clean:
 	rm -f $(DEST)/gen
 	rm -f $(DEST)/cat2als
 	rm -f $(DEST)/pp_comparator
-	rm -f comparator.odocl
-	rm -rf ../doc
+	rm -f memalloy.odocl
+	rm -rf $(DOCDIR)

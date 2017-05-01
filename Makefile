@@ -2,10 +2,15 @@ ifndef MEMALLOY_ROOT_DIR
 $(error Please run 'source configure.sh')
 endif
 
-install:
+.PHONY: build install quicktest moretests slowtests clean
+
+rebuild:
 	make -C src
+
+install:
 	git submodule update --init --recursive
 	make -C alloystar
+	make rebuild
 
 quicktest: 
 	@ tests/Q2_c11_lidbury_partial.sh
