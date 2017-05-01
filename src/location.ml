@@ -25,8 +25,8 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
 (** Represents a memory location *)
 
-open Format
-open General_purpose
+open! Format
+open! General_purpose
        
 type t = int
 

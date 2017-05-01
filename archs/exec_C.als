@@ -43,7 +43,7 @@ fun acq[e:E, X:Exec_C] : set E { X.acq - e }
 fun rel[e:E, X:Exec_C] : set E { X.rel - e }
 fun sc[e:E, X:Exec_C] : set E { X.sc - e }
 
-pred wf_s[e:E, X:Exec_C] { 
+pred wf_s[e:E, X:Exec_C, s:E->E] { 
 
   // s is restricted to sc events
   s in sc[e,X] -> sc[e,X]

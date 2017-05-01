@@ -25,8 +25,8 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
 (** Representing and pretty-printing Graphviz graphs *)
 
-open Format
-open General_purpose
+open! Format
+open! General_purpose
 
 (** Graphviz attribute *)
 type gv_attr = string * string

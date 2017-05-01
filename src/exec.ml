@@ -25,8 +25,8 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
 (** Datatype for representing executions *)
 
-open Format
-open General_purpose
+open! Format
+open! General_purpose
 	  
 (** An execution is a list of named event sets and a list of named event relations *)
 type t = {

@@ -39,6 +39,7 @@ slowtests:
 	tests/Q2_ptx.sh
 
 clean:
-	python util/rm_als.py
+	python etc/rm_als.py
 	rm -f comparator.als
 	make -C src clean
+	rm -f top/*.pyc

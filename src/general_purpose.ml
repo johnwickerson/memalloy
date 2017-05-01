@@ -25,7 +25,7 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
 (** Some general-purpose definitions *)
 
-open Format
+open! Format
 
 (** Fails with an error message, given as a formatted string *)
 let failwith fmt =

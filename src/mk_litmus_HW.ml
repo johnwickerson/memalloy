@@ -25,8 +25,8 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
 (** Converting a generic litmus test into a hardware litmus test *)
 
-open Format
-open General_purpose
+open! Format
+open! General_purpose
 open Litmus
 
 (** [remove_Ifs r c] removes from the component [c] all if-statements that test the value of the register [r] *)

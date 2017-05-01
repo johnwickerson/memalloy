@@ -25,8 +25,8 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
 (** Relations (implemented as lists of pairs) *)
 
-open Format
-open General_purpose
+open! Format
+open! General_purpose
 
 type 'a t = ('a * 'a) list
 

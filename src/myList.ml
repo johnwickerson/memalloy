@@ -25,10 +25,10 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
 (** Extension to the List module *)
 
-open Format
+open! Format
+open! General_purpose
 open List
-open General_purpose
-       
+  
 let exists_pair f xs ys =
   exists (fun x -> exists (f x) ys) xs
 

@@ -25,8 +25,8 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
 (** The architectures supported by the tool *)
 
-open Format
-open General_purpose
+open! Format
+open! General_purpose
        
 type architecture =
   | Basic
@@ -51,17 +51,18 @@ let parent_arch = function
   | OCaml -> Some Basic
 
 (** Convert architecture to Alloy module name *)      
-let pp_arch oc = function
-  | Basic -> fprintf oc "../archs/exec"
-  | C -> fprintf oc "../archs/exec_C"
-  | Basic_HW -> fprintf oc "../archs/exec_H"
-  | X86 -> fprintf oc "../archs/exec_x86"
-  | Power -> fprintf oc "../archs/exec_ppc"
-  | Arm7 -> fprintf oc "../archs/exec_arm7"
-  | Arm8 -> fprintf oc "../archs/exec_arm8"
-  | PTX -> fprintf oc "../archs/exec_ptx"
-  | OpenCL -> fprintf oc "../archs/exec_OpenCL"
-  | OCaml -> fprintf oc "../archs/exec_OCaml"
+let pp_arch fences_as_relations oc arch =
+  let module_name = match arch with
+  | Basic -> "exec"         | C -> "exec_C"
+  | Basic_HW -> "exec_H"    | X86 -> "exec_x86"
+  | Power -> "exec_ppc"     | Arm7 -> "exec_arm7"
+  | Arm8 -> "exec_arm8"     | PTX -> "exec_ptx"
+  | OpenCL -> "exec_OpenCL" | OCaml -> "exec_OCaml"
+  in
+  if fences_as_relations then
+    fprintf oc "../archs/fences_as_relations/%s" module_name
+  else
+    fprintf oc "../archs/%s" module_name
 
 (** Convert architecture to Alloy signature name *)
 let pp_Arch oc = function

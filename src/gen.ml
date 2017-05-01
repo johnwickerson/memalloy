@@ -25,8 +25,8 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
 (** Command-line tool for processing executions and generating litmus tests *)
 
-open Format
-open General_purpose
+open! Format
+open! General_purpose
        
 type output_type = Dot | Als | Lit
        
@@ -71,13 +71,10 @@ let get_args () =
     | None -> Archs.Basic
   in
   xml_path, out_path, out_type, arch
-
-let check_args (xml_path, out_path, out_type) =
-  assert (Filename.check_suffix xml_path ".xml")
 		  
 let main () =
   let xml_path, out_path, out_type, arch = get_args () in
-  check_args (xml_path, out_path, out_type);
+  assert (Filename.check_suffix xml_path ".xml");
   let exec = Xml_input.parse_file xml_path in
   let oc = open_out out_path in
   let fmtr = formatter_of_out_channel oc in

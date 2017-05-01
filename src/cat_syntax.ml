@@ -25,8 +25,8 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
 (** Abstract syntax tree for a .cat model *)
 
-open Format
-open General_purpose
+open! Format
+open! General_purpose
        
 type access_type =
   | WriteRead
@@ -74,7 +74,7 @@ let rec pp_expr oc = function
   | Var x -> fprintf oc "%s" x
   | Arg x -> fprintf oc "%s" x
   | App (f,es) -> fprintf oc "%s(%a)" f pp_exprs es
-  | Op1 (o,e) -> fprintf oc "unop(%a)" pp_expr e
+  | Op1 (_,e) -> fprintf oc "unop(%a)" pp_expr e (* TODO *)
   | Op (Seq,es) -> fprintf oc "Seq(%a)" pp_exprs es
   | Op (Union,es) -> fprintf oc "Union(%a)" pp_exprs es
   | Op (Inter,es) -> fprintf oc "Inter(%a)" pp_exprs es

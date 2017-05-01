@@ -25,8 +25,8 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
 (** Converting an execution into an Alloy predicate *)
 
-open Format
-open General_purpose
+open! Format
+open! General_purpose
 open Exec
 
 (** Convert event set to Alloy constraint *)

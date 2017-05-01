@@ -25,8 +25,8 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
 (** Generating a litmus test from an execution *)
 
-open Format
-open General_purpose
+open! Format
+open! General_purpose
 open Exec
 open Litmus
 

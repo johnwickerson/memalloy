@@ -25,7 +25,7 @@
 # WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
 import argparse
-import argparsing
+#import argparsing
 import xml.etree.ElementTree as ET
 import os
 import shutil
@@ -199,8 +199,7 @@ def get_hash_from_instance(my_inst):
     different_maps = get_maps(different_orderings)
     exec_strings = get_exec_strings_from_maps(different_maps, my_inst)
     #pdb.set_trace()
-    hashed = sorted([str((hashlib.md5(x)).hexdigest()) for x in exec_strings])
-    
+    hashed = sorted([str((hashlib.md5(x)).hexdigest()) for x in exec_strings])   
     # Second hash to account for multiple possible hashes
     new_str = "+".join(hashed)
     return str(hashlib.md5(new_str).hexdigest())
@@ -224,7 +223,7 @@ def partition_file(fname):
 
     # Get the execution hash
     hash_str = get_hash_from_file(fname)
-
+    
     # The first one is unique
     if len(UNIQUE) == 0:        
         found_unique(fname, hash_str)
@@ -238,7 +237,7 @@ def partition_file(fname):
         if hash_str == hash_str_unique:
             shutil.move(fname, os.path.join(os.path.dirname(f)))
             return
-            
+
     found_unique(fname, hash_str)
     return
 
@@ -280,9 +279,9 @@ def main(args):
   except:
     return 1
 
-if __name__ == '__main__':
-  parser = argparse.ArgumentParser(description="Remove duplicates from xml results dir")
-  argparsing.add_remove_dups_args(parser, is_standalone=True)
-  args = parser.parse_args(sys.argv[1:])
-  args.events2 = 0
-  sys.exit(main(args))
+#if __name__ == '__main__':
+#  parser = argparse.ArgumentParser(description="Remove duplicates from xml results dir")
+#  argparsing.add_remove_dups_args(parser, is_standalone=True)
+#  args = parser.parse_args(sys.argv[1:])
+#  args.events2 = 0
+#  sys.exit(main(args))

@@ -25,8 +25,8 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
 (** Datatype for litmus tests *)
 
-open Format
-open General_purpose
+open! Format
+open! General_purpose
 
 type attribute = string
 

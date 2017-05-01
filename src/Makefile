@@ -8,6 +8,9 @@ OCB_OPTS := $(OCB_OPTS) -cflag -g
 OCB_OPTS := $(OCB_OPTS) -libs str,unix
 # OCaml packages
 OCB_OPTS := $(OCB_OPTS) -pkgs xml-light
+# Complain about unused variables
+UNUSED_VAR = @20@26@27@32..39
+OCB_OPTS := $(OCB_OPTS) -cflags -w,$(UNUSED_VAR)
 
 # Set title of documentation
 OCD_OPTS := -docflags -t,Memalloy
@@ -19,7 +22,7 @@ DEST := ..
 
 .PHONY: all clean gen comparator doc
 
-BINARIES = gen cat2als pp_comparator
+BINARIES = cat2als pp_comparator gen
 
 all: $(BINARIES) doc 
 

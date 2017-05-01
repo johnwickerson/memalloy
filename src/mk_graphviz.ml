@@ -25,8 +25,8 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
 (** Converting executions into Graphviz graphs *)
 
-open Format
-open General_purpose
+open! Format
+open! General_purpose
 open Exec
 open Graphviz
 

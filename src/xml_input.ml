@@ -25,8 +25,8 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
 (** Parsing one or two executions from an XML file *)
 
-open Format
-open General_purpose
+open! Format
+open! General_purpose
 
 (** Either a single execution, or a pair of executions linked by some mapping relation *)
 type input_type =

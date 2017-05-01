@@ -25,8 +25,8 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
 (** Printing a hardware litmus test as a PowerPC litmus test *)
 
-open Format
-open General_purpose
+open! Format
+open! General_purpose
 open Litmus_HW
 
 type fence = SYNC | LWSYNC | EIEIO | ISYNC

@@ -25,12 +25,13 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
 (** Converting a .cat model into an .als file *)
 
-open Format
-open General_purpose
+open! Format
+open! General_purpose
 open Cat_syntax
 
 (* Nasty global variables *)
 let verbose = ref false
+let fencerels = ref false
 let cat_dir : string ref = ref "models"
 let out_dir : string ref = ref "."
 
@@ -49,7 +50,7 @@ let add_subscript = sprintf "%s_%d"
 let rec sub_subscript xs d = function
   | Empty_rln -> Empty_rln
   | Var x -> Var (if List.mem x xs then add_subscript x d else x)
-  | Arg x -> failwith "Did not expect parameter within recursive def."
+  | Arg _ -> failwith "Did not expect parameter within recursive def."
   | App (f, es) -> App (f, List.map (sub_subscript xs d) es)
   | Op1 (o, e) -> Op1 (o, sub_subscript xs d e)
   | Op (o, es) -> Op (o, List.map (sub_subscript xs d) es)
@@ -149,7 +150,7 @@ and type_of env = function
       | _, _ ->
 	 failwith "Missing argument for %s." x
     end
-  | Arg x -> Rel (* assume arguments are relational *)
+  | Arg _ -> Rel (* assume arguments are relational *)
   | App (f, args) ->
      let args_type, ret_type = type_of_var env f in
      let num_formals = List.length args_type in
@@ -204,7 +205,7 @@ and type_instr env = function
      let arg_type = List.map (fun _ -> Rel) args in
      (x, (arg_type, def_type)) :: env
   | LetRec xes ->
-     (List.map (fun (x,e) -> (x, ([], Rel))) xes) @ env
+     (List.map (fun (x,_) -> (x, ([], Rel))) xes) @ env
   | Axiom _ -> env 
   | Include path -> type_file path @ env
 
@@ -317,7 +318,7 @@ let als_of_expr defs oc e =
 let rec replace_vars_with_args args = function
   | Empty_rln -> Empty_rln
   | Var x -> if List.mem x args then Arg x else Var x
-  | Arg x -> failwith "Did not expect an Arg here."
+  | Arg _ -> failwith "Did not expect an Arg here."
   | App (f,es) -> App (f, List.map (replace_vars_with_args args) es)
   | Op1 (o,e) -> Op1 (o, replace_vars_with_args args e)
   | Op (o,es) -> Op (o, List.map (replace_vars_with_args args) es)
@@ -336,7 +337,7 @@ let preamble cat_path model_name arch oc =
   fprintf oc "/* Automatically generated from %s on %s at %s */\n\n"
 	  cat_path (MyUnix.today ()) (MyUnix.now ());
   fprintf oc "module %s[E]\n" model_name;
-  fprintf oc "open %a[E]\n\n" Archs.pp_arch arch
+  fprintf oc "open %a[E]\n\n" (Archs.pp_arch !fencerels) arch
 	  
 (** Generates the final part of the Alloy file *)
 let postamble withsc arch axs oc c =
@@ -421,8 +422,6 @@ and als_of_file interm_model unrolling cat_path =
     end;
   close_out oc
 	    
-
-	    	  
 (** {2 Processing command-line input} *)
 	       
 let get_args () =
@@ -430,6 +429,8 @@ let get_args () =
   let unrolling_factor : int ref = ref 3 in
   let intermediate_model : bool ref = ref false in
   let speclist = [
+      ("-fencerels", Arg.Set fencerels,
+       "Encode fences as relations rather than events");
       ("-u", Arg.Set_int unrolling_factor,
        sprintf "Number of times to unroll recursive definitions (optional, default=%d)" !unrolling_factor);
       ("-i", Arg.Set intermediate_model,
@@ -451,13 +452,10 @@ let get_args () =
   let cat_file = Filename.basename !cat_path in
   let _ = cat_dir := dir in
   cat_file, !unrolling_factor, !intermediate_model
-
-let check_args (cat_path, unrolling_factor, interm_model) =
-  assert (unrolling_factor >= 0)
 		  
 let main () =
   let cat_path, unrolling_factor, interm_model = get_args () in
-  check_args (cat_path, unrolling_factor, interm_model);
+  assert (unrolling_factor >= 0);
   als_of_file interm_model unrolling_factor cat_path;
   exit 0
     
