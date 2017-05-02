@@ -109,49 +109,81 @@ let parse_arch = function
 let all =
   ["BASIC"; "C"; "HW"; "X86"; "PPC"; "ARM7"; "ARM8"; "PTX"; "OpenCL"; "OCaml"]
 
-(** Pre-defined event sets for given architecture *)
+(** Pre-defined event sets for given architecture (including fences) *)
 let rec arch_sets = function
   | Basic -> ["ev"; "W"; "R"; "F"; "naL"; "M"; "IW"]
   | C -> arch_sets Basic @ ["A"; "acq"; "rel"; "sc"]
   | Basic_HW -> arch_sets Basic
-  | X86 -> arch_sets Basic_HW @ ["locked"]
-  | Power -> arch_sets Basic_HW
-  | Arm7 -> arch_sets Basic_HW
+  | X86 -> arch_sets Basic_HW @ ["locked"; "mfence"]
+  | Power -> arch_sets Basic_HW @
+	       ["sync"; "lwsync"; "eieio"; "isync";
+		"SYNC"; "LWSYNC"; "EIEIO"; "ISYNC"]
+  | Arm7 -> arch_sets Basic_HW @
+	      ["dmb"; "DMB"; "DSB"; "DMBSY"; "dmbst"; "DMBST";
+	       "dmbld"; "DMBLD"; "isb"; "ISB"; "DSBST"]
   | Arm8 -> arch_sets Arm7 @ ["screl"; "scacq"]
-  | PTX -> arch_sets Basic_HW 
+  | PTX -> arch_sets Basic_HW @
+             ["membar_cta"; "membar_gl"; "membar_sys";
+	      "membarcta"; "membargl"; "membarsys"]
   | OpenCL -> arch_sets C @
 		["L"; "G"; "fga"; "rem"; "entry_fence";
 		 "exit_fence"; "wg"; "dv"; "sy"]
   | OCaml -> arch_sets Basic @ ["A"]
 
-let arch_sets_o = function
-  | None -> []
-  | Some arch -> arch_sets arch
+(** Pre-defined event sets for given architecture (excluding fences) *)
+let rec arch_sets_without_fences = function
+  | Basic -> ["ev"; "W"; "R"; "F"; "naL"; "M"; "IW"]
+  | C -> arch_sets_without_fences Basic @ ["A"; "acq"; "rel"; "sc"]
+  | Basic_HW -> arch_sets_without_fences Basic
+  | X86 -> arch_sets_without_fences Basic_HW @ ["locked"]
+  | Power -> arch_sets_without_fences Basic_HW
+  | Arm7 -> arch_sets_without_fences Basic_HW
+  | Arm8 -> arch_sets_without_fences Arm7 @ ["screl"; "scacq"]
+  | PTX -> arch_sets_without_fences Basic_HW 
+  | OpenCL -> arch_sets_without_fences C @
+		["L"; "G"; "fga"; "rem"; "entry_fence";
+		 "exit_fence"; "wg"; "dv"; "sy"]
+  | OCaml -> arch_sets_without_fences Basic @ ["A"]
 
-(** Pre-defined event relations for given architecture *)
+(** Pre-defined event relations for given architecture (excluding fences) *)
 let rec arch_rels = function
   | Basic -> ["ad"; "addr"; "cd"; "co"; "coe"; "coi"; "ctrl"; "data";
 	      "dd"; "ext"; "fr"; "fr_init"; "fre"; "fri"; "loc"; "po";
 	      "poloc"; "rf"; "rfe"; "rfi"; "sb"; "sloc"; "sthd"; "thd"]
   | C -> arch_rels Basic
   | Basic_HW -> arch_rels Basic @ ["atom"; "rmw"]
-  | X86 -> arch_rels Basic_HW @ ["mfence"]
-  | Power -> arch_rels Basic_HW @
-	       ["sync"; "lwsync"; "eieio"; "isync";
-		"SYNC"; "LWSYNC"; "EIEIO"; "ISYNC"]
-  | Arm7 -> arch_rels Basic_HW @
-	      ["dmb"; "DMB"; "DSB"; "DMBSY"; "dmbst"; "DMBST";
-	       "dmbld"; "DMBLD"; "isb"; "ISB"; "DSBST"]
+  | X86 -> arch_rels Basic_HW
+  | Power -> arch_rels Basic_HW
+  | Arm7 -> arch_rels Basic_HW
   | Arm8 -> arch_rels Arm7
-  | PTX -> arch_rels Basic_HW @
-	     ["scta"; "sgl"; "membar_cta"; "membar_gl"; "membar_sys";
-	      "membarcta"; "membargl"; "membarsys"]
+  | PTX -> arch_rels Basic_HW @ ["scta"; "sgl"]
   | OpenCL -> arch_rels C @ ["swg"; "sdv"; "sbar"]
   | OCaml -> arch_rels Basic
 
-let arch_rels_o = function
+(** Pre-defined event relations for given architecture (including fences) *)
+let rec arch_rels_with_fences = function
+  | Basic -> ["ad"; "addr"; "cd"; "co"; "coe"; "coi"; "ctrl"; "data";
+	      "dd"; "ext"; "fr"; "fr_init"; "fre"; "fri"; "loc"; "po";
+	      "poloc"; "rf"; "rfe"; "rfi"; "sb"; "sloc"; "sthd"; "thd"]
+  | C -> arch_rels_with_fences Basic
+  | Basic_HW -> arch_rels_with_fences Basic @ ["atom"; "rmw"]
+  | X86 -> arch_rels_with_fences Basic_HW @ ["mfence"]
+  | Power -> arch_rels_with_fences Basic_HW @
+	       ["sync"; "lwsync"; "eieio"; "isync";
+		"SYNC"; "LWSYNC"; "EIEIO"; "ISYNC"]
+  | Arm7 -> arch_rels_with_fences Basic_HW @
+	      ["dmb"; "DMB"; "DSB"; "DMBSY"; "dmbst"; "DMBST";
+	       "dmbld"; "DMBLD"; "isb"; "ISB"; "DSBST"]
+  | Arm8 -> arch_rels_with_fences Arm7
+  | PTX -> arch_rels_with_fences Basic_HW @
+	     ["scta"; "sgl"; "membar_cta"; "membar_gl"; "membar_sys";
+	      "membarcta"; "membargl"; "membarsys"]
+  | OpenCL -> arch_rels_with_fences C @ ["swg"; "sdv"; "sbar"]
+  | OCaml -> arch_rels_with_fences Basic
+
+let arch_rels_with_fences_o = function
   | None -> []
-  | Some arch -> arch_rels arch
+  | Some arch -> arch_rels_with_fences arch
 
 (** The pre-defined event relations that can be 'minimised'; that is, generated executions should not include an edge from one of these relations if the edge can be removed without making an inconsistent execution consistent. Make sure that [arch_rels_min arch] is a subset of [arch_rels arch]. *)
 let rec arch_rels_min = function

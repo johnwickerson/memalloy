@@ -15,5 +15,5 @@ sig Exec_X86 extends Exec_H {
   atom in (locked -> locked)
 }
 
-fun locked[e:E, X:Exec_X86, ad,cd,dd,mfence:E->E] : set E { X.locked - e }
-fun mfence[e:E, X:Exec_X86, ad,cd,dd,mfence_:E->E] : E->E { mfence_ - (univ -> e) - (e -> univ) }
+fun locked[e:E, X:Exec_X86] : set E { X.locked - e }
+fun mfence[e:E, X:Exec_X86] : set E { X.mfence - e }

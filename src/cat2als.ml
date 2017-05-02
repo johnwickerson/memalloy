@@ -97,11 +97,25 @@ type ax_info = {
 let rec mk_defs = function
   | None -> []
   | Some arch ->
+     let arch_rels =
+       if !fencerels then Archs.arch_rels_with_fences
+       else Archs.arch_rels
+     in
+     let arch_sets =
+       if !fencerels then Archs.arch_sets_without_fences
+       else Archs.arch_sets
+     in
      let parent = Archs.parent_arch arch in
-     let rels = Archs.arch_rels arch in
-     let rels = MySet.diff rels (Archs.arch_rels_o parent) in
-     let sets = Archs.arch_sets arch in
-     let sets = MySet.diff sets (Archs.arch_sets_o parent) in
+     let rels = arch_rels arch in
+     let rels_parent =
+       match parent with None -> [] | Some parent -> arch_rels parent
+     in
+     let rels = MySet.diff rels rels_parent in
+     let sets = arch_sets arch in
+     let sets_parent =
+       match parent with None -> [] | Some parent -> arch_sets parent
+     in
+     let sets = MySet.diff sets sets_parent in
      let extra_rels = Archs.arch_rels_min arch in
      let mk_def a = a, {withsc = false; extra_rels} in
      (List.map mk_def rels) @ (List.map mk_def sets) @ mk_defs parent
