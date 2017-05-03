@@ -1,9 +1,10 @@
+open ../archs/exec_OpenCL[SE] as SW
+open ../archs/exec_ptx[HE] as HW
+
 /*
 An OpenCL-to-PTX mapping
 */
 
-open ../archs/exec_OpenCL[SE] as SW
-open ../archs/exec_ptx[HE] as HW
 module opencl_ptx[SE,HE]
 
 fun mk_fence[e:SE, X:SW/Exec_OpenCL, X':HW/Exec_PTX] : HE -> HE

@@ -1,3 +1,7 @@
+open ../archs/exec_C[E]
+
+open strengthening[E]
+
 /*
 A C11-to-C11 mapping that allows:
 - sb edges to be introduced,
@@ -5,8 +9,6 @@ A C11-to-C11 mapping that allows:
 - dependencies to be introduced,
 */
 
-open ../archs/exec_C[E]
-open strengthening[E]
 module c11_strengthening_seq[E]
 
 pred apply_map_c11[X,X':Exec_C] { 

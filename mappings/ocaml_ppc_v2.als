@@ -1,9 +1,9 @@
+open ../archs/exec_OCaml[SE] as SW
+open ../archs/exec_ppc[HE] as HW
+
 /*
 An OCaml-to-Power mapping.
 */
-
-open ../archs/exec_OCaml[SE] as SW
-open ../archs/exec_ppc[HE] as HW
 
 module ocaml_ppc_v1[SE,HE]
 

@@ -1,10 +1,10 @@
+open ../archs/exec_C[SE] as SW
+open ../archs/exec_x86[HE] as HW
+
 /*
 A C11-to-x86 mapping that implements SC atomics using 
 atomic hardware events. 
 */
-
-open ../archs/exec_C[SE] as SW
-open ../archs/exec_x86[HE] as HW
 
 module c11_x86a[SE,HE]
 

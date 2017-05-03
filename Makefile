@@ -7,6 +7,8 @@ endif
 rebuild:
 	make -C src
 	make comparator
+	make mappings
+	
 
 install:
 	git submodule update --init --recursive
@@ -52,5 +54,6 @@ slowtests:
 clean:
 	python etc/rm_als.py
 	make -C src clean
+	make -C mappings clean
 	rm -f top/*.pyc
 	rm -f comparator

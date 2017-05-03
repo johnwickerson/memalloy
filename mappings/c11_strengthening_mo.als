@@ -1,9 +1,11 @@
+open ../archs/exec_C[E]
+
+open strengthening[E]
+
 /*
 A C11-to-C11 mapping that (only) allows memory orders to be strengthened.
 */
 
-open ../archs/exec_C[E]
-open strengthening[E]
 module c11_strengthening_mo[E]
 
 pred apply_map_c11[X,X':Exec_C] { 
