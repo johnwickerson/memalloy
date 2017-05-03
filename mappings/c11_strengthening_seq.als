@@ -9,19 +9,16 @@ open ../archs/exec_C[E]
 open strengthening[E]
 module c11_strengthening_seq[E]
 
-pred apply_map_c11[X, X' : Exec_C] { 
+pred apply_map_c11[X,X':Exec_C] { 
 
   apply_map[X,X']
-  // RMWs are not considered
-  //no (X.(R&W))
-  //no (X'.(R&W))
 
   // memory orders are kept the same
-  X.acq = X'.acq
-  X.rel = X'.rel
-  X.sc = X'.sc
+  X.ACQ = X'.ACQ
+  X.REL = X'.REL
+  X.SC = X'.SC
 
   // atomicity is preserved
-  X.A = X'.A
+  X.ATO = X'.ATO
 
 }

@@ -3,7 +3,7 @@ open exec_H[E]
 
 sig Exec_PTX extends Exec_H {
   scta, sgl : E->E, // same CTA, same global
-  membar_cta,membar_gl,membar_sys : set E // memory barriers
+  MEMBAR_CTA, MEMBAR_GL, MEMBAR_SYS : set E // memory barriers
 }{
 
   // scta and sgl are equivalence relations among all events
@@ -24,19 +24,18 @@ sig Exec_PTX extends Exec_H {
   no atom
     
   // A membar.sys implies a membar.gl, which implies a membar.cta
-  membar_sys in membar_gl
-  membar_gl in membar_cta
-  membar_cta in F
+  MEMBAR_SYS in MEMBAR_GL
+  MEMBAR_GL in MEMBAR_CTA
+  MEMBAR_CTA in F
     
 }
 
 fun scta[e:E, X:Exec_PTX] : E->E { X.scta - (univ -> e) - (e -> univ) }
 fun sgl[e:E, X:Exec_PTX] : E->E { X.sgl - (univ -> e) - (e -> univ) }
-fun membar_sys[e:E, X:Exec_PTX] : set E { X.membar_sys - e }
-fun membar_gl[e:E, X:Exec_PTX] : set E { X.membar_gl - e }
-fun membar_cta[e:E, X:Exec_PTX] : set E { X.membar_cta - e }
+fun MEMBAR_SYS[e:E, X:Exec_PTX] : set E { X.MEMBAR_SYS - e }
+fun MEMBAR_GL[e:E, X:Exec_PTX] : set E { X.MEMBAR_GL - e }
+fun MEMBAR_CTA[e:E, X:Exec_PTX] : set E { X.MEMBAR_CTA - e }
 
-// Synonyms
-fun membarsys[e:E, X:Exec_PTX] : set E { membar_sys[e,X] }
-fun membargl[e:E, X:Exec_PTX] : set E { membar_gl[e,X] }
-fun membarcta[e:E, X:Exec_PTX] : set E { membar_cta[e,X] }
+fun membar_sys[e:E, X:Exec_PTX] : E->E { addsb[e,X,MEMBAR_SYS[e,X]] }
+fun membar_gl[e:E, X:Exec_PTX] : E->E { addsb[e,X,MEMBAR_GL[e,X]] }
+fun membar_cta[e:E, X:Exec_PTX] : E->E { addsb[e,X,MEMBAR_CTA[e,X]] }

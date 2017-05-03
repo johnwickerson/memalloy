@@ -2,12 +2,13 @@ module exec_ptx[E]
 open exec_H[E]
 
 sig Exec_PTX extends Exec_H {
-  scta, sgl : E->E // same CTA, same global
+  scta, sgl : E->E, // same CTA, same global
+  membar_cta,membar_gl,membar_sys:E->E
 }{
 
   // scta and sgl are equivalence relations among all events
-  is_equivalence[scta, ev]
-  is_equivalence[sgl, ev]
+  is_equivalence[scta, EV]
+  is_equivalence[sgl, EV]
 
   // Same thread implies same cta
   sthd in scta
@@ -21,16 +22,10 @@ sig Exec_PTX extends Exec_H {
 
   // Atom relation not done yet
   no atom
-    
-}
 
-pred wf_Exec_PTX[X:Exec_PTX, ad,cd,dd,membar_cta,membar_gl,membar_sys:E->E] {
-    
-  wf_Exec_H[X,ad,cd,dd]
-
-  is_fence_rel[membar_sys, X.sb]
-  is_fence_rel[membar_gl, X.sb]
-  is_fence_rel[membar_cta, X.sb]
+  is_fence_rel[membar_sys, sb]
+  is_fence_rel[membar_gl, sb]
+  is_fence_rel[membar_cta, sb]
 
   // A membar.sys implies a membar.gl, which implies a membar.cta
   membar_sys in membar_gl
@@ -38,13 +33,8 @@ pred wf_Exec_PTX[X:Exec_PTX, ad,cd,dd,membar_cta,membar_gl,membar_sys:E->E] {
     
 }
 
-fun scta[e:E, X:Exec_PTX, ad,cd,dd,membar_cta,membar_gl,membar_sys:E->E] : E->E { X.scta - (univ -> e) - (e -> univ) }
-fun sgl[e:E, X:Exec_PTX, ad,cd,dd,membar_cta,membar_gl,membar_sys:E->E] : E->E { X.sgl - (univ -> e) - (e -> univ) }
-fun membar_sys[e:E, X:Exec_PTX, ad,cd,dd,membar_cta,membar_gl,membar_sys:E->E] : E->E { membar_sys - (univ -> e) - (e -> univ) }
-fun membar_gl[e:E, X:Exec_PTX, ad,cd,dd,membar_cta,membar_gl,membar_sys:E->E] : E->E { membar_gl - (univ -> e) - (e -> univ) }
-fun membar_cta[e:E, X:Exec_PTX, ad,cd,dd,membar_cta,membar_gl,membar_sys:E->E] : E->E { membar_cta - (univ -> e) - (e -> univ) }
-
-// Synonyms
-fun membarsys[e:E, X:Exec_PTX, ad,cd,dd,membar_cta,membar_gl,membar_sys:E->E] : E->E { membar_sys - (univ -> e) - (e -> univ) }
-fun membargl[e:E, X:Exec_PTX, ad,cd,dd,membar_cta,membar_gl,membar_sys:E->E] : E->E { membar_gl - (univ -> e) - (e -> univ) }
-fun membarcta[e:E, X:Exec_PTX, ad,cd,dd,membar_cta,membar_gl,membar_sys:E->E] : E->E { membar_cta - (univ -> e) - (e -> univ) }
+fun scta[e:E, X:Exec_PTX] : E->E { X.scta - (univ -> e) - (e -> univ) }
+fun sgl[e:E, X:Exec_PTX] : E->E { X.sgl - (univ -> e) - (e -> univ) }
+fun membar_sys[e:E, X:Exec_PTX] : E->E { X.membar_sys - (univ -> e) - (e -> univ) }
+fun membar_gl[e:E, X:Exec_PTX] : E->E { X.membar_gl - (univ -> e) - (e -> univ) }
+fun membar_cta[e:E, X:Exec_PTX] : E->E { X.membar_cta - (univ -> e) - (e -> univ) }

@@ -27,9 +27,6 @@ sig Exec_H extends Exec {
 
 fun atom[e:E, X:Exec_H] : E->E { X.atom - (univ -> e) - (e -> univ) }
 
-// Synonyms:
-fun rmw[e:E, X:Exec_H] : E->E { atom[e,X] }
-
 fun fre[e:E, X:Exec_H] : E->E { fr[e,X] - sthd[e,X] }
 fun fri[e:E, X:Exec_H] : E->E { fr[e,X] & sthd[e,X] }
 fun rfe[e:E, X:Exec_H] : E->E { rf[e,X] - sthd[e,X] }

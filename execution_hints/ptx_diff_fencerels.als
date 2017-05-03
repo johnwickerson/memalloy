@@ -1,4 +1,4 @@
-pred hint[X:Exec_PTX, ad,cd,dd,membar_cta,membar_gl,membar_sys:E->E] {
+pred hint[X:Exec_PTX] {
 // Test "WWC+membar.cta+membar.gl":
 //  e1: W y 2 ||  e2: R y 2   |  e4: R x 1
 //            ||  membar.cta  |  membar.gl
@@ -8,16 +8,16 @@ pred hint[X:Exec_PTX, ad,cd,dd,membar_cta,membar_gl,membar_sys:E->E] {
     X.W = e1+e3+e5
     X.R = e2+e4
     X.sb = (e2->e3) + (e4->e5)
-    ad = none -> none
-    cd = none -> none
-    dd = none -> none
+    X.ad = none -> none
+    X.cd = none -> none
+    X.dd = none -> none
     X.sloc = sq[e1+e2+e5] + sq[e3+e4]
     X.sthd = sq[e1] + sq[e2+e3] + sq[e4+e5]
     X.scta = sq[e1] + sq[e2+e3  +    e4+e5]
     X.sgl  = sq[e1  +    e2+e3  +    e4+e5]
-    membar_cta = e2->e3 + membar_gl
-    membar_gl = e4->e5
-    membar_sys = none->none
+    X.membar_cta = e2->e3 + membar_gl
+    X.membar_gl = e4->e5
+    X.membar_sys = none->none
     X.rf = (e1->e2) + (e3->e4)
     X.co = (e5->e1)
   }

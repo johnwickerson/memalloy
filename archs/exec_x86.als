@@ -2,18 +2,20 @@ module exec_x86[E]
 open exec_H[E]
 
 sig Exec_X86 extends Exec_H {
-  locked : set E, // atomic events
-  mfence : set E // memory fence
+  LOCKED : set E, // atomic events
+  MFENCE : set E // memory fence
 }{
 
-  mfence in F
+  MFENCE in F
     
   // only RMWs can be locked
-  locked in univ.atom + atom.univ
+  LOCKED in univ.atom + atom.univ
 
   // the atom relation only relates locked instructions
-  atom in (locked -> locked)
+  atom in (LOCKED -> LOCKED)
 }
 
-fun locked[e:E, X:Exec_X86] : set E { X.locked - e }
-fun mfence[e:E, X:Exec_X86] : set E { X.mfence - e }
+fun LOCKED[e:E, X:Exec_X86] : set E { X.LOCKED - e }
+fun MFENCE[e:E, X:Exec_X86] : set E { X.MFENCE - e }
+
+fun mfence[e:E, X:Exec_X86] : E->E { addsb[e,X,MFENCE[e,X]] }

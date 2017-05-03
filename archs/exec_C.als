@@ -2,51 +2,51 @@ module exec_C[E]
 open exec[E]
 
 sig Exec_C extends Exec {
-  A : set E,            // atomic events
-  acq, rel, sc : set E, // acquire, release, sc events
+  ATO : set E,            // atomic events
+  ACQ, REL, SC : set E, // acquire, release, sc events
 }{
 
   // initial writes are non-atomic
-  A in ev - IW
+  ATO in ev - IW
 
   // acquires, releases, and SC operations are all atomic
-  acq + rel + sc in A
+  ACQ + REL + SC in ATO
 
   // RMWs and fences are atomic
-  (F + (R & W)) in A
+  (F + (R & W)) in ATO
     
   // sc reads can acquire
-  (R & sc) in acq
+  (R & SC) in ACQ
 
   // only reads and fences can acquire
-  acq in (R + F)
+  ACQ in (R + F)
     
   // sc writes can release
-  (W & sc) in rel
+  (W & SC) in REL
 
   // only writes and fences can release
-  rel in (W + F)
+  REL in (W + F)
     
   // sc fences can acquire and release
-  (F & sc) in (acq & rel)
+  (F & SC) in (ACQ & REL)
 
   // atomic events do not access non-atomic locations
-  no (A & naL)
+  no (ATO & NAL)
 
   // non-atomic reads do not access atomic locations
-  R-A in naL
+  R-ATO in NAL
 
 }
 
-fun A[e:E, X:Exec_C] : set E { X.A - e }
-fun acq[e:E, X:Exec_C] : set E { X.acq - e }
-fun rel[e:E, X:Exec_C] : set E { X.rel - e }
-fun sc[e:E, X:Exec_C] : set E { X.sc - e }
+fun ATO[e:E, X:Exec_C] : set E { X.ATO - e }
+fun ACQ[e:E, X:Exec_C] : set E { X.ACQ - e }
+fun REL[e:E, X:Exec_C] : set E { X.REL - e }
+fun SC[e:E, X:Exec_C] : set E { X.SC - e }
 
 pred wf_s[e:E, X:Exec_C, s:E->E] { 
 
   // s is restricted to sc events
-  s in sc[e,X] -> sc[e,X]
+  s in SC[e,X] -> SC[e,X]
     
   // s is acylic
   is_acyclic[s]
@@ -55,5 +55,5 @@ pred wf_s[e:E, X:Exec_C, s:E->E] {
   transitive[s]
 
   // s is a strict total relation on sc events
-  (all e1, e2 : (sc[e,X]) | (e1 != e2) iff (e1 -> e2 in (s + ~s)))
+  (all e1, e2 : (SC[e,X]) | (e1 != e2) iff (e1 -> e2 in (s + ~s)))
 }
