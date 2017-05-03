@@ -122,9 +122,17 @@ let rec mk_defs = function
 		 
 (** Create a typing environment and list of definitions containing the pre-defined sets and relations for the given architecture *)
 let build_env withsc arch =
-  let rels = Archs.arch_rels arch in
+     let arch_rels =
+       if !fencerels then Archs.arch_rels_with_fences
+       else Archs.arch_rels
+     in
+     let arch_sets =
+       if !fencerels then Archs.arch_sets_without_fences
+       else Archs.arch_sets
+     in
+  let rels = arch_rels arch in
   let rels = if withsc then "s" :: rels else rels in
-  let sets = Archs.arch_sets arch in
+  let sets = arch_sets arch in
   let env = 
     (List.map (fun a -> (a,([],Rel))) rels) @
       (List.map (fun a -> (a,([],Set))) sets)
