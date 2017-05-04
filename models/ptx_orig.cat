@@ -23,10 +23,10 @@ include "ptx_base.cat"
 
 let rmo(f) = dp | rfe | co | fr | f
 
-let CTArmo = rmo(cta_fence) & scta
-let GLrmo = rmo(gl_fence) & sgl
-let SYSrmo = rmo(sys_fence)
+let cta_rmo = rmo(cta_fence) & scta
+let gl_rmo = rmo(gl_fence) & sgl
+let sys_rmo = rmo(sys_fence)
 
-acyclic CTArmo as CTAconstraint
-acyclic GLrmo as GLconstraint
-acyclic SYSrmo as SYSconstraint
+acyclic cta_rmo as CTAconstraint
+acyclic gl_rmo as GLconstraint
+acyclic sys_rmo as SYSconstraint

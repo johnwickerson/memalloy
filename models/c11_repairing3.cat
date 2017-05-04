@@ -7,6 +7,6 @@ include "c11_base.cat"
 let rb = [R]; rf^-1; co
 let shsb = po;hb;po
 let eco = (rf | co | rb)+
-let Fhb = [F];hb
-let hbF = hb;[F]
-acyclic [sc]; Fhb?; (po | shsb | eco); hbF?; [sc] as Srepaired3
+let fhb = [F];hb
+let hbf = hb;[F]
+acyclic [SC]; fhb?; (po | shsb | eco); hbf?; [SC] as Srepaired3

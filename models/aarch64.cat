@@ -41,25 +41,25 @@ let ppoR = RR(ii)
 let ppoW = RW(ic)
 let ppo = ppoR | ppoW
 
-let acq_ = [scacq]; po
-let rel_ = po; [screl]	 
+let acq = [SCACQ]; po
+let rel = po; [SCREL]	 
 let syf = dmb
 let stf = [W];dmbst;[W]
 let ldf = [R];dmbld
-let fence = syf | stf | ldf | acq_ | rel_
+let fence = syf | stf | ldf | acq | rel
 
 let hb = ([R]; fence) | rfe | ppo
 acyclic hb as ThinAir
 						
-let prop = com*;syf | stf | rfe?;rel_
+let prop = com*;syf | stf | rfe?;rel
 			       
 let prop_al =
-    ((screl * scacq) & (rf | po))
-  | ((scacq * screl) & fr)
+    ((SCREL * SCACQ) & (rf | po))
+  | ((SCACQ * SCREL) & fr)
 
-let atomics = domain(atom) | range(atom)
+let Atomics = domain(atom) | range(atom)
       
-let xx = (W * W) & (atomics * atomics) & po
+let xx = (W * W) & (Atomics * Atomics) & po
 
 irreflexive prop; rfe; (fence | ppo); fre as Observation
 									      acyclic co | prop;hb* | xx;prop_al;hb* as Propagation

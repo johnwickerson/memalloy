@@ -5,4 +5,4 @@ include "c11_base.cat"
 
 (* Starting point (Batty et al.): *)
 let rb = [R]; rf^-1; co
-acyclic [sc]; Fsb?; (hb | co | rb); sbF?; [sc] as Srepaired0
+acyclic [SC]; fsb?; (hb | co | rb); sbf?; [SC] as Srepaired0

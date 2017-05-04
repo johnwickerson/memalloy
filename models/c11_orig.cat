@@ -9,13 +9,13 @@ http://multicore.doc.ic.ac.uk/overhauling/
 
 include "c11_base.cat"
 
-let S_imm = s \ (co;s)
+let s_imm = s \ (co;s)
 
 irreflexive s; hb as S1
-irreflexive s; Fsb?; co; sbF? as S2
-irreflexive s; rf^-1; [sc]; co as S3 
-irreflexive S_imm; rf^-1; hbl; [W] as S4
-irreflexive S_imm; ([R] \ (rf^-1;rf)) ; fr as S44
-irreflexive s; Fsb; fr as S5
-irreflexive s; fr; sbF as S6
-irreflexive s; Fsb; fr; sbF as S7
+irreflexive s; fsb?; co; sbf? as S2
+irreflexive s; rf^-1; [SC]; co as S3 
+irreflexive s_imm; rf^-1; hbl; [W] as S4
+irreflexive s_imm; ([R] \ (rf^-1;rf)) ; fr as S44
+irreflexive s; fsb; fr as S5
+irreflexive s; fr; sbf as S6
+irreflexive s; fsb; fr; sbf as S7

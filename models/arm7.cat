@@ -21,7 +21,7 @@ https://github.com/herd/herdtools/blob/master/herd/arm.cat
 (* Model for ARM, ie with po-loc ommited from ppo *)
 
 include "basic.cat"
-let ctrlisync = ctrl & ISB
+let ctrlisync = ctrl & isb
 	  
 (* Uniproc *)
 acyclic po-loc | rf | fr | co as Uniproc
@@ -57,12 +57,11 @@ let ppo = RW(ic) | RR(ii)
 (**********)
 	      
 (* ARM *)
-let dmbstW=WW(DMBST)
-let dsbstW=WW(DSBST)
-show DMB,DSB,dmbstW,dsbstW
+let dmbstW=WW(dmbst)
+show dmb,dmbstW
 
 (* Common, all arm barriers are strong *)
-let strong = DMB|DSB|dmbstW|dsbstW
+let strong = dmb|dmbstW
 let light = 0
 
 let fence = strong|light
@@ -70,7 +69,6 @@ let fence = strong|light
 
 (* happens before *)
 let hb = ppo | fence | rfe
-let GHB = hb
 
 acyclic hb as ThinAir
 

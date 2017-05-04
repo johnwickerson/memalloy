@@ -70,8 +70,8 @@ let fenceext = (rfe;fence)|(fence;rfe)|(rfe;fence;rfe)
 
 (* happens before *)
 let hb = ppo | ppoext | fence | fenceext
-let GHB = hb
-show GHB
+let ghb = hb
+show ghb
 acyclic hb as NoThinAir
 
 (* prop *)

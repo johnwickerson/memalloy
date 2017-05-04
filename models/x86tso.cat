@@ -38,9 +38,7 @@ let i1 = PA(poWR)
 let i2 = AP(poWR)
 let implied = i1 | i2
 
-let fence = po; [mfence]; po
-
-let ghb = fence | implied | ppo | rfe | fr | co
+let ghb = mfence | implied | ppo | rfe | fr | co
 show mfence
 show implied
 acyclic ghb as GHB

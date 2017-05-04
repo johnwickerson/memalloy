@@ -1,5 +1,5 @@
 "C"
 
-empty [R] \ [acq] as AllReadsAcquire
-empty [W] \ [rel] as AllWritesRelease
-empty [sc] as NoSCAtomics						
+empty [R] \ [ACQ] as AllReadsAcquire
+empty [W] \ [REL] as AllWritesRelease
+empty [SC] as NoSCAtomics						

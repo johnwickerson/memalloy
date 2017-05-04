@@ -1,0 +1,29 @@
+"C"
+
+include "basic.cat"
+
+(* let rs = poloc*; rf* *)
+let rs = poloc*;[W]
+	  
+(* synchronises with *)
+let sw = ([REL & W]; rs; rf; [R & ACQ]) \ thd
+
+(* happens before *)
+let hb = (po | sw)+
+let hbl = hb & loc
+
+		 
+(* coherence, etc *)
+		 
+acyclic hbl | rf | rf^-1;hbl | fr_init as HbCom
+irreflexive rf ; poloc*; [W]; po; rf^-1 as WriteObscuring 
+					   
+acyclic po | rf as NoLoadBuffering
+				
+(* no "if(r==0)" *)
+deadness_requires empty if_zero as No_If_Zero 
+
+(* coherence edges are forced *)
+deadness_requires empty unforced_co as Forced_Co
+
+

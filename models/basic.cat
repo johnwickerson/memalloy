@@ -2,9 +2,32 @@
 
 let poloc = po & sloc
 
+let E = _
+          
+let iden = [E]
+let univ = E * E
+         
+let fr_init = ([R] \ (rf^-1;rf)); sloc; [W]
+let fr = (fr_init | (rf^-1;co)) \ iden
+
+let po = sb
+let addr = ad
+let ctrl = cd
+let data = dd
+let loc = sloc
+let thd = sthd
+let ext = univ \ sthd
+  
+let rfe = rf \ sthd
+let rfi = rf & sthd
+let fre = fr \ sthd
+let fri = fr & sthd
+let coe = co \ sthd
+let coi = co & sthd
+
 let com = rf | fr | co
 
-let if_zero = ([_] & (ctrl;ctrl^-1)) \ (rf^-1;rf)
+let if_zero = (iden & (ctrl;ctrl^-1)) \ (rf^-1;rf)
 
 let imm(r) = r \ (r;r+)
 

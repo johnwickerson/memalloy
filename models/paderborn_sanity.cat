@@ -1,0 +1,3 @@
+"C"
+
+empty [(R&W) \ (REL&ACQ)] | [NAL] | [M\A] | [F] | [SC] as Sanity

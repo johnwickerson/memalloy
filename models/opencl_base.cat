@@ -12,34 +12,34 @@ Tyler Sorensen and George A. Constantinides (POPL'17).
 
 include "basic.cat"
   
-let Fsb = [F]; po
-let sbF = po; [F]
+let fsb = [F]; po
+let sbf = po; [F]
 
 (* release sequence *)
 let rs = poloc*; rf*
 
 (* inclusive scopes (conservative original) *)
-let incl' = swg & (wg * wg)
-	  | sdv & (dv * dv)
-	  |       (sy * sy)
+let incl' = swg & (WG * WG)
+	  | sdv & (DV * DV)
+	  |       (SY * SY)
 
 (* inclusive scopes (less conservative version) *)
-let incl1 = [wg]; swg
-	  | [dv]; sdv
-	  | [sy]; (_ * _)
+let incl1 = [WG]; swg
+	  | [DV]; sdv
+	  | [SY]; univ
 let incl = incl1 & incl1^-1
-	 | [rem]; incl1
-	 | incl1^-1; [rem]
+	 | [REM]; incl1
+	 | incl1^-1; [REM]
       
-let scf = sc * sc
+let scf = (SC * SC)
 	| (G & L & F) * (G & L & F)
 
 let swra_local =
-  ([L & rel]; Fsb?; [A & W]; rs; [L]; rf; [R & A]; sbF?; [L & acq])
+  ([L & REL]; fsb?; [A & W]; rs; [L]; rf; [R & A]; sbf?; [L & ACQ])
   & incl \ thd
 
 let swra_global =
-  ([G & rel]; Fsb?; [A & W]; rs; [G]; rf; [R & A]; sbF?; [G & acq])
+  ([G & REL]; fsb?; [A & W]; rs; [G]; rf; [R & A]; sbf?; [G & ACQ])
   & incl \ thd
 						  
 let sw_local = swra_local | (scf & swra_global)
@@ -59,8 +59,8 @@ irreflexive (co | co;rf | fr | fr;rf); lhb as Lcoh
 
 irreflexive rf;hb as Rf
 
-empty (rf;[naL & G]) \ imm([W];(ghb & sloc)) as GnaRf
-empty (rf;[naL & L]) \ imm([W];(lhb & sloc)) as LnaRf
+empty (rf;[NAL & G]) \ imm([W];(ghb & sloc)) as GnaRf
+empty (rf;[NAL & L]) \ imm([W];(lhb & sloc)) as LnaRf
 
 irreflexive rf | co;fr | co;rf as Rmw
 
@@ -83,8 +83,8 @@ let cde = ((rf \ thd) | ctrl)* ; ctrl
 (* dependable release sequence *)
 let drs = rs \ ([R]; ~cde)
 (* dependable synchronises-with *)
-let dsw_global = sw_global & (((Fsb?; [rel]; drs?) \ (~ctrl; ~cde)) ; rf)
-let dsw_local = sw_local & (((Fsb?; [rel]; drs?) \ (~ctrl; ~cde)) ; rf)
+let dsw_global = sw_global & (((fsb?; [rel]; drs?) \ (~ctrl; ~cde)) ; rf)
+let dsw_local = sw_local & (((fsb?; [rel]; drs?) \ (~ctrl; ~cde)) ; rf)
 (* dependable happens-before *)
 let dhb_global = po?; (dsw_global;ctrl)*
 let dhb_local = po?; (dsw_local;ctrl)*

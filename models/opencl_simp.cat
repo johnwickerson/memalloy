@@ -8,11 +8,10 @@ is available online: http://multicore.doc.ic.ac.uk/overhauling/
 
 include "opencl_base.cat"
 
-let Sall = Fsb?; (co | fr | hb); sbF?
-let Sp = (Sall & (sc*sc)) \ [_]
+let sall = fsb?; (co | fr | hb); sbf?
+let sp = (sall & (SC*SC)) \ iden
 
-let unv = _ * _
-let s_cond1 = unv \ (unv; ([sc \ (sy & fga)]); unv)
-let s_cond2 = unv \ (unv; ([sc \ (dv \ fga)]); unv)
+let s_cond1 = univ \ (univ; ([SC \ (SY & FGA)]); univ)
+let s_cond2 = univ \ (univ; ([SC \ (DV \ FGA)]); univ)
 			  
-acyclic Sp & (s_cond1 | s_cond2) as Spartial
+acyclic sp & (s_cond1 | s_cond2) as Spartial
