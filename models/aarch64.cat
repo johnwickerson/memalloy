@@ -37,8 +37,8 @@ let rec ci = ci0 | (ci;ii) | (cc;ci)
     and cc = cc0 | ci | (ci;ic) | (cc;cc)
     and ic = ic0 | ii | cc | (ic;cc) | (ii;ic)
 
-let ppoR = RR(ii)
-let ppoW = RW(ic)
+let ppoR = (R * R) & ii
+let ppoW = (R * W) & ic
 let ppo = ppoR | ppoW
 
 let acq = [SCACQ]; po

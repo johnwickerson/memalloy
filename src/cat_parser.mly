@@ -55,10 +55,8 @@ let do_op op e1 e2 = Op (op, as_op op e1 @ as_op op e2)
 %token <string> STRING
 %token LPAR RPAR LBRAC RBRAC
 %token EMPTY UNDERSCORE
-%token MM MR MW WM WW WR RM RW RR
-%token AA AP PA PP
 %token ALT SEMI UNION INTER COMMA DIFF
-%token STAR PLUS OPT INV COMP NOT HAT DOMAIN RANGE
+%token STAR PLUS OPT INV COMP HAT DOMAIN RANGE
 %token AND ACYCLIC AS DEADNESS_REQUIRES EQUAL IRREFLEXIVE
 INCLUDE LET REC SHOW TESTEMPTY WITHSC UNDEFINED_UNLESS UNSHOW
        
@@ -78,8 +76,11 @@ INCLUDE LET REC SHOW TESTEMPTY WITHSC UNDEFINED_UNLESS UNSHOW
 %%
 
 main:
-| VAR opt_withsc ins_list EOF    { ($1, $2, $3) }
-| STRING opt_withsc ins_list EOF { ($1, $2, $3) }
+| model_name opt_withsc ins_list EOF { ($1, $2, $3) }
+
+model_name:
+| VAR { $1 }
+| STRING   { $1 }
 
 opt_withsc:
 |        { false }
@@ -126,7 +127,7 @@ var_list:
 | VAR COMMA var_list { $1 :: $3 }
 
 exp:
-| EMPTY                  { Empty_rln }
+| EMPTY                  { Empty }
 | UNDERSCORE             { Var "ev" }
 | LPAR exp RPAR          { $2 }
 | select LPAR exp RPAR   { Op1 ($1,$3) }
@@ -142,8 +143,7 @@ exp:
 | exp UNION exp          { do_op Union $1 $3 }
 | exp DIFF exp           { Op (Diff, [$1; $3;]) }
 | exp INTER exp          { Op (Inter, [$1; $3;]) }
-| COMP exp               { Op1 (Comp Rel, $2) }
-| NOT exp                { Op1 (Comp Set, $2) }
+| COMP exp               { Op1 (Comp, $2) }
 | DOMAIN LPAR exp RPAR   { Op1 (Domain,$3) }
 | RANGE LPAR exp RPAR    { Op1 (Range,$3) }
 
@@ -151,17 +151,3 @@ exp_list:
 | exp                { [$1] }
 | exp COMMA exp_list { $1 :: $3 }
 	
-select:
-| MM  { Select (WriteRead,WriteRead) }
-| MW  { Select (WriteRead,Write) }
-| MR  { Select (WriteRead,Read) }
-| WM  { Select (Write,WriteRead) }
-| WW  { Select (Write,Write) }
-| WR  { Select (Write,Read) }
-| RM  { Select (Read,WriteRead) }
-| RW  { Select (Read,Write) }
-| RR  { Select (Read,Read) }
-| AA  { Select (Atomic,Atomic) }
-| AP  { Select (Atomic,Plain) }
-| PA  { Select (Plain,Atomic) }
-| PP  { Select (Plain,Plain) }

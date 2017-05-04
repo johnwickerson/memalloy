@@ -32,7 +32,7 @@ sig Exec_OpenCL extends Exec_C {
 
   // Scopes are only applied to atomic events, and wider
   // scopes include all narrower scopes
-  WG = ATO
+  WG = A
   DV in WG
   SY in DV
   FGA in DV + SY 

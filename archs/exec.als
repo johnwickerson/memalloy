@@ -105,7 +105,6 @@ fun W [e:E, X:Exec] : set E { X.W - e }
 fun IW [e:E, X:Exec] : set E { X.IW - e }
 fun R [e:E, X:Exec] : set E { X.R - e }
 fun F [e:E, X:Exec] : set E { X.F - e }
-fun M [e:E, X:Exec] : set E { X.R + X.W - e }
 fun NAL [e:E, X:Exec] : set E { X.NAL - e }
 
 fun sb [e:E, X:Exec] : E->E { X.sb - (univ -> e) - (e -> univ) }

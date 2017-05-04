@@ -2,18 +2,18 @@ module exec_C[E]
 open exec[E]
 
 sig Exec_C extends Exec {
-  ATO : set E,            // atomic events
+  A : set E,            // atomic events
   ACQ, REL, SC : set E, // acquire, release, sc events
 }{
 
   // initial writes are non-atomic
-  ATO in ev - IW
+  A in ev - IW
 
   // acquires, releases, and SC operations are all atomic
-  ACQ + REL + SC in ATO
+  ACQ + REL + SC in A
 
   // RMWs and fences are atomic
-  (F + (R & W)) in ATO
+  (F + (R & W)) in A
     
   // sc reads can acquire
   (R & SC) in ACQ
@@ -31,14 +31,14 @@ sig Exec_C extends Exec {
   (F & SC) in (ACQ & REL)
 
   // atomic events do not access non-atomic locations
-  no (ATO & NAL)
+  no (A & NAL)
 
   // non-atomic reads do not access atomic locations
-  R-ATO in NAL
+  R-A in NAL
 
 }
 
-fun ATO[e:E, X:Exec_C] : set E { X.ATO - e }
+fun A[e:E, X:Exec_C] : set E { X.A - e }
 fun ACQ[e:E, X:Exec_C] : set E { X.ACQ - e }
 fun REL[e:E, X:Exec_C] : set E { X.REL - e }
 fun SC[e:E, X:Exec_C] : set E { X.SC - e }

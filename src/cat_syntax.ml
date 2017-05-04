@@ -27,18 +27,7 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
 open! Format
 open! General_purpose
-       
-type access_type =
-  | WriteRead
-  | Write
-  | Read
-  | Atomic
-  | Plain
-
-type set_or_rel = Set | Rel
-
-let pp_typ = function Set -> "Set" | Rel -> "Rel"
-
+  
 (** Unary operators *)
 type unop =
   | Set_to_rln
@@ -46,8 +35,7 @@ type unop =
   | Plus
   | Opt
   | Inv
-  | Comp of set_or_rel
-  | Select of access_type * access_type
+  | Comp
   | Domain
   | Range
 
@@ -61,7 +49,7 @@ type binop =
 
 (** Expressions *)
 type cat_expr =
-  | Empty_rln
+  | Empty
   | Var of string
   | Arg of string (* used internally, when processing function bodies *)
   | App of string * cat_expr list
@@ -70,7 +58,7 @@ type cat_expr =
 
 (** Basic pretty-printing of expressions (for debugging) *)
 let rec pp_expr oc = function
-  | Empty_rln -> fprintf oc "0"
+  | Empty -> fprintf oc "0"
   | Var x -> fprintf oc "%s" x
   | Arg x -> fprintf oc "%s" x
   | App (f,es) -> fprintf oc "%s(%a)" f pp_exprs es

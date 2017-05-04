@@ -49,7 +49,7 @@ and ii = ii0 | ci | (ic;ci) | (ii;ii)
 and cc = cc0 | ci | (ci;ic) | (cc;cc)
 and ic = ic0 | ii | cc | (ic;cc) | (ii ; ic) (* | ci inclus dans ii et cc *)
 
-let ppo = RW(ic) | RR(ii)
+let ppo = (R * W) & ic | (R * R) & ii
 
 
 (**********)
@@ -57,11 +57,11 @@ let ppo = RW(ic) | RR(ii)
 (**********)
 	      
 (* ARM *)
-let dmbstW=WW(dmbst)
-show dmb,dmbstW
+let dmbstW = (W * W) & dmbst
+show dmb, dmbstW
 
 (* Common, all arm barriers are strong *)
-let strong = dmb|dmbstW
+let strong = dmb | dmbstW
 let light = 0
 
 let fence = strong|light
@@ -78,7 +78,7 @@ let propbase = (fence|(rfe;fence));hbstar
 
 let chapo = rfe|fre|coe|(fre;rfe)|(coe;rfe)
 
-let prop = WW(propbase)| (chapo? ; propbase*; strong; hbstar)
+let prop = (W * W) & propbase | (chapo? ; propbase*; strong; hbstar)
 
 acyclic co|prop as Propagation
 irreflexive fre;prop;hbstar as Causality

@@ -2,18 +2,18 @@ module exec_OCaml[E]
 open exec[E]
 
 sig Exec_OCaml extends Exec {
-  ATO : set E,            // atomic events
+  A : set E,            // atomic events
 }{
 
   // initial writes are non-atomic
-  ATO in EV - IW
+  A in EV - IW
     
   // RMWs and fences are atomic
-  (F + (R & W)) in ATO
+  (F + (R & W)) in A
 
   // no concept of atomic or non-atomic locations
   no NAL
 
 }
 
-fun ATO[e:E, X:Exec_OCaml] : set E { X.ATO - e }
+fun A[e:E, X:Exec_OCaml] : set E { X.A - e }

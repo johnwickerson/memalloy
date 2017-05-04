@@ -10,6 +10,8 @@ let univ = E * E
 let fr_init = ([R] \ (rf^-1;rf)); sloc; [W]
 let fr = (fr_init | (rf^-1;co)) \ iden
 
+let M = R | W
+       
 let po = sb
 let addr = ad
 let ctrl = cd

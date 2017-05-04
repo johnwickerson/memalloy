@@ -3,7 +3,7 @@ X86
 
 include "basic.cat"
 
-let ppo = WW(po) | RM(po)
+let ppo = (W * W) & po | (R * M) & po
 
 (* Defining multicopy atomicity *)
 acyclic po-loc | co as MCA_part1

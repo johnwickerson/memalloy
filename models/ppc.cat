@@ -81,7 +81,7 @@ show propbase
 
 let chapo = rfe|fre|coe|(fre;rfe)|(coe;rfe)
 
-let prop = WW(propbase)| (chapo? ; propbase*; strong; hbstar)
+let prop = (W * W) & propbase | (chapo? ; propbase*; strong; hbstar)
 
 #show prop
 acyclic co|prop as Propagation

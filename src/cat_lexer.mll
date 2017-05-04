@@ -49,24 +49,21 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
     Str.global_replace (Str.regexp_string ".") "" x
        
   let check_keyword = function
-    | "AA" -> AA | "acyclic" -> ACYCLIC
-    | "and" -> AND | "AP" -> AP | "as" -> AS
+    | "acyclic" -> ACYCLIC
+    | "and" -> AND
+    | "as" -> AS
     | "deadness_requires" -> DEADNESS_REQUIRES
     | "domain" -> DOMAIN
     | "empty" -> TESTEMPTY
     | "include" -> INCLUDE
     | "irreflexive" -> IRREFLEXIVE
     | "let" -> LET
-    | "MM" -> MM | "MR" -> MR | "MW" -> MW
     | "rec" -> REC
-    | "RM" -> RM | "RR" -> RR | "RW" -> RW 
-    | "PA" -> PA | "PP" -> PP
     | "range" -> RANGE
     | "show" -> SHOW
     | "undefined_unless" -> UNDEFINED_UNLESS
     | "unshow" -> UNSHOW
     | "withsc" -> WITHSC
-    | "WM" -> WM | "WR" -> WR | "WW" -> WW
     | x -> VAR (remove_hyphens (remove_dots x))
 }
 
@@ -88,8 +85,7 @@ rule token = parse
 | '|'   { UNION }
 | '&'   { INTER }
 | '*'   { STAR }
-| '~'   { COMP }
-| '!'   { NOT }
+| '!'   { COMP }
 | '+'   { PLUS }
 | '^'   { HAT }
 | "-1"  { INV }
