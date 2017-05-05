@@ -46,10 +46,10 @@ moretests:
 	tests/Q2_c11_sra_simp_iter.sh
 	tests/Q4_ocaml_ppc_v1.sh
 	tests/Q4_ocaml_ppc_v2.sh
-
-slowtests:
 	tests/Q2_c11_lidbury_partial_iter.sh
 	tests/Q2_ptx.sh
+
+slowtests:
 
 clean:
 	python etc/rm_als.py

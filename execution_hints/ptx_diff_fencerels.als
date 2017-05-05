@@ -15,7 +15,7 @@ pred hint[X:Exec_PTX] {
     X.sthd = sq[e1] + sq[e2+e3] + sq[e4+e5]
     X.scta = sq[e1] + sq[e2+e3  +    e4+e5]
     X.sgl  = sq[e1  +    e2+e3  +    e4+e5]
-    X.membar_cta = e2->e3 + membar_gl
+    X.membar_cta = e2->e3 + X.membar_gl
     X.membar_gl = e4->e5
     X.membar_sys = none->none
     X.rf = (e1->e2) + (e3->e4)
