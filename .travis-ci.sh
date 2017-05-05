@@ -36,7 +36,8 @@ eval `opam config env`
 #dot -V
 
 export OS=amd64-linux
-
+export JAVA_HEAP_SIZE=3g
+export MEMALLOY_ROOT_DIR="$( pwd )"
 
 make
 make moretests
