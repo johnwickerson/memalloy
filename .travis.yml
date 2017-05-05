@@ -2,15 +2,17 @@ language: java
 jdk: oraclejdk8
 sudo: required
 env:
-  - OCAML_VERSION=4.01.0 OPAM_VERSION=1.0.0
-  - OCAML_VERSION=4.01.0 OPAM_VERSION=1.2.1
-  - OCAML_VERSION=4.02.1 OPAM_VERSION=1.2.0
-  - OCAML_VERSION=4.02.3 OPAM_VERSION=1.2.2
-# script: bash -ex .travis-ci.sh
+  - OCAML_VERSION=4.01.0
+  - OCAML_VERSION=4.02.1
+  - OCAML_VERSION=4.02.3
+  - OCAML_VERSION=4.03.0
+  - OCAML_VERSION=4.04.0
 before_install:
   - sudo apt-get update
   - sudo apt-get install graphviz
+  - export OPAMYES=true
   - wget https://raw.github.com/ocaml/opam/master/shell/opam_installer.sh -O - | sh -s /usr/local/bin
+  - opam switch $OCAML_VERSION
   - eval `opam config env`
   - opam install ocamlfind xml-light
   - sudo easy_install progressbar
