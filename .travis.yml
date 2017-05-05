@@ -11,7 +11,6 @@ before_install:
   - sudo apt-get update
   - sudo apt-get install graphviz
   - wget https://raw.github.com/ocaml/opam/master/shell/opam_installer.sh -O - | sh -s /usr/local/bin
-  - opam init
   - opam install ocaml ocaml-native-compilers
   - opam install ocamlfind xml-light
   - eval `opam config env`
