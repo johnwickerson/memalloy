@@ -128,7 +128,7 @@ var_list:
 
 exp:
 | EMPTY                  { Empty }
-| UNDERSCORE             { Var "ev" }
+| UNDERSCORE             { Var "EV" }
 | LPAR exp RPAR          { $2 }
 | VAR                    { Var ($1) }
 | VAR LPAR exp_list RPAR { App ($1,$3) }

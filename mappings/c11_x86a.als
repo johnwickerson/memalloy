@@ -14,7 +14,7 @@ pred apply_map[X:SW/Exec_C, X':HW/Exec_X86, map:SE->HE] {
   map in X.EV lone -> X'.EV
     
   // HW reads/writes cannot be invented by the compiler
-  all e' : X'.(R+W) | one e.~map
+  all e : X'.(R+W) | one e.~map
 
   // SW reads/writes cannot be discarded by the compiler
   all e : X.(R+W) | some e.map

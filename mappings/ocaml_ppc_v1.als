@@ -16,19 +16,19 @@ pred apply_map[X:SW/Exec_OCaml, X':HW/Exec_PPC, map:SE->HE] {
   map in X.EV lone -> X'.EV
    
   // HW reads/writes cannot be invented by the compiler
-  all e' : X'.(R+W) | one e.~map
+  all e : X'.(R+W) | one e.~map
 
   // SW reads/writes cannot be discarded by the compiler
   all e : X.(R+W) | some e.map
   
   // a non-atomic read compiles to a single read
-  all e : X.((R - W) - ATO) {
+  all e : X.((R - W) - A) {
     one e.map
     e.map in X'.R
   }
       
   // an atomic read compiles to a sync, read, sync.
-  all e : X.((R - W) & ATO) | let e1 = e.map {
+  all e : X.((R - W) & A) | let e1 = e.map {
     one e1 
     e1 in X'.R
     (X'.sb) :> e1 in sync[none,X']
@@ -36,13 +36,13 @@ pred apply_map[X:SW/Exec_OCaml, X':HW/Exec_PPC, map:SE->HE] {
   }
   
   // a non-atomic write compiles to a single write
-  all e : X.((W - R) - ATO) {
+  all e : X.((W - R) - A) {
     one e.map
     e.map in X'.W
   }
 
   // an atomic write compiles to a sync, write, sync
-  all e : X.((W - R) & ATO) | let e1 = e.map {
+  all e : X.((W - R) & A) | let e1 = e.map {
     one e1
     e1 in X'.W
     (X'.sb) :> e1 in sync[none,X']

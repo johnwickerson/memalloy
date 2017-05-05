@@ -6,9 +6,8 @@ endif
 
 rebuild:
 	make -C src
-	make comparator
-	make mappings
-	
+	@ make comparator
+	@ make -C mappings
 
 install:
 	git submodule update --init --recursive
@@ -16,12 +15,13 @@ install:
 	make rebuild
 
 comparator:
-	rm -f $@
-	echo '#!/bin/sh\npython top/comparator.py "$$@"' > $@
-	chmod +x $@
+	@ echo "Building top-level executable."
+	@ rm -f $@
+	@ echo '#!/bin/sh\npython top/comparator.py "$$@"' > $@
+	@ chmod +x $@
 
 quicktest: 
-	@ tests/Q2_c11_lidbury_partial.sh
+	tests/Q2_c11_lidbury_partial.sh
 
 moretests:
 	tests/Q2_sc_x86.sh

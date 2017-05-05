@@ -13,7 +13,7 @@ sig Exec_Arm7 extends Exec_H {
   dmb in dmbld 
 }
 
-fun isb[e:E, X:Exec_Arm7] : E->E { isb - (univ -> e) - (e -> univ) }
-fun dmbst[e:E, X:Exec_Arm7] : E->E { dmbst - (univ -> e) - (e -> univ) }
-fun dmbld[e:E, X:Exec_Arm7] : E->E { dmbld - (univ -> e) - (e -> univ) }
-fun dmb[e:E, X:Exec_Arm7] : E->E { dmb - (univ -> e) - (e -> univ) }
+fun isb[e:E, X:Exec_Arm7] : E->E { X.isb - (univ -> e) - (e -> univ) }
+fun dmbst[e:E, X:Exec_Arm7] : E->E { X.dmbst - (univ -> e) - (e -> univ) }
+fun dmbld[e:E, X:Exec_Arm7] : E->E { X.dmbld - (univ -> e) - (e -> univ) }
+fun dmb[e:E, X:Exec_Arm7] : E->E { X.dmb - (univ -> e) - (e -> univ) }

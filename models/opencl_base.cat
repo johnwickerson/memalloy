@@ -26,7 +26,7 @@ let incl' = swg & (WG * WG)
 (* inclusive scopes (less conservative version) *)
 let incl1 = [WG]; swg
 	  | [DV]; sdv
-	  | [SY]; univ
+	  | [SY]; uni
 let incl = incl1 & incl1^-1
 	 | [REM]; incl1
 	 | incl1^-1; [REM]
@@ -81,10 +81,10 @@ deadness_requires empty unforced_co as Forced_Co
 (* external control dependency *)
 let cde = ((rf \ thd) | ctrl)* ; ctrl
 (* dependable release sequence *)
-let drs = rs \ ([R]; ~cde)
+let drs = rs \ ([R]; !cde)
 (* dependable synchronises-with *)
-let dsw_global = sw_global & (((fsb?; [rel]; drs?) \ (~ctrl; ~cde)) ; rf)
-let dsw_local = sw_local & (((fsb?; [rel]; drs?) \ (~ctrl; ~cde)) ; rf)
+let dsw_global = sw_global & (((fsb?; [REL]; drs?) \ (!ctrl; !cde)) ; rf)
+let dsw_local = sw_local & (((fsb?; [REL]; drs?) \ (!ctrl; !cde)) ; rf)
 (* dependable happens-before *)
 let dhb_global = po?; (dsw_global;ctrl)*
 let dhb_local = po?; (dsw_local;ctrl)*

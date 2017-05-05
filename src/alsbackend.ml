@@ -49,7 +49,7 @@ let als_of_rel oc (name, ees) =
 
 (** Convert execution to Alloy predicate *)
 let als_of_execution oc x =
-  let ev = get_set x "ev" in
+  let ev = get_set x "EV" in
   fprintf oc "pred hint[X:Exec] {\n";
   fprintf oc "  some disj %a : E {\n" (MyList.pp_gen "," Event.pp) ev;
   List.iter (als_of_set oc) x.sets;

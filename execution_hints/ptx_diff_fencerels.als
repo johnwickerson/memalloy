@@ -4,7 +4,7 @@ pred hint[X:Exec_PTX] {
 //            ||  membar.cta  |  membar.gl
 //            ||  e3: W x 1   |  e5: W y 1
   some disj e1,e2,e3,e4,e5 : E {
-    X.ev = e1+e2+e3+e4+e5
+    X.EV = e1+e2+e3+e4+e5
     X.W = e1+e3+e5
     X.R = e2+e4
     X.sb = (e2->e3) + (e4->e5)

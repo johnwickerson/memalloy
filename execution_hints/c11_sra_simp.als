@@ -1,14 +1,14 @@
 pred hint[X:Exec] {
   some disj E5,E4,E3,E2,E1,E0 : E {
-    X.naL = none
+    X.NAL = none
     X.IW = none
     X.F = none
     X.R = E5+E4
     X.W = E3+E2+E1+E0
-    X.ev = E5+E4+E3+E2+E1+E0
-    X.sc = none
-    X.rel = E3+E2+E1+E0
-    X.acq = E5+E4
+    X.EV = E5+E4+E3+E2+E1+E0
+    X.SC = none
+    X.REL = E3+E2+E1+E0
+    X.ACQ = E5+E4
     X.A = E5+E4+E3+E2+E1+E0
     X.co = (E3->E0)+(E1->E2)
     X.rf = (E2->E5)+(E0->E4)

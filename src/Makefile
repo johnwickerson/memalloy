@@ -30,14 +30,14 @@ BINARIES = cat2als pp_comparator gen
 all: $(BINARIES) doc 
 
 $(BINARIES): 
-	ocamlbuild $(OCB_OPTS) $@.native
+	@ ocamlbuild $(OCB_OPTS) $@.native
 	mv $@.native $(DEST)/$@
 
 doc:
-	python ../etc/mk_odocl.py > $(DOCNAME).odocl
-	ocamlbuild $(OCB_OPTS) $(OCD_OPTS) $(DOCNAME).docdir/index.html
-	rm -rf $(DOCDIR) && mv $(DOCNAME).docdir $(DOCDIR)
-	cp mystyle.css $(DOCDIR)
+	@ python ../etc/mk_odocl.py > $(DOCNAME).odocl
+	@ ocamlbuild $(OCB_OPTS) $(OCD_OPTS) $(DOCNAME).docdir/index.html
+	@ rm -rf $(DOCDIR) && mv $(DOCNAME).docdir $(DOCDIR)
+	@ cp mystyle.css $(DOCDIR)
 	@ echo "HTML documentation is in $(DOCDIR)/index.html."
 
 clean:

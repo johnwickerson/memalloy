@@ -163,7 +163,7 @@ let resolve_exec x =
   let rs = get_set x "R" in
   let ws = get_set x "W" in
   let rw = MySet.union rs ws in
-  let nI = MySet.diff (get_set x "ev") iws in
+  let nI = MySet.diff (get_set x "EV") iws in
   let thd_map = Rel.partition true (get_rel x "sthd") nI in
   let loc_map = Rel.partition true (get_rel x "sloc") rw in
   let wval_map = mk_wval_map loc_map (get_rel x "co") ws iws in
@@ -173,8 +173,8 @@ let resolve_exec x =
 
 (** [rectify_maps (x,xmaps) (y,ymaps) pi] returns a new set of execution maps for [y] that is consistent with the threads/locations/values used for [x] according to the mapping [pi]. For instance, if an event {i e} in [x] has location {i l} according to [xmaps], and [pi] relates {i e} to {i e'} in [y], then {i e'} will also have location {i l} in the returned execution maps. *)
 let rectify_maps (x,xmaps) (y,ymaps) pi =
-  let xev = get_set x "ev" in
-  let yev = get_set y "ev" in
+  let xev = get_set x "EV" in
+  let yev = get_set y "EV" in
   let fix map' map e =
     let is_mismatch e' =
       try List.mem (e',e) pi && List.assoc e' map' <> List.assoc e map

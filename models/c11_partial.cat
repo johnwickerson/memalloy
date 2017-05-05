@@ -17,6 +17,6 @@ let s5 = fsb; fr
 let s6 = fr; sbf
 let s7 = fsb; fr; sbf
 let sall = s1|s2|s3|s4|s44|s5|s6|s7
-let sp = (sall & (SC*SC)) \ iden
+let sp = (sall & (SC*SC)) \ id
 
 acyclic sp as Spartial

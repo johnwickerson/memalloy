@@ -178,10 +178,10 @@ let rec als_of_expr env tgt oc = function
   | Op1 (Inv,e) when tgt = Rel ->
      fprintf oc "~(%a)" (als_of_expr env Rel) e
   | Op1 (Comp,e) when tgt = Set ->
-     let univ = Var "ev" in
+     let univ = Var "EV" in
      als_of_expr env Set oc (Op (Diff, [univ; e]))
   | Op1 (Comp,e) when tgt = Rel ->
-     let univ = Op(Cross, [Var "ev"; Var "ev"]) in
+     let univ = Op(Cross, [Var "EV"; Var "EV"]) in
      als_of_expr env Rel oc (Op (Diff, [univ; e])) 
   | Op1 (Domain, e) when tgt = Set ->
      fprintf oc "dom[%a]" (als_of_expr env Rel) e

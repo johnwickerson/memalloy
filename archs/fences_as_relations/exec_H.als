@@ -21,7 +21,7 @@ sig Exec_H extends Exec {
   no NAL
 
   // control dependencies are defined differently in assembly
-  cd.(X.sb) in cd
+  cd.sb in cd
 }
 
 pred is_fence_rel[fence_rel:E->E, sb:E->E] {

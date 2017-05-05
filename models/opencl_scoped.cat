@@ -9,6 +9,6 @@ is available online: http://multicore.doc.ic.ac.uk/overhauling/
 include "opencl_base.cat"
 
 let sall = fsb?; (co | fr | hb); sbf?
-let sp = (sall & (SC*SC)) \ iden
+let sp = (sall & (SC*SC)) \ id
 			  
 acyclic sp & incl as Spartial

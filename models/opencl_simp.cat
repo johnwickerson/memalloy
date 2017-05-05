@@ -9,9 +9,9 @@ is available online: http://multicore.doc.ic.ac.uk/overhauling/
 include "opencl_base.cat"
 
 let sall = fsb?; (co | fr | hb); sbf?
-let sp = (sall & (SC*SC)) \ iden
+let sp = (sall & (SC*SC)) \ id
 
-let s_cond1 = univ \ (univ; ([SC \ (SY & FGA)]); univ)
-let s_cond2 = univ \ (univ; ([SC \ (DV \ FGA)]); univ)
+let s_cond1 = uni \ (uni; ([SC \ (SY & FGA)]); uni)
+let s_cond2 = uni \ (uni; ([SC \ (DV \ FGA)]); uni)
 			  
 acyclic sp & (s_cond1 | s_cond2) as Spartial

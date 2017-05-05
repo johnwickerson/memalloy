@@ -3,5 +3,5 @@
 empty [F] as NoFences
 empty [R&W] as NoRmws
 
-empty [A];loc;[M\A] as NoLocAccessedAtomicallyAndNonatomically
-empty [M\A];loc;[A] as NoLocAccessedNonatomicallyAndAtomically
+empty [A];sloc;[(R|W)\A] as NoLocAccessedAtomicallyAndNonatomically
+empty [(R|W)\A];sloc;[A] as NoLocAccessedNonatomicallyAndAtomically

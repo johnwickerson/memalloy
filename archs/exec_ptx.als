@@ -7,8 +7,8 @@ sig Exec_PTX extends Exec_H {
 }{
 
   // scta and sgl are equivalence relations among all events
-  is_equivalence[scta, ev]
-  is_equivalence[sgl, ev]
+  is_equivalence[scta, EV]
+  is_equivalence[sgl, EV]
 
   // Same thread implies same cta
   sthd in scta

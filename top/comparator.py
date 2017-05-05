@@ -76,6 +76,8 @@ def add_gen_comparator_args(parser):
   add_common_args(parser)
   parser.add_argument('-satisfies', action='append', metavar='<M>', default=[],
                       help='Execution should satisfy this model (repeatable)')
+  parser.add_argument('-alsosatisfies', action='append', metavar='<M>', default=[],
+                      help='Execution should also satisfy this model (repeatable)')
   parser.add_argument('-violates', action='append', metavar='<N>', default=[],
                       help='Execution should satisfy this model (repeatable)')
   parser.add_argument("-arch", type=str, required=True,
@@ -115,6 +117,8 @@ def extract_gen_comparator_args(args):
   cmd_options = []
   for model in d["satisfies"]:
     cmd_options.extend(["-satisfies", model])
+  for model in d["alsosatisfies"]:
+    cmd_options.extend(["-alsosatisfies", model])
   for model in d["violates"]:
     cmd_options.extend(["-violates", model])
   for opt in ["arch", "events", "mapping", "arch2",
@@ -123,8 +127,6 @@ def extract_gen_comparator_args(args):
                 "locations", "minimal", "withinit"]:
     if not ignore_opt(d[opt]):
       cmd_options.extend(["-" + opt, str(d[opt])])
-  if args.fencerels:
-    cmd_options.extend(["-fencerels"])
   return cmd_options
 
 def add_run_alloy_args(parser):
@@ -208,7 +210,7 @@ def main(argv=None):
   dot_result_dir = os.path.join(result_dir, "dot")
   png_result_dir = os.path.join(result_dir, "png")
 
-  for model in args.satisfies + args.violates:
+  for model in args.satisfies + args.alsosatisfies + args.violates:
     if ext_of_file(model) == ".cat":
       #code = subprocess.call([os.path.join(TOOL_PATH, "cat2als"), "-o", als_result_dir, model])
       if args.fencerels:

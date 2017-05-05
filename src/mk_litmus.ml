@@ -32,12 +32,12 @@ open Litmus
 
 (** [mk_instr x maps reg_map e] returns a component corresponding to the event [e] in the execution [x], by looking up values, registers, and so on, in [maps] and [reg_map]. *)
 let mk_instr x maps reg_map e =
-  let ignored_attrs = ["ev";"R";"W";"F";"IW"] in
+  let ignored_attrs = ["EV";"R";"W";"F";"IW"] in
   let attrs = MySet.diff (get_sets x e) ignored_attrs in
   let atom = get_rel x "atom" in
   let atomic = MySet.union (Rel.dom atom) (Rel.rng atom) in
   let attrs = (if List.mem e atomic then ["X"] else []) @ attrs in
-  let ev = get_set x "ev" in
+  let ev = get_set x "EV" in
   let src r_name e' = List.mem (e',e) (get_rel x r_name) in
   let reg_of e = List.assoc e reg_map in
   let reg_rval_of e = reg_of e, List.assoc e maps.rval_map in

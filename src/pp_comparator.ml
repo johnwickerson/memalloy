@@ -160,13 +160,13 @@ let pp_comparator arch oc =
   pp_satisfied_models 2 "none" "X" oc;
   pp_also_satisfied_models 2 "none" "X" oc;
   if !hint <> None then fprintf oc "  hint[X]\n\n";
-  fprintf oc "  not (some e : X.ev {\n";
+  fprintf oc "  not (some e : X.EV {\n";
   pp_violated_models 4 "e" "X" oc;
   pp_satisfied_models 4 "e" "X" oc;
   pp_also_satisfied_models 4 "e" "X" oc;
   fprintf oc "  })\n";
-  pp_min_classes "threads" "E" !min_thds "sthd" "ev - IW" oc;
-  pp_max_classes "threads" "E" !max_thds "sthd" "ev - IW" oc;
+  pp_min_classes "threads" "E" !min_thds "sthd" "EV - IW" oc;
+  pp_max_classes "threads" "E" !max_thds "sthd" "EV - IW" oc;
   pp_min_classes "locations" "E" !min_locs "sloc" "R + W" oc;
   pp_max_classes "locations" "E" !max_locs "sloc" "R + W" oc;
   fprintf oc "}\n\n";
@@ -180,7 +180,7 @@ let pp_comparator2 arch mapping_path arch2 oc =
   if !description <> "" then fprintf oc "/* %s */\n" !description;
   pp_open_modules "HE" "SE" oc;
   let mapping = Filename.chop_extension mapping_path in
-  fprintf oc "open %s[SE,HE] as mapping\n\n" mapping;
+  fprintf oc "open ../../%s[SE,HE] as mapping\n\n" mapping;
   fprintf oc "sig SE, HE {}\n\n";
   fprintf oc "pred gp [X:%a, Y:%a, map:SE->HE] {\n\n"
     Archs.pp_Arch arch Archs.pp_Arch arch2;
@@ -190,13 +190,13 @@ let pp_comparator2 arch mapping_path arch2 oc =
   pp_satisfied_models 2 "none" "Y" oc;
   pp_also_satisfied_models 2 "none" "X" oc;
   if !hint <> None then fprintf oc "  hint[X]\n\n";
-  fprintf oc "  not (some e : X.ev {\n";
+  fprintf oc "  not (some e : X.EV {\n";
   pp_violated_models 4 "e" "X" oc;
   fprintf oc "  })\n";
   fprintf oc "  // We have a valid application of the mapping\n";
   fprintf oc "  apply_map[X, Y, map]\n\n";
-  pp_min_classes "threads" "SE" !min_thds "sthd" "ev - IW" oc;
-  pp_max_classes "threads" "SE" !max_thds "sthd" "ev - IW" oc;
+  pp_min_classes "threads" "SE" !min_thds "sthd" "EV - IW" oc;
+  pp_max_classes "threads" "SE" !max_thds "sthd" "EV - IW" oc;
   pp_min_classes "locations" "SE" !min_locs "sloc" "R + W" oc;
   pp_max_classes "locations" "SE" !max_locs "sloc" "R + W" oc;
   fprintf oc "}\n\n";

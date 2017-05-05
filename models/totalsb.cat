@@ -1,3 +1,5 @@
 "BASIC"
 
-empty (thd \ iden) \ (po | po^-1) as ProgramOrderTotalWithinThread
+include "basic.cat"
+  
+empty (sthd \ id) \ (po | po^-1) as ProgramOrderTotalWithinThread

@@ -27,7 +27,7 @@ pred apply_map[X:SW/Exec_OpenCL, X':HW/Exec_PTX, map:SE->HE] {
   map in X.EV lone -> X'.EV
    
   // HW reads/writes cannot be invented by the compiler
-  all e' : X'.(R+W) | one e.~map
+  all e : X'.(R+W) | one e.~map
 
   // SW reads/writes cannot be discarded by the compiler
   all e : X.(R+W) | some e.map
@@ -58,13 +58,13 @@ pred apply_map[X:SW/Exec_OpenCL, X':HW/Exec_PTX, map:SE->HE] {
   }
 
   // a non-atomic read compiles to a regular read
-  all e : X.(R - ATO) {
+  all e : X.(R - A) {
     one e.map
     e.map in X'.R
   }
 
   // a relaxed/acquire read compiles to a read followed by a fence
-  all e : X.(R & (ATO - SC)) | let e1 = e.map {
+  all e : X.(R & (A - SC)) | let e1 = e.map {
     one e1
     e1 in X'.R
     e1 <: (X'.sb) in mk_fence[e,X,X']

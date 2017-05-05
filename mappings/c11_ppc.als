@@ -7,7 +7,7 @@ A C11-to-Power mapping.
 
 module c11_ppc[SE,HE]
 
-pred apply_map[X:SW/Exec_C, X':HW/Exec_PPC, map:SE->HE] {
+pred apply_map[X:Exec_C, X':Exec_PPC, map:SE->HE] {
 
   X.EV = SE
   X'.EV = HE
@@ -16,7 +16,7 @@ pred apply_map[X:SW/Exec_C, X':HW/Exec_PPC, map:SE->HE] {
   map in X.EV lone -> X'.EV
    
   // HW reads/writes cannot be invented by the compiler
-  all e' : X'.(R+W) | one e.~map
+  all e : X'.(R+W) | one e.~map
 
   // SW reads/writes cannot be discarded by the compiler
   all e : X.(R+W) | some e.map

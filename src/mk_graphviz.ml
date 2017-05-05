@@ -51,7 +51,7 @@ let dot_of_event x maps e =
     | false, false, false -> "Nop", "", "azure3"
     | r,w,f -> failwith "Found event with (R,W,F)=(%b,%b,%b)" r w f
   in
-  let ignored_attrs = ["ev";"R";"W";"F";"IW"] in
+  let ignored_attrs = ["EV";"R";"W";"F";"IW"] in
   let attrs = MySet.diff (get_sets x e) ignored_attrs in
   let loc =
     try asprintf "%a" Location.pp (List.assoc e maps.loc_map)

@@ -56,12 +56,12 @@ BASE_ARR = None
 # Doesn't need to contain "F" because we have "*mb*"
 # Doesn't need to contain "ev" because we only partition executions of the same size (i.e. number of events)
 # The order of these makes a difference. Put things that are likely to fail fast first
-E_TYPES = ["W", "R", "F", "isb", "dmb", "dmbst", "dmbld", "scacq", "screl", "T", "naL", "IW", "A", "acq", "rel", "sc", "locked", "wg", "dv", "sy", "fga", "G", "L", "entry_fence", "exit_fence", "isync", "sync", "lwsync", "eieio", "membar_sys", "membar_gl", "membar_cta"]
+E_TYPES = ["W", "R", "F", "ISB", "DMB", "DMBST", "DMBLD", "SCACQ", "SCREL", "T", "NAL", "IW", "A", "ACQ", "REL", "SC", "LOCKED", "MFENCE", "WG", "DV", "SY", "FGA", "G", "L", "ISYNC", "SYNC", "LWSYNC", "EIEIO", "MEMBAR_SYS", "MEMBAR_GL", "MEMBAR_CTA"]
 
 # We don't need sthread because we have sb
 # We don't need sloc because have rf and co (I think)
 # The order of these makes a difference. Put things that are likely to fail fast first
-E_RELS = ["rf", "co", "sb", "atom", "stxn", "sloc", "sthd", "ad", "dd", "cd", "swg", "sdv", "sbar", "scta", "sgl"]
+E_RELS = ["rf", "co", "sb", "atom", "stxn", "sloc", "sthd", "ad", "dd", "cd", "swg", "sdv", "sbar", "scta", "sgl", "isb", "dmb", "dmbst", "dmbld", "mfence", "isync", "sync", "lwsync", "eieio", "membar_sys", "membar_gl", "membar_cta"]
 
 def print_to_file(s,fname):
     f = open(fname,'w')

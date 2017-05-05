@@ -30,7 +30,7 @@ let hbl = hb & loc
 empty (rf ; [NAL]) \ imm([W] ; hbl) as NaRf
 
 (* conflict *)
-let cnf = (((W*M) | (M*W)) & loc) \ iden
+let cnf = (((W*M) | (M*W)) & loc) \ id
 				  
 (* data race *)
 let dr = (cnf \ (A*A)) \ thd \ (hb | hb^-1)
@@ -55,13 +55,13 @@ deadness_requires empty unforced_co as Forced_Co
 (* external control dependency *)
 let cde = ((rf \ thd) | ctrl)* ; ctrl
 (* dependable release sequence *)
-let drs = rs \ ([R]; ~cde)
+let drs = rs \ ([R]; !cde)
 (* dependable synchronises-with *)
-let dsw = sw & (((Fsb?; [REL]; drs?) \ (~ctrl; ~cde)) ; rf)		 
+let dsw = sw & (((fsb?; [REL]; drs?) \ (!ctrl; !cde)) ; rf)		 
 (* dependable happens-before *)
 let dhb = po?; (dsw;ctrl)*
 (* self-satisfying cycle *)	    
-let ssc = iden & cde
+let ssc = id & cde
 (* potential data race *)
 let pdr = cnf \ (A*A)
 (* reads-from on non-atomic location *)
@@ -70,4 +70,4 @@ let narf = rf & (NAL*NAL)
 deadness_requires empty pdr \ (dhb | dhb^-1 | narf;ssc | ssc;narf^-1) as Dead_Pdr
 
 let scb = fsb?; (co | fr | hb); sbf?
-let scp = (scb & (SC * SC)) \ iden
+let scp = (scb & (SC * SC)) \ id

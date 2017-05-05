@@ -1,2 +1,2 @@
 "PTX"
-empty ~sgl as EverythingInSameGL
+empty !sgl as EverythingInSameGL

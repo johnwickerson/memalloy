@@ -1,24 +1,21 @@
 "BASIC"
-
-let poloc = po & sloc
-
-let E = _
           
-let iden = [E]
-let univ = E * E
+let id = [EV]
+let uni = EV * EV
          
 let fr_init = ([R] \ (rf^-1;rf)); sloc; [W]
-let fr = (fr_init | (rf^-1;co)) \ iden
+let fr = (fr_init | (rf^-1;co)) \ id
 
 let M = R | W
        
 let po = sb
+let poloc = po & sloc
 let addr = ad
 let ctrl = cd
 let data = dd
 let loc = sloc
 let thd = sthd
-let ext = univ \ sthd
+let ext = !sthd
   
 let rfe = rf \ sthd
 let rfi = rf & sthd
@@ -29,7 +26,7 @@ let coi = co & sthd
 
 let com = rf | fr | co
 
-let if_zero = (iden & (ctrl;ctrl^-1)) \ (rf^-1;rf)
+let if_zero = (id & (ctrl;ctrl^-1)) \ (rf^-1;rf)
 
 let imm(r) = r \ (r;r+)
 

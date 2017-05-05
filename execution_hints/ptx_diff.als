@@ -4,7 +4,7 @@ pred hint[X:Exec_PTX] {
 //            ||  e3: membar.cta  |  e6: membar.gl
 //            ||  e4: W x 1       |  e7: W y 1
   some disj e1,e2,e3,e4,e5,e6,e7 : E {
-    X.ev = e1+e2+e3+e4+e5+e6+e7
+    X.EV = e1+e2+e3+e4+e5+e6+e7
     X.W = e1+e4+e7
     X.R = e2+e5
     X.sb = ^((e2->e3) + (e3->e4)) + ^((e5->e6) + (e6->e7))
@@ -15,9 +15,9 @@ pred hint[X:Exec_PTX] {
     X.sthd = sq[e1] + sq[e2+e3+e4] + sq[e5+e6+e7]
     X.scta = sq[e1] + sq[e2+e3+e4  +    e5+e6+e7]
     X.sgl  = sq[e1  +    e2+e3+e4  +    e5+e6+e7]
-    X.membar_cta = e3
-    X.membar_gl = e6
-    X.membar_sys = none
+    X.MEMBAR_CTA = e3
+    X.MEMBAR_GL = e6
+    X.MEMBAR_SYS = none
     X.rf = (e1->e2) + (e4->e5)
     X.co = (e7->e1)
   }
