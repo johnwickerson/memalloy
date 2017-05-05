@@ -146,7 +146,7 @@ pred apply_map[X:SW/Exec_C, X':HW/Exec_Arm7, map:SE->HE] {
   X.ad = map . (X'.ad) . ~map
 
   // the mapping preserves data dependencies
-  dd = map . (X'.dd) . ~map
+  X.dd = map . (X'.dd) . ~map
 
   // the mapping preserves locations
   (X.sloc) = map . (X'.sloc) . ~map
