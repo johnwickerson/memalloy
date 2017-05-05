@@ -40,5 +40,5 @@ export OS=amd64-linux
 export JAVA_HEAP_SIZE=3g
 export MEMALLOY_ROOT_DIR="$( pwd )"
 
-make
+make install
 make moretests
