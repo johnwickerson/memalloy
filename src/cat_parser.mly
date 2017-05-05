@@ -130,7 +130,6 @@ exp:
 | EMPTY                  { Empty }
 | UNDERSCORE             { Var "ev" }
 | LPAR exp RPAR          { $2 }
-| select LPAR exp RPAR   { Op1 ($1,$3) }
 | VAR                    { Var ($1) }
 | VAR LPAR exp_list RPAR { App ($1,$3) }
 | exp STAR exp           { Op (Cross, [$1; $3])}

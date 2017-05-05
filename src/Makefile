@@ -9,7 +9,7 @@ OCB_OPTS := $(OCB_OPTS) -libs str,unix
 # OCaml packages
 OCB_OPTS := $(OCB_OPTS) -pkgs xml-light
 # Complain about unused variables
-UNUSED_VAR = @20@26@27@32..39
+UNUSED_VAR = @10@20@26@27@32..39
 OCB_OPTS := $(OCB_OPTS) -cflags -w,$(UNUSED_VAR)
 
 # Set title of documentation

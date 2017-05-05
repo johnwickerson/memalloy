@@ -29,7 +29,6 @@ open! Format
 open! General_purpose
 open Cat_syntax
 
-(* Nasty global variables *)
 let verbose = ref false
 let fencerels = ref false
 let cat_dir : string ref = ref "models"
@@ -81,23 +80,24 @@ let rec unfold_instrs u = function
   | other_instr :: instrs ->
      other_instr :: unfold_instrs u instrs
 				  
-(** {2 Determining Alloy types} *)
-
+(** {2 Generating Alloy code} *)
 
 type set_or_rel = Set | Rel
 
 let pp_set_or_rel oc = function
   | Set -> fprintf oc "set"
   | Rel -> fprintf oc "rel"
-    
+
+(** Information tracked for each let-declared variable *)
 type def_info = {
-    args : set_or_rel list;
-    withsc : bool
+    args : set_or_rel list; (** types of variable's arguments *)
+    withsc : bool (** variable depends on the {i S} order *)
   }
 
+(** Information tracked for each axiom *)
 type ax_info = {
-    cnstrnt : cnstrnt;
-    withsc_ax : bool
+    cnstrnt : cnstrnt; (** type of axiom *)
+    withsc_ax : bool (** axiom depends on the {i S} order *)
   }
 
 (** Create a typing environment containing the pre-defined sets and relations for the given architecture *)
@@ -106,101 +106,22 @@ let build_env withsc arch =
   let rels = if withsc then "s" :: rels else rels in
   let sets = Archs.arch_sets !fencerels arch in
   let mk_info x = (x, {args=[]; withsc=false}) in
-  (List.map mk_info rels) @ (List.map mk_info sets)
-
-let alloy_type_of = function Set -> "set E" | Rel -> "E->E"
+  List.map mk_info (rels @ sets)
     
-(** Look up type of variable's arguments in typing environment *)
+(** Look up variable in typing environment *)
 let lookup_var env x =
   try List.assoc x env with Not_found ->
     failwith "Variable %s is unbound in %a"
       x (MyList.pp (fun oc (x,_) -> pp_str oc x)) env
 
-(** Determine type of variable by inspecting the case of its first letter *)
+(** Determine type of variable from its first letter *)
 let type_of_var x =
-  let first_char = try x.[0] with Invalid_argument -> assert false in
-  let c = Char.code first_char in
-  if c >= Char.code 'A' && c <= Char.code 'Z' then Set
-  else if c >= Char.code 'a' && c <= Char.code 'z' then Rel
+  let first_char = try x.[0] with _ -> assert false in
+  let is_uppercase c = c >= 'A' && c <= 'Z' in
+  let is_lowercase c = c >= 'a' && c <= 'z' in
+  if is_uppercase first_char then Set
+  else if is_lowercase first_char then Rel
   else failwith "Variable %s has an invalid name" x
-
-(** [type_as env tgt expr] attempts to show that [expr] has type [tgt] under environment [env]. It returns [()] if it succeeds and aborts execution if it fails *)
-let rec type_as env tgt = function
-  | Empty -> ()
-  | Var x when tgt = type_of_var x ->
-     if (lookup_var env x <> []) then
-       failwith "Missing argument(s) for function %s" x;     
-  | Arg x when tgt = type_of_var x -> ()
-  | App (f, args) when tgt = type_of_var f ->
-     if (List.length args <> List.length lookup_var env f) then
-       failwith "Wrong number of arguments for function %s" f;
-     List.iter2 (type_as env) (lookup_var env f) args
-  | Op1 (Set_to_rln,e) when tgt = Rel -> type_as env Set e
-  | Op1 (Comp,e) -> type_as env tgt e
-  | Op1 (Star,e) | Op1 (Plus,e) | Op1 (Opt,e) | Op1 (Inv,e)
-       when tgt = Rel -> type_as env Rel e
-  | Op1 (Domain,e) | Op1 (Range,e) when tgt = Set ->
-     type_as env Rel e
-  | Op (Seq,es) when tgt = Rel ->
-     List.iter (type_as env Rel) es
-  | Op (Diff,es) | Op (Union,es) | Op (Inter,es) ->
-     List.iter (type_as env tgt) es
-  | Op (Cross,es) when tgt = Rel ->
-     if (List.length es <> 2) then
-       failwith "Cross product must have exactly two operands";
-     List.iter (type_as env Set) es
-  | e -> failwith "Couldn't type %a as a %s"
-           pp_expr e pp_set_or_rel tgt
-
-(** Returns the typing environment obtained by processing the instructions in the given .cat file *)
-let rec type_file path =
-  let model_type, withsc, model = parse_file path in
-  let arch = Archs.parse_arch model_type in
-  let env = build_env withsc arch in
-  List.fold_left type_instr env model
-  
-(** [type_instr env instr] updates the typing environment [env] with any new entries introduced by processing the instruction [instr] *)
-and type_instr env = function
-  | Let (x,args,e) ->
-     (* NB: we assume all arguments to a function are 
-        non-functional themselves *)
-     let add_arg a = (a,{args=[]; withsc=false}) in
-     let env' = (List.map add_arg args) @ env in
-     let tgt = type_of_var x in
-     type_as env' tgt e;
-     let arg_types = List.map type_of_var args in
-     (x, arg_types) :: env
-  | LetRec xes ->
-     let add_binding (x,_) = (x,{args=[]; withsc=false}) in
-     let env = (List.map add_binding xes) @ env in
-     let type_binding (x,e) =
-       type_as env Rel e;
-       if type_of_var x <> Rel then
-         failwith "Let-recs can only define relations, not sets"
-     in
-     List.iter type_binding xes;
-     env
-  | Axiom _ -> env 
-  | Include path -> type_file path @ env
-
-(** Returns the list of axioms declared in the given .cat file *)
-let rec extract_axioms path =
-  let model_type, withsc, model = parse_file path in
-  let arch = Archs.parse_arch model_type in
-  List.fold_left (extract_axioms_instr arch withsc) [] model 
-
-(** [extract_axioms_instr axs ins] updates the axiom list [axs] with any new axioms introduced by the instruction [ins] *)
-and extract_axioms_instr arch withsc_ax axs = function
-  | Axiom (cnstrnt,_,_,n) -> (n,{cnstrnt; withsc_ax}) :: axs
-  | Include path -> extract_axioms path @ axs
-  | _ -> axs
-				    
-(** {2 Generating Alloy code} *)
-
-let als_of_shape oc = function
-  | Acyclic -> fprintf oc "is_acyclic"
-  | Irreflexive -> fprintf oc "irreflexive"
-  | IsEmpty -> fprintf oc "is_empty"
 
 (** [replace_vars_with_args args e] converts the variables in [e] that are listed in [args] into "arguments" (which are treated differently when generating Alloy code) *)
 let rec replace_vars_with_args args = function
@@ -211,8 +132,22 @@ let rec replace_vars_with_args args = function
   | Op1 (o,e) -> Op1 (o, replace_vars_with_args args e)
   | Op (o,es) -> Op (o, List.map (replace_vars_with_args args) es)
 
-(** Cat expression to Alloy expression *)
-let als_of_expr env tgt oc = function
+let als_of_type oc = function
+  | Set -> fprintf oc "set E"
+  | Rel -> fprintf oc "E->E"
+               
+let als_of_shape oc = function
+  | Acyclic -> fprintf oc "is_acyclic"
+  | Irreflexive -> fprintf oc "irreflexive"
+  | IsEmpty -> fprintf oc "is_empty"
+
+let als_of_cnstrnt oc = function
+  | Provision -> fprintf oc "consistent"
+  | UndefUnless -> fprintf oc "racefree"
+  | Deadness -> fprintf oc "dead"
+
+(** [als_of_expr env tgt oc e] converts the Cat expression [e] into an Alloy expression (sent to output channel [oc]), with the expectation that [e] has type [tgt], and under the typing assumptions in [env] *)
+let rec als_of_expr env tgt oc = function
   | Empty when tgt = Set -> fprintf oc "none"
   | Empty when tgt = Rel -> fprintf oc "none -> none"
   | Var x when tgt = type_of_var x ->
@@ -226,7 +161,7 @@ let als_of_expr env tgt oc = function
   | App (f,es) when tgt = type_of_var f ->
      let var_info = lookup_var env f in
      let tes =
-       try List.combine var_info.args es with Invalid_argument ->
+       try List.combine var_info.args es with Invalid_argument _ ->
          failwith "Wrong number of arguments for function %s" f
      in
      fprintf oc "%s[%a,e,X%s]" f
@@ -264,17 +199,12 @@ let als_of_expr env tgt oc = function
      if (List.length es <> 2) then
        failwith "Cross product must have exactly two operands";
      MyList.pp_gen " -> " (fparen (als_of_expr env Set)) oc es
-  | e -> failwith "Couldn't type %a as a %s"
+  | e -> failwith "Couldn't type %a as a %a"
            pp_expr e pp_set_or_rel tgt
 
-(** [als_of_axiom oc (s,e)] converts the axiom [s(e)] into an Alloy expression, which is sent to [oc] *) 
+(** [als_of_axiom env oc (s,e)] converts the Cat axiom [s(e)] into an Alloy expression (sent to output channel [oc]), under the typing assumptions in [env]  *) 
 let als_of_axiom env oc (s, e) =
   fprintf oc "%a[%a]" als_of_shape s (als_of_expr env Rel) e
-
-let als_of_cnstrnt oc = function
-  | Provision -> fprintf oc "consistent"
-  | UndefUnless -> fprintf oc "racefree"
-  | Deadness -> fprintf oc "dead"
 
 (** Generates the first part of the Alloy file *)
 let preamble cat_path model_name arch oc =
@@ -285,41 +215,39 @@ let preamble cat_path model_name arch oc =
 	  
 (** Generates the final part of the Alloy file *)
 let postamble withsc arch axs oc c =
-  let axs = List.filter (fun (_,ax_info) -> ax_info.cnstrnt = c) axs in
-  let extra_rels = Archs.arch_rels_min arch in
-  fprintf oc "pred %a[e:E, X:%a%a] {\n"
-	  als_of_cnstrnt c Archs.pp_Arch arch
-	  als_args_of_extra_rels extra_rels;
+  fprintf oc "pred %a[e:E, X:%a] {\n"
+    als_of_cnstrnt c Archs.pp_Arch arch;
   if withsc then fprintf oc "  some s:E->E {\n";
-  if withsc then fprintf oc "    wf_s[e,X%a,s]\n"
-			 als_of_extra_rels extra_rels;
+  if withsc then fprintf oc "    wf_s[e,X,s]\n";
   let indent = if withsc then "    " else "  " in
   let pp_ax (n,ax_info) =
-    fprintf oc "%s%s[e,X%a%s]\n" indent n
-	    als_of_extra_rels ax_info.extra_rels_ax
-	    (if ax_info.withsc_ax then ",s" else "")
+    fprintf oc "%s%s[e,X%s]\n" indent n
+      (if ax_info.withsc_ax then ",s" else "")
   in
-  List.iter pp_ax (List.rev axs);
+  let check_constraint (_,ax_info) = ax_info.cnstrnt = c in
+  List.iter pp_ax (List.rev (List.filter check_constraint axs));
   if withsc then fprintf oc "  }\n";
   fprintf oc "}\n"
 	  
-(** [als_of_instr withsc arch u oc (env, axs, defs) ins] converts the .cat instruction [ins] into Alloy code (which is sent to [oc]), assuming architecture [arch], unrolling factor [u], typing environment [env], axiom list [axs], definition list [defs], and [withsc] controlling whether the {i S} order is included. Returns an updated typing environment, axiom list, and definition list. *)
+(** [als_of_instr withsc arch u oc (env, axs) ins] converts the Cat instruction [ins] into Alloy code (sent to out channel [oc]), assuming architecture [arch], unrolling factor [u], typing environment [env], axiom list [axs], and [withsc] controlling whether the {i S} order is included. Returns an updated typing environment and axiom list. *)
 let rec als_of_instr withsc arch unrolling oc (env, axs) = function
   | Let (x,args,e) ->
      let e = replace_vars_with_args args e in
      let e = if withsc then replace_vars_with_args ["s"] e else e in
      let x_type = type_of_var x in
+     let add_arg a = (a,{args=[]; withsc=false}) in
+     let env' = (List.map add_arg args) @ env in
      let pp_arg oc arg =
-       fprintf oc "%s:%s," arg (alloy_type_of (type_of_var arg))
+       fprintf oc "%s:%a," arg als_of_type (type_of_var arg)
      in
-     fprintf oc "fun %s [%se:E, X:%a%s] : %s {\n"
+     fprintf oc "fun %s [%ae:E, X:%a%s] : %a {\n"
        x (MyList.pp_gen "" pp_arg) args Archs.pp_Arch arch
        (if withsc then ", s:E->E" else "")
-       (alloy_type_of x_type);
-     fprintf oc "  %a\n" (als_of_expr env x_type) e;
+       als_of_type x_type;
+     fprintf oc "  %a\n" (als_of_expr env' x_type) e;
      fprintf oc "}\n\n";
-     let new_env = (x, {args=List.map type_of_var args; withsc})) in
-     (new_env :: env, axs)
+     let arg_types = {args=List.map type_of_var args; withsc} in
+     ((x, arg_types) :: env, axs)
   | LetRec _ ->
      failwith "Recursive definition should have already been removed."
   | Axiom (cnstrnt,s,e,n) ->
@@ -329,12 +257,14 @@ let rec als_of_instr withsc arch unrolling oc (env, axs) = function
      let e = if withsc then replace_vars_with_args ["s"] e else e in
      fprintf oc "  %a\n" (als_of_axiom env) (s, e);
      fprintf oc "}\n\n";
-     (env, (n, {cnstrnt; withsc_ax=withsc}) :: axs)
+     let ax_info = {cnstrnt; withsc_ax=withsc} in
+     (env, (n, ax_info) :: axs)
   | Include cat_path ->
      let env',axs' = als_of_file true unrolling cat_path in
      fprintf oc "open %s[E]\n\n" (Filename.chop_extension cat_path);
      (env' @ env, axs @ axs')
 
+(** [als_of_file interm_model u path] converts the Cat file [path] into a complete Alloy file, which is saved with the same name as the Cat file but with the .als extension instead of .cat. The conversion uses unrolling factor [u], and includes the top-level predicates unless [interm_model] is set. It returns the typing environment and axiom list obtained at the end of processing the file. *)
 and als_of_file interm_model unrolling cat_path =
   let model_name =
     Filename.chop_extension (Filename.basename cat_path)
@@ -392,11 +322,11 @@ let get_args () =
   let cat_file = Filename.basename !cat_path in
   let _ = cat_dir := dir in
   cat_file, !unrolling_factor, !intermediate_model
-		  
+		   
 let main () =
   let cat_path, unrolling_factor, interm_model = get_args () in
   assert (unrolling_factor >= 0);
-  als_of_file interm_model unrolling_factor cat_path;
+  let _ = als_of_file interm_model unrolling_factor cat_path in
   exit 0
     
 let _ = main ()
