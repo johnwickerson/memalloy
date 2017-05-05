@@ -34,6 +34,7 @@ eval `opam config env`
 # Install new version of graphviz from source
 #bash install-graphviz-2.40.1.sh
 #dot -V
+sudo easy_install progressbar
 
 export OS=amd64-linux
 export JAVA_HEAP_SIZE=3g
