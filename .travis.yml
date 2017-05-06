@@ -10,11 +10,10 @@ env:
 before_install:
   - sudo apt-get update
   - sudo apt-get install graphviz
-  - export OPAMYES=true
   - wget https://raw.github.com/ocaml/opam/master/shell/opam_installer.sh -O - | sh -s /usr/local/bin
   - opam switch $OCAML_VERSION
   - eval `opam config env`
-  - opam install ocamlfind xml-light ocamlbuild
+  - opam install --yes ocamlfind xml-light ocamlbuild
   - sudo easy_install progressbar
   - export OS=amd64-linux
   - export JAVA_HEAP_SIZE=3g
