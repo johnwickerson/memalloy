@@ -25,20 +25,9 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
 (** Abstract syntax tree for a .cat model *)
 
-open Format
-open General_purpose
-       
-type access_type =
-  | WriteRead
-  | Write
-  | Read
-  | Atomic
-  | Plain
-
-type set_or_rel = Set | Rel
-
-let pp_typ = function Set -> "Set" | Rel -> "Rel"
-
+open! Format
+open! General_purpose
+  
 (** Unary operators *)
 type unop =
   | Set_to_rln
@@ -46,8 +35,7 @@ type unop =
   | Plus
   | Opt
   | Inv
-  | Comp of set_or_rel
-  | Select of access_type * access_type
+  | Comp
   | Domain
   | Range
 
@@ -61,7 +49,7 @@ type binop =
 
 (** Expressions *)
 type cat_expr =
-  | Empty_rln
+  | Empty
   | Var of string
   | Arg of string (* used internally, when processing function bodies *)
   | App of string * cat_expr list
@@ -70,11 +58,11 @@ type cat_expr =
 
 (** Basic pretty-printing of expressions (for debugging) *)
 let rec pp_expr oc = function
-  | Empty_rln -> fprintf oc "0"
+  | Empty -> fprintf oc "0"
   | Var x -> fprintf oc "%s" x
   | Arg x -> fprintf oc "%s" x
   | App (f,es) -> fprintf oc "%s(%a)" f pp_exprs es
-  | Op1 (o,e) -> fprintf oc "unop(%a)" pp_expr e
+  | Op1 (_,e) -> fprintf oc "unop(%a)" pp_expr e (* TODO *)
   | Op (Seq,es) -> fprintf oc "Seq(%a)" pp_exprs es
   | Op (Union,es) -> fprintf oc "Union(%a)" pp_exprs es
   | Op (Inter,es) -> fprintf oc "Inter(%a)" pp_exprs es
@@ -123,9 +111,9 @@ let pp_instr oc = function
      fprintf oc "let %a\n\n" pp_binding (x,e)
   | Let (x,args,e) ->
      fprintf oc "let %s(%a) = %a\n\n"
-	     x (MyList.pp "," pp_var) args pp_expr e
+	     x (MyList.pp_gen "," pp_var) args pp_expr e
   | LetRec xes ->
-     fprintf oc "let %a\n\n" (MyList.pp " and " pp_binding) xes
+     fprintf oc "let %a\n\n" (MyList.pp_gen " and " pp_binding) xes
   | Axiom (c,t,e,n) ->
      fprintf oc "%a %a(%a) as %s\n\n"
        pp_cnstrnt c pp_shape t pp_expr e n

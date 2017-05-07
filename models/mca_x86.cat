@@ -1,0 +1,12 @@
+X86
+(* Multi-copy atomicity, applied to X86 *)
+
+include "basic.cat"
+
+let ppo = (W * W) & po | (R * M) & po
+
+(* Defining multicopy atomicity *)
+acyclic po-loc | co as MCA_part1
+let wo = (((rfe; ppo; rfe^-1) \ id); co)
+       | (rfe; ppo; fr_init)    
+acyclic wo as MCA_part2

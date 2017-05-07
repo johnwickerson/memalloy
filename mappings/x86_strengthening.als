@@ -1,3 +1,7 @@
+open ../archs/exec_x86[E]
+
+open strengthening[E]
+
 /*
 A x86-to-x86 mapping that allows:
 - sb edges to be introduced,
@@ -6,16 +10,14 @@ A x86-to-x86 mapping that allows:
 - non-locked operations to become locked
 */
 
-open ../archs/exec_x86[E]
-open strengthening[E]
 module x86_strengthening[E]
 
-pred apply_map_x86[X, X' : Exec_X86] { 
+pred apply_map_x86[X,X':Exec_X86] { 
 
   apply_map[X,X']
 
   // the strengthened execution may contain *more* locked events
-  X.locked in X'.locked
+  X.LOCKED in X'.LOCKED
 
   // atomicity is unchanged
   X.atom = X'.atom

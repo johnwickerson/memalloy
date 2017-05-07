@@ -25,7 +25,7 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
 (** Some general-purpose definitions *)
 
-open Format
+open! Format
 
 (** Fails with an error message, given as a formatted string *)
 let failwith fmt =
@@ -50,3 +50,9 @@ let rec range i j = if i > j then [] else i :: (range (i+1) j)
 let count p =
   let rec count_helper i = if p i then count_helper (i+1) else i in
   count_helper 0
+
+(** Identity function *)
+let iden x = x
+
+(** [opt a k None = a] and [opt a k (Some b) = k b] *)
+let opt a k = function None -> a | Some x -> k x

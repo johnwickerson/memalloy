@@ -1,9 +1,10 @@
 open ../archs/exec[E]
+
 module strengthening[E]
 
-pred apply_map[X, X' : Exec] { 
+pred apply_map[X,X':Exec] { 
 
-  X.ev = X'.ev
+  X.EV = X'.EV
   
   // reads compile to reads
   X.R = X'.R
@@ -35,7 +36,7 @@ pred apply_map[X, X' : Exec] {
   X.sloc = X'.sloc
 
   // the mapping preserves naL in both directions
-  X.naL = X'.naL
+  X.NAL = X'.NAL
 
   // the mapping preserves the thd-equivalence,
   // but only one way (that is, it may introduce

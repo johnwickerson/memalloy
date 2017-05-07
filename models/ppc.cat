@@ -21,7 +21,7 @@ PPC
 (* Model for Power *)
 
 include "basic.cat"
-let ctrlisync = ctrl; [isync]; po
+let ctrlisync = ctrl & isync
 
 (* Uniproc *)
 acyclic po-loc | rf | fr | co as Uniproc
@@ -49,19 +49,18 @@ and ii = ii0 | ci | (ic;ci) | (ii;ii)
 and cc = cc0 | ci | (ci;ic) | (cc;cc)
 and ic = ic0 | ii | cc | (ic;cc) | (ii ; ic) (* | ci inclus dans ii et cc *)
 
-let ppoR = RR(ii)
-let ppoW = RW(ic)
+let ppoR = (R * R) & ii
+let ppoW = (R * W) & ic
 let ppo = ppoR | ppoW
 show ppo
 
 (* fences *)
-let syncREL=po;[sync];po
-let lwsyncREL=WW(po;[lwsync];po)|RR(po;[lwsync];po)|RW(po;[lwsync];po)
-let eieioREL=WW(po;[eieio];po)
-show syncREL, lwsyncREL, eieioREL
+let lwsyncREL = ([W];lwsync;[W]) | ([R];lwsync;[R]) | ([R];lwsync;[W])
+let eieioREL = ([W];eieio;[W])
+show sync, lwsyncREL, eieioREL
 
 (* All arm barriers are strong *)
-let strong = syncREL
+let strong = sync
 let light = lwsyncREL|eieioREL
 let fence = strong|light
 
@@ -71,8 +70,8 @@ let fenceext = (rfe;fence)|(fence;rfe)|(rfe;fence;rfe)
 
 (* happens before *)
 let hb = ppo | ppoext | fence | fenceext
-let GHB = hb
-show GHB
+let ghb = hb
+show ghb
 acyclic hb as NoThinAir
 
 (* prop *)
@@ -82,14 +81,14 @@ show propbase
 
 let chapo = rfe|fre|coe|(fre;rfe)|(coe;rfe)
 
-let prop = WW(propbase)| (chapo? ; propbase*; strong; hbstar)
+let prop = (W * W) & propbase | (chapo? ; propbase*; strong; hbstar)
 
 #show prop
 acyclic co|prop as Propagation
 irreflexive fre;prop;hbstar as Observation
 
-let atomic = domain(atom) | range(atom)
-let xx = po & (atomic * atomic)
+let Ato = domain(atom) | range(atom)
+let xx = po & (Ato * Ato)
 acyclic co | xx as ScXX
 
 empty (atom & (fre;coe)) as Atomic

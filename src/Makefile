@@ -8,34 +8,43 @@ OCB_OPTS := $(OCB_OPTS) -cflag -g
 OCB_OPTS := $(OCB_OPTS) -libs str,unix
 # OCaml packages
 OCB_OPTS := $(OCB_OPTS) -pkgs xml-light
+# Complain about unused variables
+UNUSED_VAR = @10@20@26@27@32..39
+OCB_OPTS := $(OCB_OPTS) -cflags -w,$(UNUSED_VAR)
 
 # Set title of documentation
-OCD_OPTS := -docflags -t,Memalloy
+DOCNAME := memalloy
+OCD_OPTS := -docflags -t,$(DOCNAME)
 # Set custom stylesheet
 OCD_OPTS := $(OCD_OPTS) -docflags -css-style,mystyle.css
 
+# copy binaries here
+DEST := ..
+
+DOCDIR := ../doc
+
 .PHONY: all clean gen comparator doc
 
-all: gen comparator doc
+BINARIES = cat2als pp_comparator gen
 
-gen: 
-	ocamlbuild $(OCB_OPTS) gen.native
-	mv gen.native ../gen
+all: $(BINARIES) doc 
 
-comparator:
-	ocamlbuild $(OCB_OPTS) comparator.native
-	mv comparator.native ../comparator
+$(BINARIES): 
+	@ ocamlbuild $(OCB_OPTS) $@.native
+	mv $@.native $(DEST)/$@
 
 doc:
-	python mk_odocl.py > comparator.odocl
-	ocamlbuild $(OCB_OPTS) $(OCD_OPTS) comparator.docdir/index.html
-	rm -rf ../doc && mv comparator.docdir ../doc
-	cp mystyle.css ../doc/
-	@ echo "HTML documentation is in ../doc/index.html."
+	@ python ../etc/mk_odocl.py > $(DOCNAME).odocl
+	@ ocamlbuild $(OCB_OPTS) $(OCD_OPTS) $(DOCNAME).docdir/index.html
+	@ rm -rf $(DOCDIR) && mv $(DOCNAME).docdir $(DOCDIR)
+	@ cp mystyle.css $(DOCDIR)
+	@ echo "HTML documentation is in $(DOCDIR)/index.html."
 
 clean:
 	ocamlbuild -clean
-	@ echo ""
-	rm -f ../gen ../comparator
-	rm -f comparator.odocl
-	rm -rf ../doc
+	@ echo "" # because ocamlbuild doesn't end with a newline
+	rm -f $(DEST)/gen
+	rm -f $(DEST)/cat2als
+	rm -f $(DEST)/pp_comparator
+	rm -f memalloy.odocl
+	rm -rf $(DOCDIR)

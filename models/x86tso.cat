@@ -30,15 +30,12 @@ empty atom & (fre;coe) as Atomic
   
 (* GHB *)
 #ppo
-let ppo = WW(po) | RM(po)
-
-#mfence
-let mfence = po; [F]; po
+let ppo = (W * W) & po | (R * M) & po
 
 #implied barriers
-let poWR = WR(po)
-let i1 = PA(poWR)
-let i2 = AP(poWR)
+let poWR = (W * R) & po
+let i1 = (!LOCKED * LOCKED) & poWR
+let i2 = (LOCKED * !LOCKED) & poWR
 let implied = i1 | i2
 
 let ghb = mfence | implied | ppo | rfe | fr | co

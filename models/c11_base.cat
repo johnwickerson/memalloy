@@ -12,14 +12,14 @@ Tyler Sorensen and George A. Constantinides (POPL'17).
 
 include "basic.cat"
 
-let Fsb = [F]; po
-let sbF = po; [F]
+let fsb = [F]; po
+let sbf = po; [F]
 
 (* release sequence *)
 let rs = poloc*; rf*
 
 (* synchronises with *)
-let sw = ([rel]; Fsb?; [A & W]; rs; rf; [R & A]; sbF?; [acq]) \ thd
+let sw = ([REL]; fsb?; [A & W]; rs; rf; [R & A]; sbf?; [ACQ]) \ thd
 
 (* happens before *)
 let hb = (po | sw)+
@@ -27,10 +27,10 @@ let hb = (po | sw)+
 let hbl = hb & loc
 
 (* non-atomic reads-from *)
-empty (rf ; [naL]) \ imm([W] ; hbl) as NaRf
+empty (rf ; [NAL]) \ imm([W] ; hbl) as NaRf
 
 (* conflict *)
-let cnf = (((W*M) | (M*W)) & loc) \ [_]
+let cnf = (((W*M) | (M*W)) & loc) \ id
 				  
 (* data race *)
 let dr = (cnf \ (A*A)) \ thd \ (hb | hb^-1)
@@ -55,19 +55,19 @@ deadness_requires empty unforced_co as Forced_Co
 (* external control dependency *)
 let cde = ((rf \ thd) | ctrl)* ; ctrl
 (* dependable release sequence *)
-let drs = rs \ ([R]; ~cde)
+let drs = rs \ ([R]; !cde)
 (* dependable synchronises-with *)
-let dsw = sw & (((Fsb?; [rel]; drs?) \ (~ctrl; ~cde)) ; rf)		 
+let dsw = sw & (((fsb?; [REL]; drs?) \ (!ctrl; !cde)) ; rf)		 
 (* dependable happens-before *)
 let dhb = po?; (dsw;ctrl)*
 (* self-satisfying cycle *)	    
-let ssc = [_] & cde
+let ssc = id & cde
 (* potential data race *)
 let pdr = cnf \ (A*A)
 (* reads-from on non-atomic location *)
-let narf = rf & (naL*naL)
+let narf = rf & (NAL*NAL)
 
 deadness_requires empty pdr \ (dhb | dhb^-1 | narf;ssc | ssc;narf^-1) as Dead_Pdr
 
-let scb = Fsb?; (co | fr | hb); sbF?
-let scp = (scb & (sc * sc)) \ [_]
+let scb = fsb?; (co | fr | hb); sbf?
+let scp = (scb & (SC * SC)) \ id

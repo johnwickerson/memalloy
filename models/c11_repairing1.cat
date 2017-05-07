@@ -6,4 +6,4 @@ include "c11_base.cat"
 (* Repairing C11/Power mapping: *)
 let rb = [R]; rf^-1; co
 let shsb = po;hb;po
-acyclic [sc]; Fsb?; (po | shsb | rf | co | rb); sbF?; [sc] as Srepaired1
+acyclic [SC]; fsb?; (po | shsb | rf | co | rb); sbf?; [SC] as Srepaired1

@@ -1,43 +1,43 @@
+open ../archs/exec_C[SE] as SW
+open ../archs/exec_x86[HE] as HW
+
 /*
 A C11-to-x86 mapping that implements SC atomics using 
 atomic hardware events. 
 */
 
-open ../archs/exec_C[SE] as SW
-open ../archs/exec_x86[HE] as HW
-
 module c11_x86a[SE,HE]
 
-pred apply_map[X : SW/Exec_C, X' : HW/Exec_X86, map : SE -> HE] {
+pred apply_map[X:SW/Exec_C, X':HW/Exec_X86, map:SE->HE] {
 
-  X.ev = SE
-  X'.ev = HE
-
-  // every software event is mapped to at least one hardware event
-  map in X.ev one -> some X'.ev
-
-  // all events except RMWs and SC writes compile to single hardware events
-  all e : X.(ev - (R&W) - (W&sc)) | one e.map
-
-  // there are no no-ops on the software side
-  X.ev in X.(R + W + F)
-
-  // Reads compile to reads
-  (X.(R-W)).map in X'.R
-
-  // CAS's and SC writes compile to locked events
-  (X.((R&W) + (W&sc))).map = X'.locked
-
-  // Non-SC writes compile to non-locked writes
-  (X.((W-R)-sc)).map = X'.(W-locked)
-
-  // SC writes compile to locked RMWs
-  all e : X.(W&sc) | some disj e1, e2 : X'.ev {
-    e.map = e1 + e2
-    e1 in X'.(R & locked)
-    e2 in X'.(W & locked)
-    (e1 -> e2) in imm[X'.sb] & X'.atom
+  // two SW events cannot be compiled to a single HW event
+  map in X.EV lone -> X'.EV
     
+  // HW reads/writes cannot be invented by the compiler
+  all e : X'.(R+W) | one e.~map
+
+  // SW reads/writes cannot be discarded by the compiler
+  all e : X.(R+W) | some e.map
+
+  // a read compiles to a single non-locked read
+  all e : X.(R - W) {
+    one e.map
+    e.map in X'.(R - LOCKED)
+  }
+    
+  // a non-SC write compiles to a single non-locked write
+  all e : X.((W - R) - SC) {
+    one e.map
+    e.map in X'.(W - LOCKED)
+  }
+
+  // an SC write compiles to an RMW
+  all e : X.((W - R) & SC) | some disj e1,e2 : X'.EV {
+    e.map = e1 + e2
+    e1 in X'.(R & LOCKED)
+    e2 in X'.(W & LOCKED)
+    (e1 -> e2) in X'.atom & imm[X'.sb]
+
     // read does not observe a too-late value
     (e2 -> e1) not in ((X'.co) . (X'.rf))
 
@@ -46,37 +46,40 @@ pred apply_map[X : SW/Exec_C, X' : HW/Exec_X86, map : SE -> HE] {
   }
 
   // RMWs compile to locked RMWs
-  all e : X.(R&W) | some disj e1, e2 : X'.ev {
+  all e : X.(R & W) | some disj e1, e2 : X'.EV {
     e.map = e1 + e2
-    e1 in X'.(R & locked)
-    e2 in X'.(W & locked)
-    (e1 -> e2) in imm[X'.sb] & X'.atom
+    e1 in X'.(R & LOCKED)
+    e2 in X'.(W & LOCKED)
+    (e1 -> e2) in X'.atom & imm[X'.sb]
   }
 
-  // SC fences compile to fences
-  (X.(F & sc)).map in X'.F
-
-  // Non-SC fences compile to no-ops
-  (X.(F - sc)).map in X'.(ev - (R + W + F))
+  // SC fences compile to full fences
+  all e : X.(F & SC) {
+    (X.sb) . (stor[e]) . (X.sb) = map . (mfence[none,X']) . ~map
+  }
  
-  // the mapping preserves sb
-  (X.sb).map in map.(X'.sb)
-
-  // the mapping preserves dependencies
-  (X.cd).map = map.(X'.cd)
-  (X.ad).map = map.(X'.ad)
-  (X.dd).map = map.(X'.dd)
- 
-  // the mapping preserves rf
-  (X.rf).map = map.(X'.rf)
+  // sb edges are preserved (but more may be introduced)
+  X.sb in map . (X'.sb) . ~map
+  
+  // rf edges are preserved (but more may be introduced)
+  X.rf in map . (X'.rf) . ~map
 
   // the mapping preserves co
-  (X.co).map = map.(X'.co)
+  X.co = map . (X'.co) . ~map
+
+  // the mapping preserves address dependencies
+  X.ad = map . (X'.ad) . ~map
+
+  // the mapping preserves data dependencies
+  X.dd = map . (X'.dd) . ~map
+
+  // the mapping preserves locations
+  X.sloc = map . (X'.sloc) . ~map
+    
+  // the mapping preserves control dependencies
+  X.cd in map . (X'.cd) . ~map
 
   // the mapping preserves threads
-  (X.sthd).map = map.(X'.sthd)
-
-  // the mapping preserves loc
-  (X.sloc).map = map.(X'.sloc)
+  X.sthd = map . (X'.sthd) . ~map
 
 }

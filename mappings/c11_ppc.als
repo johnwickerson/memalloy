@@ -1,181 +1,146 @@
+open ../archs/exec_C[SE] as SW
+open ../archs/exec_ppc[HE] as HW
+
 /*
 A C11-to-Power mapping.
 */
 
-open ../archs/exec_C[SE] as SW
-open ../archs/exec_ppc[HE] as HW
-
 module c11_ppc[SE,HE]
 
-pred apply_map[
-  X : SW/Exec_C, X' : HW/Exec_PPC, 
-  map : SE -> HE
-] {
+pred apply_map[X:Exec_C, X':Exec_PPC, map:SE->HE] {
 
-  //X.ev = SE
-  //X'.ev = HE
+  X.EV = SE
+  X'.EV = HE
+    
+  // two SW events cannot be compiled to a single HW event
+  map in X.EV lone -> X'.EV
+   
+  // HW reads/writes cannot be invented by the compiler
+  all e : X'.(R+W) | one e.~map
 
-  // every software event is mapped to at least one hardware event
-  map in X.ev one -> some X'.ev
-
-  // there are no no-ops on the software side
-  X.ev in X.(R + W + F)
+  // SW reads/writes cannot be discarded by the compiler
+  all e : X.(R+W) | some e.map
   
   // a non-atomic or relaxed read compiles to a single read
-  all e : X.((R - W) - acq) {
+  all e : X.((R - W) - ACQ) {
     one e.map
     e.map in X'.R
   }
       
   // an acquire read compiles to a read followed by
-  // a control fence, with control dependencies inserted between the read and 
-  // every event that is sequenced after it.
-  all e : X.((R - W) & acq - sc) | some disj e1,e2 : X'.ev { 
-    e.map = e1+e2
+  // a control fence, with control dependencies inserted between the
+  // read and every event that is sequenced after it.
+  all e : X.((R - W) & ACQ - SC) | let e1 = e.map {
+    one e1 
     e1 in X'.R
-    e2 in X'.isync
-    (e1 -> e2) in imm[X'.sb] & X'.(cd - (ad + dd))
-    all e' : X'.sb[e1] | (e1 -> e') in X'.cd
+    e1 <: (X'.sb) in (X'.cd) & (isync[none,X'])
   }
-
-/* DELIBERATELY WRONG MAPPING FOR ACQUIRE READS:
-  all e : X.((R - W) & acq - sc) {
-    one e.map
-    e.map in X'.R
-  }
-*/
   
-
   // an SC read compiles to a full fence followed by a read 
   // followed by a control fence, with control dependencies inserted 
   // between the read and every event that is sequenced after it
-  all e : X.((R - W) & sc) | some disj e1,e2,e3 : X'.ev {
-    e.map = e1+e2+e3
-    e1 in X'.sync
-    e2 in X'.R
-    e3 in X'.isync 
-    (e1 -> e2) in imm[X'.sb]
-    (e2 -> e3) in imm[X'.sb] & X'.(cd - (ad + dd))
-    all e' : X'.sb[e2] | (e2 -> e') in X'.cd
+  all e : X.((R - W) & SC) | let e1 = e.map {
+    one e1
+    e1 in X'.R
+    (X'.sb) :> e1 in (sync[none,X'])
+    e1 <: (X'.sb) in (X'.cd) & (isync[none,X']) 
   }
   
   // a non-atomic or relaxed write compiles to a single write
-  all e : X.((W - R) - rel) {
+  all e : X.((W - R) - REL) {
     one e.map
     e.map in X'.W
   }
 
   // a release write compiles to a lightweight fence followed 
   // by a write
-  all e : X.((W - R) & rel - sc) | some disj e1,e2 : X'.ev {
-    e.map = e1+e2
-    e1 in X'.lwsync
-    e2 in X'.W 
-    (e1 -> e2) in imm[X'.sb]
+  all e : X.((W - R) & REL - SC) | let e1 = e.map {
+    one e1
+    e1 in X'.W
+    (X'.sb) :> e1 in (lwsync[none,X'])
   }
   
   // an SC write compiles to a full fence followed by a write
-  all e : X.((W - R) & sc) | some disj e1,e2 : X'.ev {
-    e.map = e1+e2
-    e1 in X'.sync
-    e2 in X'.W
-    (e1 -> e2) in imm[X'.sb]
+  all e : X.((W - R) & SC) | let e1 = e.map {
+    one e1
+    e1 in X'.W
+    (X'.sb) :> e1 in (sync[none,X'])
   }
   
   // a relaxed RMW compiles to a read followed by a write, with 
   // control dependencies inserted between the read and every 
   // event that is sequenced after it
-  all e : X.((R & W) - (acq + rel)) | some disj e1,e2 : X'.ev {
+  all e : X.((R & W) - (ACQ + REL)) | some disj e1,e2 : X'.EV {
     e.map = e1+e2
     e1 in X'.R
     e2 in X'.W
-    (e1 -> e2) in X'.atom
-    all e' : X'.sb[e1] | (e1 -> e') in X'.cd
+    (e1 -> e2) in X'.atom & imm[X'.sb]
+    e1 <: (X'.sb) in X'.cd  
   }
 
   // an acquire RMW compiles to a read followed by a write, 
   // followed by an isync, with control dependencies inserted 
   // between the read and every event that is sequenced after it
-  all e : X.((R & W & acq) - (rel + sc)) | some disj e1,e2,e3 : X'.ev {
-    e.map = e1+e2+e3
+  all e : X.((R & W & ACQ) - (REL + SC)) | some disj e1,e2 : X'.EV {
+    e.map = e1+e2
     e1 in X'.R
     e2 in X'.W
-    e3 in X'.isync
-    (e1 -> e2) in X'.atom
-    (e2 -> e3) in imm[X'.sb]
-    (e1 -> e3) in X'.(cd - (ad + dd))
-    all e' : X'.sb[e1] | (e1 -> e') in X'.cd
+    (e1 -> e2) in X'.atom & imm[X'.sb]
+    e1 <: (X'.sb) in X'.cd
+    e2 <: (X'.sb) in isync[none,X']
   }
 
   // a release RMW compiles to an lwsync, followed by a read, followed by
-  // a write, with control dependencies inserted between the read and every 
-  // event that is sequenced after it
-  all e : X.((R & W & rel) - (acq + sc)) | some disj e1,e2,e3 : X'.ev {
-    e.map = e1+e2+e3
-    e1 in X'.lwsync
-    e2 in X'.R
-    e3 in X'.W
-    (e1 -> e2) in imm[X'.sb]
-    (e2 -> e3) in X'.atom
-    all e' : X'.sb[e2] | (e2 -> e') in X'.cd
+  // a write, with control dependencies inserted between the read and
+  // every event that is sequenced after it
+  all e : X.((R & W & REL) - (ACQ + SC)) | some disj e1,e2 : X'.EV {
+    e.map = e1+e2
+    e1 in X'.R
+    e2 in X'.W
+    (e1 -> e2) in X'.atom & imm[X'.sb]
+    (X'.sb) :> e1 in lwsync[none,X']
+    e1 <: (X'.sb) in X'.cd
   }
 
-  // an acquire/release RMW compiles to an lwsync, followed by a read, followed by
-  // a write, followed by an isync, with control dependencies inserted between 
-  // the read and every event that is sequenced after it
-  all e : X.((R & W & rel & acq) - sc) | some disj e1,e2,e3,e4 : X'.ev {
-    e.map = e1+e2+e3+e4
-    e1 in X'.lwsync
-    e2 in X'.R
-    e3 in X'.W
-    e4 in X'.isync
-    (e1 -> e2) in imm[X'.sb]
-    (e2 -> e3) in X'.atom
-    (e3 -> e4) in imm[X'.sb]
-    (e1 -> e3) in X'.(cd - (ad + dd))
-    all e' : X'.sb[e2] | (e2 -> e') in X'.cd
+  // an acquire/release RMW compiles to an lwsync, followed by a read,
+  // followed by a write, followed by an isync, with control
+  // dependencies inserted between the read and every event that is
+  // sequenced after it
+  all e : X.((R & W & REL & ACQ) - SC) | some disj e1,e2 : X'.EV {
+    e.map = e1+e2
+    e1 in X'.R
+    e2 in X'.W
+    (e1 -> e2) in X'.atom & imm[X'.sb]
+    (X'.sb) :> e1 in lwsync[none,X']
+    e1 <: (X'.sb) in X'.cd
+    e2 <: (X'.sb) in isync[none,X']
   }
 
-  // an SC RMW compiles to an hwsync, followed by a read, followed by
-  // a write, followed by an isync, with control dependencies inserted between 
-  // the read and every event that is sequenced after it
-  all e : X.(R & W & sc) | some disj e1,e2,e3,e4 : X'.ev {
-    e.map = e1+e2+e3+e4
-    e1 in X'.sync
-    e2 in X'.R
-    e3 in X'.W
-    e4 in X'.isync
-    (e1 -> e2) in imm[X'.sb]
-    (e2 -> e3) in X'.atom
-    (e3 -> e4) in imm[X'.sb]
-    (e1 -> e3) in X'.(cd - (ad + dd))
-    all e' : X'.sb[e2] | (e2 -> e') in X'.cd
+  // an SC RMW compiles to an sync, followed by a read, followed by
+  // a write, followed by an isync, with control dependencies inserted
+  // between the read and every event that is sequenced after it
+  all e : X.(R & W & SC) | some disj e1,e2 : X'.EV {
+    e.map = e1+e2
+    e1 in X'.R
+    e2 in X'.W
+    (e1 -> e2) in X'.atom & imm[X'.sb]
+    (X'.sb) :> e1 in sync[none,X']
+    e1 <: (X'.sb) in X'.cd
+    e2 <: (X'.sb) in isync[none,X']
   }
 
-  // relaxed fences compile to no-ops
-  all e : X.(F - (acq + rel)) {
-    one e.map
-    e.map in X'.(ev - (R + W + F))
-  }
-
-  // release/acquire fences compile to lightweight fences
-  all e : X.(F & (acq + rel) - sc) {
-    one e.map
-    e.map in X'.lwsync
+  // release or acquire fences compile to lightweight fences
+  all e : X.(F & (ACQ + REL) - SC) {
+    (X.sb) . (stor[e]) . (X.sb) = map . (lwsync[none,X']) . ~map
   }
       
   // SC fences compile to full fences
-  all e : X.(F & sc) {
-    one e.map 
-    e.map in X'.sync
+  all e : X.(F & SC) {
+    (X.sb) . (stor[e]) . (X.sb) = map . (sync[none,X']) . ~map
   }
  
-  // the mapping is allowed to introduce extra sb edges within a
-  // thread - partly because the compilation scheme may introduce
-  // extra events, and partly because the compilation scheme may
-  // need to linearise a partial sb in the source.
-  (all e1,e2 : X.ev | 
-	((e1 -> e2) in (X.sb)) implies ((e1.map -> e2.map) in (X'.sb)))
+  // sb edges are preserved (but more may be introduced)
+  X.sb in map . (X'.sb) . ~map
   
   // the mapping preserves rf
   X.rf = map . (X'.rf) . ~map
@@ -190,24 +155,12 @@ pred apply_map[
   X.dd = map . (X'.dd) . ~map
 
   // the mapping preserves locations
-  (X.sloc) = map . (X'.sloc) . ~map
+  X.sloc = map . (X'.sloc) . ~map
     
-  // every ctrl dependency in the software induces zero or
-  // more ctrl dependencies in the hardware, depending on
-  // how many hardware instructions the dependent software 
-  // instruction maps to.
-  (all e1,e2 : X.ev |
-	(((e1 -> e2) in X.cd) && some e1.map) implies
-	  (some e1' : e1.map | (e1' -> e2.map) in X'.cd))
-  
-  // every ctrl dependency in the hardware is obtained 
-  // from an existing ctrl dependency in the software, or
-  // else is introduced by the scheme.
-  (all e1',e2' : X'.ev | ((e1' -> e2') in X'.cd) implies
-	(some e1,e2 : X.ev | e1' in e1.map && e2' in e2.map &&
-      (e1 -> e2) in rc[X.cd]))
+  // ctrl dependencies are preserved (but more may be introduced)
+  X.cd in map . (X'.cd) . ~map
 
   // the mapping preserves threads
-  (X'.sthd) = ~map . (X.sthd) . map
+  X.sthd = map . (X'.sthd) . ~map
   
 }

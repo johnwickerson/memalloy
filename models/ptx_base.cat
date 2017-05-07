@@ -19,7 +19,7 @@ https://github.com/herd/herdtools/blob/master/herd/ptx.cat
 
 "PTX"
 
-include "basic.cat"
+include "basic_H.cat"
 
 empty (atom & (fre;coe)) as Atomic
 					
@@ -29,6 +29,6 @@ acyclic polocLLH | com as ScPerLocLLH
 let dp = addr | data | ctrl
 acyclic dp | rf as NoThinAir
 
-let sys_fence = po; [membar.sys]; po
-let gl_fence = (po; [membar.gl]; po) | sys_fence
-let cta_fence = (po; [membar.cta]; po) | gl_fence
+let sys_fence = membar_sys
+let gl_fence = membar_gl | sys_fence
+let cta_fence = membar_cta | gl_fence

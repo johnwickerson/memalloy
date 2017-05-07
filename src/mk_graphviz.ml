@@ -25,8 +25,8 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
 (** Converting executions into Graphviz graphs *)
 
-open Format
-open General_purpose
+open! Format
+open! General_purpose
 open Exec
 open Graphviz
 
@@ -51,7 +51,7 @@ let dot_of_event x maps e =
     | false, false, false -> "Nop", "", "azure3"
     | r,w,f -> failwith "Found event with (R,W,F)=(%b,%b,%b)" r w f
   in
-  let ignored_attrs = ["ev";"R";"W";"F";"IW"] in
+  let ignored_attrs = ["EV";"R";"W";"F";"IW"] in
   let attrs = MySet.diff (get_sets x e) ignored_attrs in
   let loc =
     try asprintf "%a" Location.pp (List.assoc e maps.loc_map)
@@ -63,7 +63,7 @@ let dot_of_event x maps e =
   in *)
   let e = asprintf "%a" Event.pp e in
   let label = asprintf "%s: %s[%a]%s%s" e dir
-		       (MyList.pp "," pp_str) attrs loc vals
+		       (MyList.pp_gen "," pp_str) attrs loc vals
   in
   let attrs =
     ["label", label;
@@ -97,9 +97,9 @@ let dot_of_rel (name, tuples) =
   List.map dot_of_pair tuples
   
 let dot_of_execution' maps x =
+  let x = tidy_exec x in
   let x = remove_transitive "sb" x in
   let x = remove_transitive "co" x in
-  let x = remove_stale_rfs x in
   let thds = Assoc.val_list (Assoc.invert_map maps.thd_map) in
   let mk_cluster ns =
     Cluster (ns, ["color", "azure4"; "style", "dashed"])

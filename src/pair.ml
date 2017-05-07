@@ -25,8 +25,8 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
 (** A pair type *)
 
-open Format
-open General_purpose
+open! Format
+open! General_purpose
 
 let pp f1 s f2 oc (a,b) =
   fprintf oc "%a%s%a" f1 a s f2 b 

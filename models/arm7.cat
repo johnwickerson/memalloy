@@ -21,7 +21,7 @@ https://github.com/herd/herdtools/blob/master/herd/arm.cat
 (* Model for ARM, ie with po-loc ommited from ppo *)
 
 include "basic.cat"
-let ctrlisync = ctrl; [ISB]; po
+let ctrlisync = ctrl & isb
 	  
 (* Uniproc *)
 acyclic po-loc | rf | fr | co as Uniproc
@@ -49,25 +49,19 @@ and ii = ii0 | ci | (ic;ci) | (ii;ii)
 and cc = cc0 | ci | (ci;ic) | (cc;cc)
 and ic = ic0 | ii | cc | (ic;cc) | (ii ; ic) (* | ci inclus dans ii et cc *)
 
-let ppo = RW(ic) | RR(ii)
+let ppo = (R * W) & ic | (R * R) & ii
 
 
 (**********)
 (* fences *)
 (**********)
-
-let dmbstREL = po; [DMB.ST]; po
-let dsbstREL = po; [DSB.ST]; po
-let dmbREL = po; [DMB]; po
-let dsbREL = po; [DSB]; po
-
+	      
 (* ARM *)
-let dmbstW=WW(dmbstREL)
-let dsbstW=WW(dsbstREL)
-show dmbREL,dsbREL,dmbstW,dsbstW
+let dmbstW = (W * W) & dmbst
+show dmb, dmbstW
 
 (* Common, all arm barriers are strong *)
-let strong = dmbREL|dsbREL|dmbstREL|dsbstREL
+let strong = dmb | dmbstW
 let light = 0
 
 let fence = strong|light
@@ -75,7 +69,6 @@ let fence = strong|light
 
 (* happens before *)
 let hb = ppo | fence | rfe
-let GHB = hb
 
 acyclic hb as ThinAir
 
@@ -85,8 +78,9 @@ let propbase = (fence|(rfe;fence));hbstar
 
 let chapo = rfe|fre|coe|(fre;rfe)|(coe;rfe)
 
-let prop = WW(propbase)| (chapo? ; propbase*; strong; hbstar)
+let prop = (W * W) & propbase | (chapo? ; propbase*; strong; hbstar)
 
 acyclic co|prop as Propagation
 irreflexive fre;prop;hbstar as Causality
 
+empty atom & (fre;coe) as Atomic

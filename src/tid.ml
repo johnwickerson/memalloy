@@ -25,9 +25,9 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
 (** A thread identifier *)
 
-open Format
-open General_purpose
+open! Format
+open! General_purpose
 
 type t = int
 
-let pp oc tid = fprintf oc "T%d" tid
+let pp oc tid = fprintf oc "%d" tid

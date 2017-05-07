@@ -23,15 +23,16 @@ OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION
 WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 *)
 
-open Format
-open Unix
+open! Format
 
 (** Extension of Unix module *)
        
 let today() =
-  let t = localtime (time ()) in
-  sprintf "%04d-%02d-%02d" (t.tm_year + 1900) (t.tm_mon + 1) t.tm_mday
+  let t = Unix.localtime (Unix.time ()) in
+  sprintf "%04d-%02d-%02d"
+    (t.Unix.tm_year + 1900) (t.Unix.tm_mon + 1) t.Unix.tm_mday
 
 let now() =
-  let t = localtime (time ()) in
-  sprintf "%02d:%02d:%02d" t.tm_hour t.tm_min t.tm_sec
+  let t = Unix.localtime (Unix.time ()) in
+  sprintf "%02d:%02d:%02d"
+    t.Unix.tm_hour t.Unix.tm_min t.Unix.tm_sec

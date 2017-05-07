@@ -25,12 +25,13 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
 (** Represents a memory location *)
 
-open Format
-open General_purpose
+open! Format
+open! General_purpose
        
 type t = int
 
 let pp oc = function
+  | -1 -> fprintf oc "ok"
   | 0 -> fprintf oc "x"
   | 1 -> fprintf oc "y"
   | 2 -> fprintf oc "z"

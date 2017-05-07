@@ -6,5 +6,4 @@
     -events 4 \
     -satisfies models/nodeps.cat \
     -expect 2 \
-    -iter \
-    -minimal
+    -iter

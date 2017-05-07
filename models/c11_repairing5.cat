@@ -5,8 +5,8 @@ include "c11_base.cat"
 
 (* Allowing further elimination of SC accesses: *)
 let rb = [R]; rf^-1; co
-let shsb = (po \ WW(loc)); hb; (po \ RR(loc))
+let shsb = (po \ ([W];loc;[W])); hb; (po \ ([R];loc;[R]))
 let eco = (rf | co | rb)+
-let Fhb = [F];hb
-let hbF = hb;[F]
-acyclic [sc]; Fhb?; (po | shsb | eco); hbF?; [sc] as Srepaired5
+let fhb = [F];hb
+let hbf = hb;[F]
+acyclic [SC]; fhb?; (po | shsb | eco); hbf?; [SC] as Srepaired5

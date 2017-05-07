@@ -12,43 +12,39 @@ Tyler Sorensen and George A. Constantinides (POPL'17).
 
 include "basic.cat"
   
-let Fsb = [F]; po
-let sbF = po; [F]
+let fsb = [F]; po
+let sbf = po; [F]
 
 (* release sequence *)
 let rs = poloc*; rf*
 
 (* inclusive scopes (conservative original) *)
-let incl' = swg & (wg * wg)
-	  | sdv & (dv * dv)
-	  |       (sy * sy)
+let incl' = swg & (WG * WG)
+	  | sdv & (DV * DV)
+	  |       (SY * SY)
 
 (* inclusive scopes (less conservative version) *)
-let incl1 = [wg]; swg
-	  | [dv]; sdv
-	  | [sy]; (_ * _)
+let incl1 = [WG]; swg
+	  | [DV]; sdv
+	  | [SY]; uni
 let incl = incl1 & incl1^-1
-	 | [rem]; incl1
-	 | incl1^-1; [rem]
+	 | [REM]; incl1
+	 | incl1^-1; [REM]
       
-let scf = sc * sc
+let scf = (SC * SC)
 	| (G & L & F) * (G & L & F)
 
 let swra_local =
-  ([L & rel]; Fsb?; [A & W]; rs; [L]; rf; [R & A]; sbF?; [L & acq])
+  ([L & REL]; fsb?; [A & W]; rs; [L]; rf; [R & A]; sbf?; [L & ACQ])
   & incl \ thd
 
 let swra_global =
-  ([G & rel]; Fsb?; [A & W]; rs; [G]; rf; [R & A]; sbF?; [G & acq])
+  ([G & REL]; fsb?; [A & W]; rs; [G]; rf; [R & A]; sbf?; [G & ACQ])
   & incl \ thd
-  
-let bsw_local = (entry_fence * exit_fence) & sbar & swg & (L*L) \ thd
-
-let bsw_global = (entry_fence * exit_fence) & sbar & swg & (G*G) \ thd
 						  
-let sw_local = swra_local | bsw_local | (scf & swra_global)
+let sw_local = swra_local | (scf & swra_global)
 
-let sw_global = swra_global | bsw_local | (scf & swra_local)
+let sw_global = swra_global | (scf & swra_local)
 
 let ghb = ((G * G) & po | sw_global)+
 let lhb = ((L * L) & po | sw_local)+
@@ -63,8 +59,8 @@ irreflexive (co | co;rf | fr | fr;rf); lhb as Lcoh
 
 irreflexive rf;hb as Rf
 
-empty (rf;[naL & G]) \ imm([W];(ghb & sloc)) as GnaRf
-empty (rf;[naL & L]) \ imm([W];(lhb & sloc)) as LnaRf
+empty (rf;[NAL & G]) \ imm([W];(ghb & sloc)) as GnaRf
+empty (rf;[NAL & L]) \ imm([W];(lhb & sloc)) as LnaRf
 
 irreflexive rf | co;fr | co;rf as Rmw
 
@@ -85,10 +81,10 @@ deadness_requires empty unforced_co as Forced_Co
 (* external control dependency *)
 let cde = ((rf \ thd) | ctrl)* ; ctrl
 (* dependable release sequence *)
-let drs = rs \ ([R]; ~cde)
+let drs = rs \ ([R]; !cde)
 (* dependable synchronises-with *)
-let dsw_global = sw_global & (((Fsb?; [rel]; drs?) \ (~ctrl; ~cde)) ; rf)
-let dsw_local = sw_local & (((Fsb?; [rel]; drs?) \ (~ctrl; ~cde)) ; rf)
+let dsw_global = sw_global & (((fsb?; [REL]; drs?) \ (!ctrl; !cde)) ; rf)
+let dsw_local = sw_local & (((fsb?; [REL]; drs?) \ (!ctrl; !cde)) ; rf)
 (* dependable happens-before *)
 let dhb_global = po?; (dsw_global;ctrl)*
 let dhb_local = po?; (dsw_local;ctrl)*

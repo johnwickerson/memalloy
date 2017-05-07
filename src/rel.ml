@@ -25,13 +25,16 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
 (** Relations (implemented as lists of pairs) *)
 
-open Format
-open General_purpose
+open! Format
+open! General_purpose
 
 type 'a t = ('a * 'a) list
 
 let invert r =
   List.map (fun (e,e') -> (e',e)) r
+
+let dom r = List.map fst r
+let rng r = List.map snd r
 
 let compare r e e' = if List.mem (e,e') r then -1 else 1
 

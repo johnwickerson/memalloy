@@ -8,7 +8,7 @@ is available online: http://multicore.doc.ic.ac.uk/overhauling/
 
 include "opencl_base.cat"
 
-let Sall = Fsb?; (co | fr | hb); sbF?
-let Sp = (Sall & (sc*sc)) \ [_]
+let sall = fsb?; (co | fr | hb); sbf?
+let sp = (sall & (SC*SC)) \ id
 			  
-acyclic Sp & incl as Spartial
+acyclic sp & incl as Spartial

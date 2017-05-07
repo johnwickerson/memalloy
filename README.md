@@ -1,18 +1,24 @@
-[![Build Status](https://travis-ci.org/johnwickerson/memalloy.svg?branch=master)](https://travis-ci.org/johnwickerson/memalloy)
+
+| Licence | Master branch | Dev branch |
+|---------|---------------|------------|
+| [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT) | [![Build Status](https://travis-ci.org/johnwickerson/memalloy.svg?branch=master)](https://travis-ci.org/johnwickerson/memalloy) | [![Build Status](https://travis-ci.org/johnwickerson/memalloy.svg?branch=dev)](https://travis-ci.org/johnwickerson/memalloy) |
 
 # System requirements
 
-- Tested with the following versions of (OCaml, OPAM):
-    - (4.01.0, 1.0.0)
-    - (4.01.0, 1.2.1)
-    - (4.02.1, 1.2.0)
-    - (4.02.3, 1.2.2)
+- Tested with the following versions of OCaml:
+    - 4.01.0
+    - 4.02.1
+    - 4.02.3
+	- 4.03.0
+	- 4.04.0
 
-- OPAM packages `xml-light` and `ocamlfind`.
+- OPAM packages `xml-light`, `ocamlfind`, and `ocamlbuild`
+
+- Python packages `progressbar`
 
 - Java runtime version 8 (Java SE 8).
 
-- Graphviz version 2.40.1 
+- Graphviz
 
 # Quick start
 
@@ -20,7 +26,8 @@
 
 2. Run `source configure.sh`.
 
-3. Run `make`. HTML documentation can now be browsed at `doc/index.html`.
+3. Run `make install`. HTML documentation can now be browsed at
+   `doc/index.html`.
 
 4. Run `make quicktest`. After a few minutes you should find some
    pictures of distinguishing executions in the `png` directory.
@@ -29,21 +36,27 @@
 
 - Each `.cat` file must begin with a description of the architecture
   being modelled. This must be one of: `"BASIC"`, `"C"`, `"HW"`,
-  `"X86"`, `"PPC"`, `"ARM7"`, `"ARM8"`, `"PTX"`, or `"OpenCL"`.
+  `"X86"`, `"PPC"`, `"ARM7"`, `"ARM8"`, `"PTX"`, `"OpenCL"`, or `"OCaml"`.
 
 - A reasonable fragment of the `.cat` language is supported.
 
-    - You can define sets or relations via `let x = e`.
+	- You can define sets and relations via `let x = e`. Names of sets
+      must begin with an uppercase letter, and names of relations must
+      begin with a lowercase letter.
 
-    - You can define functions via `let f(r1,...,rn) = e`, but note
-      that the parameters `r1` through `rn` are assumed to be
-      relations.
+	- You can define functions via `let f(r1,...,rn) = e`. The name of
+      the function must begin with an uppercase letter if the function
+      returns a set, and must begin with a lowercase letter if the
+      function returns a relation. Functions cannot return functions.
+      Set-valued parameters must have a name beginning with an
+      uppercase letter, and relation-valued parameters must begin with
+      a lowercase letter. Parameters cannot be functions themselves.
 	  
-    - You can define relations recursively via `let x1 = e1 and
-      ... and xn = en`, and these are unrolled a fixed number of times
-      when translating into Alloy (since Alloy only checks up to a
-      finite bound anyway). The number of unrollings is set by the
-      `-u` flag, which defaults to 3.
+    - You can define relations (but not sets) recursively via `let x1
+	  = e1 and ... and xn = en`, and these are unrolled a fixed number
+	  of times when translating into Alloy (since Alloy only checks up
+	  to a finite bound anyway). The number of unrollings is set by
+	  the `-u` flag, which defaults to 3.
 	  
     - You can define a consistency axiom of the model called `name`
       via `acyclic|irreflexive|empty e as name`. You can define a
@@ -71,5 +84,5 @@
       'acquire' accesses in the Arm8 architecture, but these clash
       with the variables for 'local' accesses in OpenCL and 'atomic'
       accesses in C and OpenCL, respectively. Alloy does not allow
-      variables to be re-used in this way, so you must use `screl` and
-      `scacq` in the Arm8 architecture instead.
+      variables to be re-used in this way, so you must use `SCREL` and
+      `SCACQ` in the Arm8 architecture instead.

@@ -1,0 +1,7 @@
+"OCaml"
+
+empty [F] as NoFences
+empty [R&W] as NoRmws
+
+empty [A];sloc;[(R|W)\A] as NoLocAccessedAtomicallyAndNonatomically
+empty [(R|W)\A];sloc;[A] as NoLocAccessedNonatomicallyAndAtomically

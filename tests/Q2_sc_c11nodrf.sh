@@ -6,4 +6,5 @@
     -events 4 \
     -satisfies models/c11_normws.cat \
     -satisfies models/c11_onlysc.cat \
+    -satisfies models/totalsb.cat \
     -expect 1
