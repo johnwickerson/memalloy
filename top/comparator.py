@@ -112,7 +112,7 @@ def main(argv=None):
       print "ERROR: Expected %d unique solutions, found %d" % (args.expect, nsolutions)
       return 1
   
-  if nsolutions == 0
+  if nsolutions == 0:
     return 0
   
   print "Remove duplicates"
