@@ -4,4 +4,5 @@
     -satisfies models/x86tso.cat \
     -violates models/mca_x86.cat \
     -events 7 \
-    -expect 0
+    -expect 0 \
+    $@

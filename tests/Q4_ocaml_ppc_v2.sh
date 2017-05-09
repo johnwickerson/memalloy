@@ -8,4 +8,5 @@
     -events 4 \
     -arch2 PPC \
     -events2 4 \
-    -expect 0 # about 4 mins
+    -expect 0 \
+    $@ # about 4 mins

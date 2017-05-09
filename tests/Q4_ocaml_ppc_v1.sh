@@ -8,4 +8,5 @@
     -events 4 \
     -arch2 PPC \
     -events2 4 \
-    -expect 1
+    -expect 1 \
+    $@

@@ -10,7 +10,8 @@
     -alsosatisfies models/c11_normws.cat \
     -alsosatisfies models/nofences.cat \
     -expect 1 \
-    -fencerels
+    -fencerels \
+    $@
 
 # Also possible:
 #   -events 5 -events2 6

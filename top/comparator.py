@@ -60,6 +60,8 @@ def main(argv=None):
   parser.add_argument("-expect", type=int, default=None,
                       help="Expect to find this many unique solutions (optional)")
   parser.add_argument("-desc", type=str, help="Textual description (optional)")
+  parser.add_argument("-batch", action="store_true",
+                        help="Option: suppress GUI")
   argparsing.add_setup_result_dir_args(parser)
   argparsing.add_gen_comparator_args(parser)
   argparsing.add_run_alloy_args(parser)
@@ -145,7 +147,7 @@ def main(argv=None):
         print "ERROR: png generation was unsuccessful"
         return 1
 
-  if platform.system() == "Darwin":
+  if platform.system() == "Darwin" and args.batch == False:
     if nsolutions == 1:
       for f in os.listdir(png_result_dir):
         subprocess.Popen(["open", os.path.join(png_result_dir, f)])

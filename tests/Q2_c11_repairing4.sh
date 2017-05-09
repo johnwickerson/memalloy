@@ -7,4 +7,5 @@
     -expect 1 \
     -satisfies models/c11_noscfences.cat \
     -satisfies models/c11_normws.cat \
-    -satisfies models/totalsb.cat
+    -satisfies models/totalsb.cat \
+    $@

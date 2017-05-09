@@ -8,5 +8,6 @@
     -satisfies models/c11_relacq.cat \
     -satisfies models/c11_normws.cat \
     -satisfies models/c11_simplepost.cat \
-    -satisfies models/totalsb.cat
+    -satisfies models/totalsb.cat \
+    $@
  #   -hint execution_hints/c11_sra_simp.als

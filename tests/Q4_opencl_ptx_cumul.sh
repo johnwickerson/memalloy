@@ -8,4 +8,5 @@
     -events 5 \
     -events2 5 \
     -expect 1 \
-    -fencerels
+    -fencerels \
+    $@

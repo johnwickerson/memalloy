@@ -5,4 +5,5 @@
     -satisfies models/ppc.cat \
     -violates models/mca_ppc.cat \
     -events 6 \
-    -expect 1 
+    -expect 1 \
+    $@

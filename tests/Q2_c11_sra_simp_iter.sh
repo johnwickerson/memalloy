@@ -9,4 +9,5 @@
     -satisfies models/c11_normws.cat \
     -satisfies models/c11_simplepost.cat \
     -satisfies models/totalsb.cat \
-    -iter
+    -iter \
+    $@

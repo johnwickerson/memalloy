@@ -7,4 +7,5 @@
     -expect 1 \
     -solver plingeling \
     -satisfies models/totalsb.cat \
-    -hint execution_hints/nienhuis_example.als
+    -hint execution_hints/nienhuis_example.als \
+    $@

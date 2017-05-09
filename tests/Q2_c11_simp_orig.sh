@@ -4,4 +4,5 @@
     -violates models/c11_simp.cat \
     -arch C \
     -events 4 \
-    -expect 0
+    -expect 0 \
+    $@
