@@ -107,6 +107,14 @@ def main(argv=None):
   nsolutions = len([x for x in os.listdir(xml_result_dir) if is_xml_file(x)])
   print "Alloy found %d solutions" % nsolutions
 
+  if args.expect:
+    if args.expect != nsolutions:
+      print "ERROR: Expected %d unique solutions, found %d" % (args.expect, nsolutions)
+      return 1
+  
+  if nsolutions == 0
+    return 0
+  
   print "Remove duplicates"
   code = remove_dups.main(args)
   if code != 0:
@@ -153,11 +161,6 @@ def main(argv=None):
         subprocess.Popen(["open", os.path.join(png_result_dir, f)])
     else:
       subprocess.Popen(["open", os.path.join(png_result_dir)])
-
-  if args.expect:
-    if args.expect != nsolutions:
-      print "ERROR: Expected %d unique solutions, found %d" % (args.expect, nsolutions)
-      return 1
 
   return 0
 
