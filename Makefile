@@ -2,7 +2,7 @@ ifndef MEMALLOY_ROOT_DIR
 $(error Please run 'source configure.sh')
 endif
 
-.PHONY: build install quicktest moretests slowtests clean
+.PHONY: build install quicktest moretests slowtests clean deepclean
 
 rebuild:
 	make -C src
@@ -57,3 +57,7 @@ clean:
 	make -C mappings clean
 	rm -f top/*.pyc
 	rm -f comparator
+
+deepclean:
+	make -C alloystar clean
+	make clean
