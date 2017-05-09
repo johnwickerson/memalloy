@@ -9,11 +9,15 @@ env:
   - OCAML_VERSION=4.04.0
 before_install:
   - sudo apt-get update
+# Installing graphviz
   - sudo apt-get install graphviz
+# Downloading and installing OPAM and OCaml
   - wget https://raw.github.com/ocaml/opam/master/shell/opam_installer.sh -O - | sh -s /usr/local/bin
   - opam switch $OCAML_VERSION
   - eval `opam config env`
+# Installing OCaml dependencies
   - opam install --yes ocamlfind xml-light ocamlbuild
+# Installing Python dependencies
   - sudo easy_install progressbar
   - export OS=amd64-linux
   - export JAVA_HEAP_SIZE=3g
