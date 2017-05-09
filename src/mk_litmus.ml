@@ -74,6 +74,7 @@ let mk_instr x maps reg_map e =
   let cs = [Basic (ins, attrs)] in
   let mk_fence f cs =
     if List.mem e (Rel.rng (get_rel x f))
+                (* FIXME: This currently inserts too many fences *)
     then Basic (Fence, [f]) :: cs else cs 
   in
   let cs = List.fold_right mk_fence Archs.all_fences cs in
