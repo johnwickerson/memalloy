@@ -25,10 +25,9 @@ import distutils.spawn
 # OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION
 # WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
-MEMALLOY_ROOT_DIR = os.environ.get('MEMALLOY_ROOT_DIR')
+MEMALLOY_ROOT_DIR = os.path.abspath(os.path.join(os.path.realpath(__file__), os.pardir, os.pardir))
+
 def check_dependencies():
-  if not MEMALLOY_ROOT_DIR:
-    raise Exception("Need to have MEMALLOY_ROOT_DIR env variable; please source configure.sh")
   if not distutils.spawn.find_executable("dot"):
     raise Exception("Need to have dot for converting executions into images")
 check_dependencies()

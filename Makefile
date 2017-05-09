@@ -1,7 +1,3 @@
-ifndef MEMALLOY_ROOT_DIR
-$(error Please run 'source configure.sh')
-endif
-
 .PHONY: build install quicktest moretests slowtests clean deepclean
 
 rebuild:

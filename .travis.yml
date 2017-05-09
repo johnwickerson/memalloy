@@ -17,7 +17,6 @@ before_install:
   - sudo easy_install progressbar
   - export OS=amd64-linux
   - export JAVA_HEAP_SIZE=3g
-  - export MEMALLOY_ROOT_DIR="$( pwd )"
 install:
   - make install
 script:
