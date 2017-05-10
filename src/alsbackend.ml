@@ -31,9 +31,16 @@ open Exec
 
 (** Convert event set to Alloy constraint *)
 let als_of_set oc (name, es) =
-  fprintf oc "    X.%s = " name;
-  if es = [] then fprintf oc "none"
-  else MyList.pp_gen "+" Event.pp oc es;
+  if List.mem name ["SC";"ACQ";"REL";"A"] then begin
+      fprintf oc "    ";
+      if es = [] then fprintf oc "none"
+      else MyList.pp_gen "+" Event.pp oc es;
+      fprintf oc " in X.%s" name
+    end else begin
+      fprintf oc "    X.%s = " name;
+      if es = [] then fprintf oc "none"
+      else MyList.pp_gen "+" Event.pp oc es
+    end;
   fprintf oc "\n"
 
 (** Convert event pair to Alloy expression *)
@@ -42,9 +49,16 @@ let als_of_pair oc (e,e') =
 
 (** Convert event relation to Alloy constraint *)
 let als_of_rel oc (name, ees) =
-  fprintf oc "    X.%s = " name;
-  if ees = [] then fprintf oc "none->none"
-  else MyList.pp_gen "+" als_of_pair oc ees;
+  if List.mem name ["ad";"cd";"dd"] then begin
+      fprintf oc "    ";
+      if ees = [] then fprintf oc "none->none"
+      else MyList.pp_gen "+" als_of_pair oc ees;
+      fprintf oc " in X.%s" name;
+    end else begin
+      fprintf oc "    X.%s = " name;
+      if ees = [] then fprintf oc "none->none"
+      else MyList.pp_gen "+" als_of_pair oc ees
+    end;
   fprintf oc "\n"	  
 
 (** Convert execution to Alloy predicate *)
