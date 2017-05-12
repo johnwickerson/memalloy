@@ -44,7 +44,7 @@ https://raw.githubusercontent.com/herd/herdtools7/daa126680b6ecba97ba47b3e05bbaa
  * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  *)
 
-"ARMv8 AArch64"
+"ARM8"
 
 (*
  * Include the cos.cat file shipped with herd.
