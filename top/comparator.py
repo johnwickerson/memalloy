@@ -82,7 +82,8 @@ def main(argv=None):
   dot_result_dir = os.path.join(result_dir, "dot")
   png_result_dir = os.path.join(result_dir, "png")
 
-  print "\"" + args.desc + "\""
+  if args.desc:
+    print "\"" + args.desc + "\""
   
   for model in args.satisfies + args.alsosatisfies + args.violates:
     if is_cat_file(model):
