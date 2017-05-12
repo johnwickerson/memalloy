@@ -8,8 +8,7 @@ all:
 	@ mkdir $(FAR)
 	@ for f in *.als; do \
 	  cp $$f $(FAR); \
-	  sed -i '1s|../archs/|../../archs/$(FAR)/|' $(FAR)/$$f; \
-	  sed -i '2s|../archs/|../../archs/$(FAR)/|' $(FAR)/$$f; \
+	  python ../etc/adapt_mapping.py $(FAR)/$$f; \
 	done
 	@ rm $(FAR)/opencl_amd.als # this mapping is a bit different
 
