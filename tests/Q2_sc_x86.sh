@@ -4,7 +4,6 @@
     -violates models/sc.cat \
     -satisfies models/x86tso.cat \
     -events 4 \
-    -satisfies models/nodeps.cat \
     -expect 2 \
     -iter \
     $@
