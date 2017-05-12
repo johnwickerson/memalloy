@@ -1,4 +1,4 @@
-pred hint[X:Exec] {
+pred nienhuis_example[X:Exec] {
   /*
 e1:RMW[rel](y,2,3) || e3:R[rlx](y,4) || e6:RMW[acq](x,1,2)
 e2:W[rlx](y,4)     || e4:F[ar]

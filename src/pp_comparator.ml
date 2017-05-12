@@ -32,13 +32,10 @@ let succ_paths = ref []
 let also_succ_paths = ref []
 let fail_paths = ref []
 let withinit = ref false
-let hint = ref None
+let hints = ref []
 let eventcount = ref 0
 let eventcount2 = ref 0
 let description = ref ""
-let iter = ref false
-let expectation = ref None
-let solver = ref "glucose"
 		      
 let min_thds = ref 0
 let max_thds = ref (-1)
@@ -142,9 +139,13 @@ let pp_file oc path =
   try while true do fprintf oc "%s\n" (input_line ic) done
   with End_of_file -> close_in ic
 			      
-let pp_hint_predicate oc = match !hint with
-  | None -> ()
-  | Some hint_path -> pp_file oc hint_path
+let pp_hint_predicates oc = List.iter (pp_file oc) !hints
+
+let pp_hint_name oc hint_file =
+  let hint_name =
+    Filename.chop_extension (Filename.basename hint_file)
+  in
+  fprintf oc "  %s[X]\n" hint_name
 
 (** [pp_comparator arch oc] generates an Alloy file (sent to [oc]) that can be used to find an execution of type [arch] that satisfies all the models in [!succ_paths] and violates all the models in [!fail_paths]. *)
 let pp_comparator arch oc =
@@ -159,7 +160,7 @@ let pp_comparator arch oc =
   pp_violated_models 2 "none" "X" oc;
   pp_satisfied_models 2 "none" "X" oc;
   pp_also_satisfied_models 2 "none" "X" oc;
-  if !hint <> None then fprintf oc "  hint[X]\n\n";
+  List.iter (pp_hint_name oc) !hints;
   fprintf oc "  not (some e : X.EV {\n";
   pp_violated_models 4 "e" "X" oc;
   pp_satisfied_models 4 "e" "X" oc;
@@ -170,7 +171,7 @@ let pp_comparator arch oc =
   pp_min_classes "locations" "E" !min_locs "sloc" "R + W" oc;
   pp_max_classes "locations" "E" !max_locs "sloc" "R + W" oc;
   fprintf oc "}\n\n";
-  pp_hint_predicate oc;
+  pp_hint_predicates oc;
   fprintf oc "run gp for 1 Exec, %d E, 3 Int\n" !eventcount
 
 (** [pp_comparator2 arch mapping_path arch2 oc] generates an Alloy file (sent to [oc]) that can be used to find an execution {i X} of type [arch] and an execution {i Y} of type [arch2] such that {i X} satisfies all the models in [!succ_paths], {i Y} violates all the models in [!fail_paths], and {i X} and {i Y} are related by the mapping in [mapping_path] *)
@@ -189,7 +190,7 @@ let pp_comparator2 arch mapping_path arch2 oc =
   pp_violated_models 2 "none" "X" oc;
   pp_satisfied_models 2 "none" "Y" oc;
   pp_also_satisfied_models 2 "none" "X" oc;
-  if !hint <> None then fprintf oc "  hint[X]\n\n";
+  List.iter (pp_hint_name oc) !hints;
   fprintf oc "  not (some e : X.EV {\n";
   pp_violated_models 4 "e" "X" oc;
   fprintf oc "  })\n";
@@ -200,7 +201,7 @@ let pp_comparator2 arch mapping_path arch2 oc =
   pp_min_classes "locations" "SE" !min_locs "sloc" "R + W" oc;
   pp_max_classes "locations" "SE" !max_locs "sloc" "R + W" oc;
   fprintf oc "}\n\n";
-  pp_hint_predicate oc;
+  pp_hint_predicates oc;
   fprintf oc "run gp for exactly 1 M1/Exec, exactly 1 N1/Exec, %d SE, %d HE, 3 Int\n" !eventcount !eventcount2
 
 let get_args () =
@@ -224,16 +225,12 @@ let get_args () =
        "Max number of target events (required iff -mapping is given)");
       ("-alsosatisfies", Arg.String (set_list_ref also_succ_paths),
        "Execution should also satisfy this model (repeatable; always refers to the 'source' model when checking compilers)");
-      ("-expect", Arg.Int (set_option_ref expectation),
-       "Expect to find this many unique solutions (optional)");
       ("-desc", Arg.Set_string description,
        "Textual description (optional)");
-      ("-solver", Arg.Set_string solver,
-       "Which SAT solver to use (optional). One of: sat4j, cryptominisat, glucose (default), plingeling, lingeling, minisatprover, or minisat.");
       ("-o", Arg.String (set_option_ref comparator_als),
        "Output .als file (optional, default stdout)");
-      ("-hint", Arg.String (set_option_ref hint),
-       "An .als file containing a 'hint[X]' predicate (optional)");
+      ("-hint", Arg.String (set_list_ref hints),
+       "An .als file containing a 'hint_*[X]' predicate (optional, repeatable)");
       ("-minthreads", Arg.Set_int min_thds,
        "Find executions with at least N threads (default 0)");
       ("-maxthreads", Arg.Set_int max_thds,
@@ -248,7 +245,6 @@ let get_args () =
       ("-locations",
        Arg.Int (fun i -> min_locs := i; max_locs := i),
        "Find executions with exactly N locations");
-      ("-iter", Arg.Set iter, "Option: find all solutions");
       ("-withinit", Arg.Set withinit,
        "Option: explicit initial writes");
     ] in

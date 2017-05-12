@@ -26,6 +26,7 @@
 
 import argparse
 import os
+import shutil
 import sys
 import subprocess
 import platform
@@ -34,8 +35,6 @@ import argparsing
 from argparsing import TOOL_PATH
 import setup_result_dir
 import run_alloy
-import remove_dups
-import reduce_tests
 
 def ext_of_file(f):
   _unused_basename, ext = os.path.splitext(f)
@@ -50,6 +49,13 @@ def is_als_file(f):
 def is_xml_file(f):
   return ext_of_file(f) == ".xml"
 
+def try_call(args, cmd, msg):
+  if args.verbose: print " ".join(cmd)
+  code = subprocess.call(cmd)
+  if code != 0:
+    print msg
+    sys.exit(1)
+
 def main(argv=None):
   if argv is None:
     argv = sys.argv[1:]
@@ -59,14 +65,17 @@ def main(argv=None):
                       help="Option: show subcommands and use verbose output")
   parser.add_argument("-expect", type=int, default=None,
                       help="Expect to find this many unique solutions (optional)")
+  parser.add_argument("-minimise", action="store_true",
+                      help="Minimise any solution(s) found")
   parser.add_argument("-desc", type=str, help="Textual description (optional)")
   parser.add_argument("-batch", action="store_true",
                         help="Option: suppress GUI")
   argparsing.add_setup_result_dir_args(parser)
   argparsing.add_gen_comparator_args(parser)
   argparsing.add_run_alloy_args(parser)
-  argparsing.add_remove_dups_args(parser, is_standalone=False)
   args = parser.parse_args(argv)
+
+  iterate = args.iter
 
   result_dir = setup_result_dir.main(args)
   xml_result_dir = os.path.join(result_dir, "xml")
@@ -89,72 +98,149 @@ def main(argv=None):
     else:
       print "ERROR: Unrecognised model type [%s]" % model
       return 1
+    
+  nsolutions = 0
 
-  comparator_script = os.path.join(result_dir, "comparator.als")
-  cmd = [os.path.join(TOOL_PATH, "pp_comparator"), "-o", comparator_script]
-  cmd.extend(argparsing.extract_gen_comparator_args(args))
-  if args.verbose: print " ".join(cmd)
-  code = subprocess.call(cmd)
-  if code != 0:
-    print "ERROR: Generation of comparator script was unsuccessful"
-    return 1
+  while True: # "solution-finding loop" 
 
-  args.comparator_script = comparator_script
-  args.alloystar = "alloystar"
-  args.xml_result_dir = xml_result_dir
-  code = run_alloy.main(args)
-  if code != 0:
-    print "ERROR: Alloy was unsuccessful"
-    return 1
-  nsolutions = len([x for x in os.listdir(xml_result_dir) if is_xml_file(x)])
-  print "Alloy found %d solutions" % nsolutions
-  
-  if nsolutions == 0:
-    if args.expect and args.expect != 0:
-      print "ERROR: Expected %d unique solutions, found 0" % args.expect
+    # Generate comparator to find any solution that is not a
+    # super-execution of one that has been found already
+    comparator_name = "comparator_%d.als" % nsolutions
+    comparator_script = os.path.join(result_dir, comparator_name)
+    cmd = [os.path.join(TOOL_PATH, "pp_comparator"), "-o", comparator_script]
+    for i in range(0, nsolutions):
+      hint_file = os.path.join(result_dir, "hint_%d.als" % i)
+      cmd.extend(["-hint", hint_file])      
+    cmd.extend(argparsing.extract_gen_comparator_args(args))
+    try_call(args, cmd, "ERROR: Generation of comparator script was unsuccessful")
+
+    # Run Alloy on the generated comparator script
+    args.comparator_script = comparator_script
+    args.alloystar = "alloystar"
+    args.iter = False
+    xml_result_dir_ = os.path.join(xml_result_dir, str(nsolutions))
+    os.mkdir(xml_result_dir_)
+    xml_result_dir_ = os.path.join(xml_result_dir_, str(0))
+    os.mkdir(xml_result_dir_)
+    args.xml_result_dir = xml_result_dir_
+    code = run_alloy.main(args)
+    if code != 0:
+      print "ERROR: Alloy was unsuccessful"
       return 1
+
+    # Check whether Alloy found a solution
+    xml_soln = os.path.join(xml_result_dir_, "test_0.xml")
+    if os.path.exists(xml_soln): # "found solution"
+
+      print "Found a solution."
+
+      num_equiv_solns_found = 1
+
+      if not args.minimise and not iterate:
+        
+        # Copy the .xml file into its grandparent directory
+        target_xml = os.path.join(xml_result_dir, "test_0.xml")
+        shutil.copyfile(xml_soln, target_xml)
+      
+        nsolutions = 1
+        break
+      
+      # Convert the solution into an Alloy predicate that will be
+      # used as an upper bound when finding smaller solutions
+      pred_name = "hint_%d_0" % nsolutions
+      hint_file = "%s.als" % pred_name
+      hint_path = os.path.join(result_dir, hint_file)
+      cmd = [os.path.join(TOOL_PATH, "gen"), "-Tals", "-o", hint_path, "-name", pred_name, "-sub", xml_soln]
+      try_call(args, cmd, "ERROR: hint generation was unsuccessful")
+
+      while True: # "solution-minimising loop"
+
+        # Generate comparator to find any solution that is a strict
+        # sub-execution of the previously-generated solution
+        comparator_name = "comparator_%d_%d.als" % (nsolutions, num_equiv_solns_found)
+        comparator_script = os.path.join(result_dir, comparator_name)
+        hint = "hint_%d_%d.als" % (nsolutions, num_equiv_solns_found-1)
+        hint_path = os.path.join(result_dir, hint)
+        cmd = [os.path.join(TOOL_PATH, "pp_comparator"), "-o", comparator_script, "-hint", hint_path]
+        cmd.extend(argparsing.extract_gen_comparator_args(args))
+        try_call(args, cmd, "ERROR: Generation of comparator script was unsuccessful")
+
+        # Run Alloy on the generated comparator script
+        args.comparator_script = comparator_script
+        args.alloystar = "alloystar"
+        args.iter = False
+        xml_result_dir_ = os.path.join(xml_result_dir, str(nsolutions), str(num_equiv_solns_found))
+        os.mkdir(xml_result_dir_)
+        args.xml_result_dir = xml_result_dir_
+        code = run_alloy.main(args)
+        if code != 0:
+          print "ERROR: Alloy was unsuccessful"
+          return 1
+
+        # Check whether Alloy found a solution
+        xml_soln = os.path.join(xml_result_dir_, "test_0.xml")
+        if os.path.exists(xml_soln): # "found smaller solution"
+
+          print "Found a smaller solution."
+
+          # Convert the solution into an Alloy predicate that will be
+          # used as an upper bound when finding further solutions
+          pred_name = "hint_%d_%d" % (nsolutions, num_equiv_solns_found)
+          hint_file = "%s.als" % pred_name
+          hint_path = os.path.join(result_dir, hint_file)
+          cmd = [os.path.join(TOOL_PATH, "gen"), "-Tals", "-o", hint_path, "-name", pred_name, "-sub", xml_soln]
+          try_call(args, cmd, "ERROR: hint generation was unsuccessful")
+
+          num_equiv_solns_found += 1
+          continue
+
+        else:
+          print "No more smaller solutions."
+          os.rmdir(xml_result_dir_) # directory is empty
+          break
+        #end "found smaller solution"
+
+      #end "solution-minimising loop"
+
+      # Copy the minimal .xml file into its grandparent directory
+      minimal_xml = os.path.join(xml_result_dir, str(nsolutions), str(num_equiv_solns_found-1), "test_0.xml")
+      target_xml = os.path.join(xml_result_dir, "test_%d.xml" % nsolutions)
+      shutil.copyfile(minimal_xml, target_xml)
+
+      # Convert the solution into an Alloy predicate that stops
+      # Alloy finding this execution again, or any of its
+      # super-executions
+      pred_name = "hint_%d" % nsolutions
+      hint_file = "%s.als" % pred_name
+      hint_path = os.path.join(result_dir, hint_file)
+      cmd = [os.path.join(TOOL_PATH, "gen"), "-Tals", "-o", hint_path, "-name", pred_name, "-super", target_xml]
+      try_call(args, cmd, "ERROR: hint generation was unsuccessful")
+
+      nsolutions += 1
+
+      if iterate:
+        continue
+      else:
+        break
+
     else:
-      return 0
+      print "No more solutions found."
+      break
+    #end "found solution"
+
+  #end "solution-finding loop" 
   
-  print "Remove duplicates"
-  code = remove_dups.main(args)
-  if code != 0:
-    print "ERROR: Remove duplicates script was unsuccessful"
-    return 1
-  nsolutions = len([x for x in os.listdir(xml_result_dir) if x.endswith("_unique")])
-  print "Partitioned to %d unique solutions" % nsolutions
-
-  print "Reducing tests"
-  code = reduce_tests.main(args)
-  if code != 0:
-    print "ERROR: Reduce tests script was unsuccessful"
-    return 1
-  nsolutions = len([x for x in os.listdir(xml_result_dir) if x.endswith("_unique")])
-  print "Reduced to %d weakest solutions" % nsolutions
-
-  # TODO: gen changed to operate over a directory not per-file
-  hash_file = os.path.join(result_dir, "xml", "hashes.txt")
-  with open(hash_file) as f:
-    for test_hash in f:
-      test_hash = test_hash.strip()
-      if not test_hash: continue
-      xml_dir = os.path.join(xml_result_dir, "%s_unique" % test_hash)
-      xml_files = [ x for x in os.listdir(xml_dir) if is_xml_file(x) ]
-      dot_file = os.path.join(result_dir, "dot", "test_%s.dot" % test_hash)
-      assert 0 < len(xml_files)
-      cmd = [os.path.join(TOOL_PATH, "gen"), "-Tdot", "-o", dot_file, os.path.join(xml_dir, xml_files[0])]
-      if args.verbose: print " ".join(cmd)
-      code = subprocess.call(cmd)
-      if code != 0:
-        print "ERROR: dot generation was unsuccessful"
-        return 1
-      png_file = os.path.join(result_dir, "png", "test_%s.png" % test_hash)
+  # Step through the minimal solutions and convert each to dot/png
+  soln_ctr = 0
+  for xml_file in os.listdir(xml_result_dir):
+    if is_xml_file(xml_file):
+      dot_file = os.path.join(result_dir, "dot", "test_%d.dot" % soln_ctr)
+      cmd = [os.path.join(TOOL_PATH, "gen"), "-Tdot", "-o", dot_file, os.path.join(xml_result_dir, xml_file)]
+      try_call(args, cmd, "ERROR: dot generation was unsuccessful")
+      png_file = os.path.join(result_dir, "png", "test_%d.png" % soln_ctr)
       cmd = ["dot", "-Tpng", "-o", png_file, dot_file]
-      if args.verbose: print " ".join(cmd)
-      code = subprocess.call(cmd)
-      if code != 0:
-        print "ERROR: png generation was unsuccessful"
-        return 1
+      try_call(args, cmd, "ERROR: png generation was unsuccessful")
+      soln_ctr +=1
 
   if platform.system() == "Darwin" and args.batch == False:
     if nsolutions == 1:

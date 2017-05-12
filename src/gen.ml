@@ -29,6 +29,10 @@ open! Format
 open! General_purpose
        
 type output_type = Dot | Als | Lit
+
+let als_sub = ref false
+let als_super = ref false
+let als_name = ref "hint"
        
 let get_args () =
   let xml_path : string list ref = ref [] in
@@ -45,9 +49,16 @@ let get_args () =
        "Optional: execution type");
       ("-o", Arg.String (set_list_ref out_path),
        "Output file (mandatory)");
+      ("-sub", Arg.Set als_sub,
+       "Constrain as sub-execution (-Tals mode only)");
+      ("-super", Arg.Set als_super,
+       "Constrain as super-execution (-Tals mode only)");
+      ("-name", Arg.Set_string als_name,
+       "Name of als predicate (-Tals mode only)");
     ] in
-  let usage_msg =
-    "Processing executions and generating litmus tests.\nUsage: `gen [options] <xml_file.xml>`.\nOptions available:"
+  let usage_msg = "Processing executions and generating litmus \
+                   tests.\nUsage: `gen [options] <xml_file.xml>`.\n\
+                   Options available:"
   in
   Arg.parse speclist (set_list_ref xml_path) usage_msg;
   let bad_arg () =
@@ -94,12 +105,18 @@ let main () =
     | Als ->
        assert (Filename.check_suffix out_path ".als");
        begin
+         let converter = match !als_sub, !als_super with
+           | false, false -> Alsbackend.als_of_execution
+           | true, false -> Alsbackend.als_of_execution_strictsub
+           | false, true -> Alsbackend.als_of_execution_notsuper
+           | true, true -> assert false
+         in
 	 match exec with
-	 | Xml_input.Single x ->      
-	    fprintf fmtr "%a\n" Alsbackend.als_of_execution x
+	 | Xml_input.Single x ->
+	    fprintf fmtr "%a\n" (converter !als_name) x
 	 | Xml_input.Double (x,y,pi) ->
-	    fprintf fmtr "%a\n" Alsbackend.als_of_execution x;
-	    fprintf fmtr "%a\n" Alsbackend.als_of_execution y;
+	    fprintf fmtr "%a\n" (converter !als_name) x;
+	    fprintf fmtr "%a\n" (converter !als_name) y;
 	    fprintf fmtr "%a\n" Alsbackend.als_of_rel ("pi", pi)
        end
     | Lit ->

@@ -127,19 +127,11 @@ let parse_file xml_path =
   in
   let exec1 = Exec.empty_exec in
   let exec1 = List.fold_left (add_field (Some x1)) exec1 fieldnodes in
-  let is_primed e = MyStr.endswith (label_of e) "&apos;" in
-  let reserved_rels = ["$gp_map"; "$gp_X"; "$gp_Y"; "$consistent_s"] in
-  let is_reserved e = List.mem (label_of e) reserved_rels in
-  let is_extra_rel1 e = not (is_reserved e) && not (is_primed e) in
-  let extra_rels1 = List.filter is_extra_rel1 skolem_nodes in
-  let extra_rels2 = List.filter is_primed skolem_nodes in
-  let exec1 = List.fold_left (add_field None) exec1 extra_rels1 in
   match find_exec "$gp_Y" with
   | None -> Single exec1
   | Some x2 ->
      let exec2 = Exec.empty_exec in
      let exec2 = List.fold_left (add_field (Some x2)) exec2 fieldnodes in
-     let exec2 = List.fold_left (add_field None) exec2 extra_rels2 in
      let pi_node = List.find (label_is "$gp_map") skolem_nodes in
      match mk_field None pi_node with
      | Rel pi -> Double (exec1, exec2, pi)

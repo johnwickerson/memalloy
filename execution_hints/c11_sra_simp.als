@@ -1,4 +1,4 @@
-pred hint[X:Exec] {
+pred c11_sra_simp[X:Exec] {
   some disj E5,E4,E3,E2,E1,E0 : E {
     X.NAL = none
     X.IW = none

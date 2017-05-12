@@ -29,44 +29,83 @@ open! Format
 open! General_purpose
 open Exec
 
-(** Convert event set to Alloy constraint *)
+(** Equality constraint on sets *)
 let als_of_set oc (name, es) =
-  if List.mem name ["SC";"ACQ";"REL";"A"] then begin
-      fprintf oc "    ";
-      if es = [] then fprintf oc "none"
-      else MyList.pp_gen "+" Event.pp oc es;
-      fprintf oc " in X.%s" name
-    end else begin
-      fprintf oc "    X.%s = " name;
-      if es = [] then fprintf oc "none"
-      else MyList.pp_gen "+" Event.pp oc es
-    end;
-  fprintf oc "\n"
+  if es = [] then fprintf oc "    X.%s = none" name
+  else fprintf oc "    X.%s = %a" name
+         (MyList.pp_gen "+" Event.pp) es
 
 (** Convert event pair to Alloy expression *)
 let als_of_pair oc (e,e') =
   fprintf oc "(%a->%a)" Event.pp e Event.pp e'
 
-(** Convert event relation to Alloy constraint *)
+(** Equality constraint on relations *)
 let als_of_rel oc (name, ees) =
-  if List.mem name ["ad";"cd";"dd"] then begin
-      fprintf oc "    ";
-      if ees = [] then fprintf oc "none->none"
-      else MyList.pp_gen "+" als_of_pair oc ees;
-      fprintf oc " in X.%s" name;
-    end else begin
-      fprintf oc "    X.%s = " name;
-      if ees = [] then fprintf oc "none->none"
-      else MyList.pp_gen "+" als_of_pair oc ees
-    end;
-  fprintf oc "\n"	  
+  if ees = [] then fprintf oc "    X.%s = none->none" name
+  else fprintf oc "    X.%s = %a" name
+         (MyList.pp_gen "+" als_of_pair) ees
 
-(** Convert execution to Alloy predicate *)
-let als_of_execution oc x =
+(** [als_of_execution pred_name oc x] generates on [oc] a constraint called [pred_name] that holds when a given execution is isomorphic to [x] *)
+let als_of_execution pred_name oc x =
   let ev = get_set x "EV" in
-  fprintf oc "pred hint[X:Exec] {\n";
-  fprintf oc "  some disj %a : E {\n" (MyList.pp_gen "," Event.pp) ev;
-  List.iter (als_of_set oc) x.sets;
-  List.iter (als_of_rel oc) x.rels;
-  fprintf oc "  }\n";
+  fprintf oc "pred %s[X:Exec] {\n" pred_name;
+  fprintf oc "  some disj %a : E {\n%a%a\n  }\n"
+    (MyList.pp_gen "," Event.pp) ev
+    (MyList.pp_gen "\n" als_of_set) x.sets
+    (MyList.pp_gen "\n" als_of_rel) x.rels;
+  fprintf oc "}\n"
+  
+(** Superset constraint on sets *)
+let als_of_set_super oc (name, es) =
+  let op = if List.mem name Archs.min_sets then "in" else "=" in
+  if es = []
+  then fprintf oc "    none %s X.%s" op name
+  else fprintf oc "    %a %s X.%s"
+         (MyList.pp_gen "+" Event.pp) es op name
+
+(** Superset constraint on relations *)
+let als_of_rel_super oc (name, ees) =
+  let op = if List.mem name Archs.min_rels then "in" else "=" in
+  if ees = []
+  then fprintf oc "    none->none %s X.%s" op name
+  else fprintf oc "    %a %s X.%s"
+         (MyList.pp_gen "+" als_of_pair) ees op name
+
+
+(** [als_of_execution_notsuper pred_name oc x] generates on [oc] a constraint called [pred_name] that holds when a given execution is not isomorphic to any super-execution of [x] *)
+let als_of_execution_notsuper pred_name oc x =
+  let ev = get_set x "EV" in
+  fprintf oc "pred %s[X:Exec] {\n" pred_name;
+  fprintf oc "  not some disj %a : E {\n%a%a\n }\n"
+    (MyList.pp_gen "," Event.pp) ev
+    (MyList.pp_gen "\n" als_of_set_super) x.sets
+    (MyList.pp_gen "\n" als_of_rel_super) x.rels;
+  fprintf oc "}\n"
+  
+(** Subset constraint on sets *)
+let als_of_set_sub oc (name, es) =
+  let op = if List.mem name Archs.min_sets then "in" else "=" in
+  if es = []
+  then fprintf oc "    X.%s %s none" name op
+  else fprintf oc "    X.%s %s %a"
+         name op (MyList.pp_gen "+" Event.pp) es
+
+(** Subset constraint on relations *)
+let als_of_rel_sub oc (name, ees) =
+  let op = if List.mem name Archs.min_rels then "in" else "=" in
+  if ees = []
+  then fprintf oc "    X.%s %s none->none" name op
+  else fprintf oc "    X.%s %s %a"
+         name op (MyList.pp_gen "+" als_of_pair) ees
+
+(** [als_of_execution_strictsub pred_name oc x] generates on [oc] a constraint called [pred_name] that holds when a given execution is not isomorphic to any super-execution of [x] *)
+let als_of_execution_strictsub pred_name oc x =
+  let ev = get_set x "EV" in
+  fprintf oc "pred %s[X:Exec] {\n" pred_name;
+  fprintf oc "  some disj %a : E {\n%a%a\n  not (%a && %a)\n  }\n"
+    (MyList.pp_gen "," Event.pp) ev
+    (MyList.pp_gen "\n" als_of_set_sub) x.sets
+    (MyList.pp_gen "\n" als_of_rel_sub) x.rels
+    (MyList.pp_gen " && " als_of_set) x.sets
+    (MyList.pp_gen " && " als_of_rel) x.rels;
   fprintf oc "}\n"

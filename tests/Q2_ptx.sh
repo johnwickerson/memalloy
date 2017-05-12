@@ -7,6 +7,5 @@
     -iter \
     -satisfies models/normws.cat \
     -satisfies models/ptx_singlegl.cat \
-    -hint execution_hints/ptx_diff_fencerels.als \
     -fencerels \
     $@

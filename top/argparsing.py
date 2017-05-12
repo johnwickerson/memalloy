@@ -84,9 +84,9 @@ def add_gen_comparator_args(parser):
                       help="Find executions with at most N threads")
   parser.add_argument("-threads", type=int,
                       help="Find executions with exactly N threads")
-  parser.add_argument("-minlocations", type=int, default=0,
+  parser.add_argument("-minlocations", type=int,
                       help="Find executions with at least N locations (default 0)")
-  parser.add_argument("-maxlocations", type=int, default=None,
+  parser.add_argument("-maxlocations", type=int,
                       help="Find executions with at most N locations")
   parser.add_argument("-locations", type=int,
                       help="Find executions with exactly N locations")

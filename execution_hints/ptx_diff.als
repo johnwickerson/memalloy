@@ -1,4 +1,4 @@
-pred hint[X:Exec_PTX] {
+pred ptx_diff[X:Exec_PTX] {
 // Test "WWC+membar.cta+membar.gl":
 //  e1: W y 2 ||  e2: R y 2       |  e5: R x 1
 //            ||  e3: membar.cta  |  e6: membar.gl

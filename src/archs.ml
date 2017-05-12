@@ -174,3 +174,17 @@ let all_implied_rels =
 let all_implied_sets =
   ["SC", "ACQ"; "SC", "REL"; "SC", "A";
    "ACQ", "A"; "REL", "A"]
+
+(** List of all sets that should be reduced as much as possible *)
+let min_sets = [
+    "SC"; "ACQ"; "REL"; "A"; "SCREL"; "SCACQ"; "MFENCE"; "SYNC";
+    "LWSYNC"; "EIEIO"; "ISYNC"; "DMB"; "DMBST"; "DMBLD"; "ISB";
+    "MEMBAR_CTA"; "MEMBAR_GL"; "MEMBAR_SYS"; "LOCKED"
+  ]
+
+(** List of all relations that should be reduced as much as possible *)
+let min_rels = [
+    "ad"; "cd"; "dd"; "dmb"; "dmbst"; "dmbld"; "isb"; "sync";
+    "lwsync"; "eieio"; "isync"; "membar_cta"; "membar_gl";
+    "membar_sys"; "mfence"
+  ]
