@@ -20,6 +20,8 @@
 
 - Graphviz
 
+- Apache Ant (for building Alloy)
+
 # Quick start
 
 1. Modify `configure.sh` to suit your OS.
