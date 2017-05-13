@@ -208,6 +208,14 @@ def main(argv=None):
       target_xml = os.path.join(xml_result_dir, "test_%d.xml" % nsolutions)
       shutil.copyfile(minimal_xml, target_xml)
 
+      # Convert the minimal .xml file into png format
+      dot_file = os.path.join(result_dir, "dot", "test_%d.dot" % nsolutions)
+      cmd = [os.path.join(TOOL_PATH, "gen"), "-Tdot", "-o", dot_file,  target_xml]
+      try_call(args, cmd, "ERROR: dot generation was unsuccessful")
+      png_file = os.path.join(result_dir, "png", "test_%d.png" % nsolutions)
+      cmd = ["dot", "-Tpng", "-o", png_file, dot_file]
+      try_call(args, cmd, "ERROR: png generation was unsuccessful")
+
       # Convert the solution into an Alloy predicate that stops
       # Alloy finding this execution again, or any of its
       # super-executions
@@ -230,18 +238,6 @@ def main(argv=None):
     #end "found solution"
 
   #end "solution-finding loop" 
-  
-  # Step through the minimal solutions and convert each to dot/png
-  soln_ctr = 0
-  for xml_file in os.listdir(xml_result_dir):
-    if is_xml_file(xml_file):
-      dot_file = os.path.join(result_dir, "dot", "test_%d.dot" % soln_ctr)
-      cmd = [os.path.join(TOOL_PATH, "gen"), "-Tdot", "-o", dot_file, os.path.join(xml_result_dir, xml_file)]
-      try_call(args, cmd, "ERROR: dot generation was unsuccessful")
-      png_file = os.path.join(result_dir, "png", "test_%d.png" % soln_ctr)
-      cmd = ["dot", "-Tpng", "-o", png_file, dot_file]
-      try_call(args, cmd, "ERROR: png generation was unsuccessful")
-      soln_ctr +=1
 
   if platform.system() == "Darwin" and args.batch == False:
     if nsolutions == 1:
