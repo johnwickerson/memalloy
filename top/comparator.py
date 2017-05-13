@@ -142,6 +142,14 @@ def main(argv=None):
         # Copy the .xml file into its grandparent directory
         target_xml = os.path.join(xml_result_dir, "test_0.xml")
         shutil.copyfile(xml_soln, target_xml)
+
+        # Convert the minimal .xml file into png format
+        dot_file = os.path.join(result_dir, "dot", "test_0.dot")
+        cmd = [os.path.join(TOOL_PATH, "gen"), "-Tdot", "-o", dot_file,  target_xml]
+        try_call(args, cmd, "ERROR: dot generation was unsuccessful")
+        png_file = os.path.join(result_dir, "png", "test_0.png")
+        cmd = ["dot", "-Tpng", "-o", png_file, dot_file]
+        try_call(args, cmd, "ERROR: png generation was unsuccessful")
       
         nsolutions = 1
         break
