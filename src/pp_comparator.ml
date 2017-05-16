@@ -116,7 +116,7 @@ let min_classes ev n r dom oc =
   fprintf oc "  some disj %a : %s {\n"
 	  (MyList.pp_gen ", " pp_str) es ev;
   fprintf oc "    %a in X.(%s)\n" (MyList.pp_gen "+" pp_str) es dom;
-  fprintf oc "    no ((sq[%a]-iden) & %s[none,X])\n"
+  fprintf oc "    no ((sq[%a]-iden) & X.%s)\n"
 	  (MyList.pp_gen "+" pp_str) es r;
   fprintf oc "  }\n"
 
