@@ -97,22 +97,29 @@ pred withoutinit[X:Exec] {
   // there are no initial writes
   no X.IW
 }
-
+/*
 fun addsb[e:E, X:Exec, F:set E] : E->E {
   *(sb[e,X]) . (stor[F]) . *(sb[e,X]) }
+  */
 
-fun EV [e:E, X:Exec] : set E { X.EV - e }
-fun W [e:E, X:Exec] : set E { X.W - e }
-fun IW [e:E, X:Exec] : set E { X.IW - e }
-fun R [e:E, X:Exec] : set E { X.R - e }
-fun F [e:E, X:Exec] : set E { X.F - e }
-fun NAL [e:E, X:Exec] : set E { X.NAL - e }
+abstract sig PTag {} // Perturbation Tag
+one sig rm_EV extends PTag {}
+one sig rm_ad extends PTag {}
+one sig rm_cd extends PTag {}
+one sig rm_dd extends PTag {}
 
-fun sb [e:E, X:Exec] : E->E { X.sb - (univ -> e) - (e -> univ) }
-fun ad [e:E, X:Exec] : E->E { X.ad - (univ -> e) - (e -> univ) }
-fun dd [e:E, X:Exec] : E->E { X.dd - (univ -> e) - (e -> univ) }
-fun cd [e:E, X:Exec] : E->E { X.cd - (univ -> e) - (e -> univ) }
-fun sthd [e:E, X:Exec] : E->E { X.sthd - (univ -> e) - (e -> univ) }
-fun sloc [e:E, X:Exec] : E->E { X.sloc - (univ -> e) - (e -> univ) }
-fun rf [e:E, X:Exec] : E->E { X.rf - (univ -> e) - (e -> univ) }
-fun co [e:E, X:Exec] : E->E { X.co - (univ -> e) - (e -> univ) }
+fun EV [e:PTag->E, X:Exec] : set E { X.EV - e[rm_EV] }
+fun W [e:PTag->E, X:Exec] : set E { X.W - e[rm_EV] }
+fun IW [e:PTag->E, X:Exec] : set E { X.IW - e[rm_EV] }
+fun R [e:PTag->E, X:Exec] : set E { X.R - e[rm_EV] }
+fun F [e:PTag->E, X:Exec] : set E { X.F - e[rm_EV] }
+fun NAL [e:PTag->E, X:Exec] : set E { X.NAL - e[rm_EV] }
+
+fun sb [e:PTag->E, X:Exec] : E->E { (univ - e[rm_EV]) <: X.sb :> (univ - e[rm_EV]) }
+fun ad [e:PTag->E, X:Exec] : E->E { (univ - e[rm_EV] - e[rm_ad]) <: X.ad :> (univ - e[rm_EV]) }
+fun dd [e:PTag->E, X:Exec] : E->E { (univ - e[rm_EV] - e[rm_dd]) <: X.dd :> (univ - e[rm_EV]) }
+fun cd [e:PTag->E, X:Exec] : E->E { (univ - e[rm_EV] - e[rm_cd]) <: X.cd :> (univ - e[rm_EV]) }
+fun sthd [e:PTag->E, X:Exec] : E->E { (univ - e[rm_EV]) <: X.sthd :> (univ - e[rm_EV]) }
+fun sloc [e:PTag->E, X:Exec] : E->E { (univ - e[rm_EV]) <: X.sloc :> (univ - e[rm_EV]) }
+fun rf [e:PTag->E, X:Exec] : E->E { (univ - e[rm_EV]) <: X.rf :> (univ - e[rm_EV]) }
+fun co [e:PTag->E, X:Exec] : E->E { (univ - e[rm_EV]) <: X.co :> (univ - e[rm_EV]) }

@@ -122,6 +122,14 @@ let fence_sets = function
   | PTX -> ["MEMBAR_CTA"; "MEMBAR_GL"; "MEMBAR_SYS"]
   | _ -> []
 
+(** Pre-defined fence relations for given architecture *)
+let fence_rels = function
+  | X86 -> ["mfence"]
+  | Power -> ["sync"; "lwsync"; "eieio"; "isync"]
+  | Arm7 | Arm8 -> ["dmb"; "dmbst"; "dmbld"; "isb"]
+  | PTX -> ["membar_cta"; "membar_gl"; "membar_sys"]
+  | _ -> []
+
 (** Pre-defined event sets for given architecture *)
 let arch_sets fences_as_relations arch =
   let rec arch_sets = function
@@ -152,6 +160,11 @@ let rec arch_rels = function
              ["scta"; "sgl"; "membar_cta"; "membar_gl"; "membar_sys"]
   | OpenCL -> arch_rels C @ ["swg"; "sdv"; "sbar"]
   | OCaml -> arch_rels Basic
+
+(** Relations that should be reduced *)
+let arch_min_rels fences_as_relations arch =
+  let fences = if fences_as_relations then fence_rels arch else [] in
+  fences @ ["ad"; "cd"; "dd"]
 
 (** List of all fence relations *)
 let all_fences =

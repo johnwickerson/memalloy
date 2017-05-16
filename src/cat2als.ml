@@ -215,7 +215,7 @@ let preamble cat_path model_name arch oc =
 	  
 (** Generates the final part of the Alloy file *)
 let postamble withsc arch axs oc c =
-  fprintf oc "pred %a[e:E, X:%a] {\n"
+  fprintf oc "pred %a[e:PTag->E, X:%a] {\n"
     als_of_cnstrnt c Archs.pp_Arch arch;
   if withsc then fprintf oc "  some s:E->E {\n";
   if withsc then fprintf oc "    wf_s[e,X,s]\n";
@@ -240,7 +240,7 @@ let rec als_of_instr withsc arch unrolling oc (env, axs) = function
      let pp_arg oc arg =
        fprintf oc "%s:%a," arg als_of_type (type_of_var arg)
      in
-     fprintf oc "fun %s [%ae:E, X:%a%s] : %a {\n"
+     fprintf oc "fun %s [%ae:PTag->E, X:%a%s] : %a {\n"
        x (MyList.pp_gen "" pp_arg) args Archs.pp_Arch arch
        (if withsc then ", s:E->E" else "")
        als_of_type x_type;
@@ -251,7 +251,7 @@ let rec als_of_instr withsc arch unrolling oc (env, axs) = function
   | LetRec _ ->
      failwith "Recursive definition should have already been removed."
   | Axiom (cnstrnt,s,e,n) ->
-     fprintf oc "pred %s [e:E, X:%a%s] {\n"
+     fprintf oc "pred %s [e:PTag->E, X:%a%s] {\n"
        n Archs.pp_Arch arch
        (if withsc then ", s:E->E" else "");
      let e = if withsc then replace_vars_with_args ["s"] e else e in
