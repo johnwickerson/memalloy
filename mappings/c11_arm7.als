@@ -30,14 +30,14 @@ pred apply_map[X:SW/Exec_C, X':HW/Exec_Arm7, map:SE->HE] {
   all e : X.((R - W) & ACQ - SC) | let e1 = e.map {
     one e1 
     e1 in X'.R
-    e1 <: (X'.sb) in (X'.cd) & (isb[none,X'])
+    e1 <: (X'.sb) in (X'.cd) & (isb[none->none,X'])
   }
    
   // an SC read compiles to a read followed by a dmb
   all e : X.((R - W) & SC) | let e1 = e.map {
     one e1
     e1 in X'.R
-    e1 <: (X'.sb) in (dmb[none,X'])
+    e1 <: (X'.sb) in (dmb[none->none,X'])
   }
   
   // a non-atomic or relaxed write compiles to a single write
@@ -50,15 +50,15 @@ pred apply_map[X:SW/Exec_C, X':HW/Exec_Arm7, map:SE->HE] {
   all e : X.((W - R) & REL - SC) | let e1 = e.map {
     one e1
     e1 in X'.W
-    (X'.sb) :> e1 in (dmb[none,X'])
+    (X'.sb) :> e1 in (dmb[none->none,X'])
   }
   
   // an SC write compiles to a dmb followed by a write followed by a dmb
   all e : X.((W - R) & SC) | let e1 = e.map {
     one e1
     e1 in X'.W
-    e1 <: (X'.sb) in (dmb[none,X'])
-    (X'.sb) :> e1 in (dmb[none,X'])
+    e1 <: (X'.sb) in (dmb[none->none,X'])
+    (X'.sb) :> e1 in (dmb[none->none,X'])
   }
   
   // a relaxed RMW compiles to a read followed by a write, with 
@@ -81,7 +81,7 @@ pred apply_map[X:SW/Exec_C, X':HW/Exec_Arm7, map:SE->HE] {
     e2 in X'.W
     (e1 -> e2) in X'.atom & imm[X'.sb]
     e1 <: (X'.sb) in (X'.cd)
-    e2 <: (X'.sb) in (isb[none,X'])
+    e2 <: (X'.sb) in (isb[none->none,X'])
   }
 
   // a release RMW compiles to a dmb, followed by a read, followed by
@@ -92,7 +92,7 @@ pred apply_map[X:SW/Exec_C, X':HW/Exec_Arm7, map:SE->HE] {
     e1 in X'.R
     e2 in X'.W
     (e1 -> e2) in X'.atom & imm[X'.sb]
-    (X'.sb) :> e1 in (dmb[none,X'])
+    (X'.sb) :> e1 in (dmb[none->none,X'])
     e1 <: (X'.sb) in (X'.cd)
   }
 
@@ -105,9 +105,9 @@ pred apply_map[X:SW/Exec_C, X':HW/Exec_Arm7, map:SE->HE] {
     e1 in X'.R
     e2 in X'.W
     (e1 -> e2) in X'.atom & imm[X'.sb]
-    (X'.sb) :> e1 in (dmb[none,X'])
+    (X'.sb) :> e1 in (dmb[none->none,X'])
     e1 <: (X'.sb) in (X'.cd)
-    e2 <: (X'.sb) in (isb[none,X'])
+    e2 <: (X'.sb) in (isb[none->none,X'])
   }
 
   // an SC RMW compiles to a dmb, followed by a read, followed by
@@ -118,19 +118,19 @@ pred apply_map[X:SW/Exec_C, X':HW/Exec_Arm7, map:SE->HE] {
     e1 in X'.R
     e2 in X'.W
     (e1 -> e2) in X'.atom & imm[X'.sb]
-    (X'.sb) :> e1 in (dmb[none,X'])
+    (X'.sb) :> e1 in (dmb[none->none,X'])
     e1 <: (X'.sb) in (X'.cd)
-    e2 <: (X'.sb) in (dmb[none,X'])
+    e2 <: (X'.sb) in (dmb[none->none,X'])
   }
 
   // release or acquire fences compile to dmbs
   all e : X.(F & (ACQ + REL) - SC) {
-    (X.sb) . (stor[e]) . (X.sb) = map . (dmb[none,X']) . ~map
+    (X.sb) . (stor[e]) . (X.sb) = map . (dmb[none->none,X']) . ~map
   }
      
   // SC fences compile to dmbs
   all e : X.(F & SC) {
-    (X.sb) . (stor[e]) . (X.sb) = map . (dmb[none,X']) . ~map
+    (X.sb) . (stor[e]) . (X.sb) = map . (dmb[none->none,X']) . ~map
   }
  
   // sb edges are preserved (but more may be introduced)

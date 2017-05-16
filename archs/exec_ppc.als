@@ -9,12 +9,12 @@ sig Exec_PPC extends Exec_H {
   SYNC = LWSYNC & EIEIO  
 }
 
-fun ISYNC[e:E, X:Exec_PPC] : set E { X.ISYNC - e }
-fun SYNC[e:E, X:Exec_PPC] : set E { X.SYNC - e }
-fun LWSYNC[e:E, X:Exec_PPC] : set E { X.LWSYNC - e }
-fun EIEIO[e:E, X:Exec_PPC] : set E { X.EIEIO - e }
+fun ISYNC[e:PTag->E, X:Exec_PPC] : set E { X.ISYNC - e[rm_EV] }
+fun SYNC[e:PTag->E, X:Exec_PPC] : set E { X.SYNC - e[rm_EV] }
+fun LWSYNC[e:PTag->E, X:Exec_PPC] : set E { X.LWSYNC - e[rm_EV] }
+fun EIEIO[e:PTag->E, X:Exec_PPC] : set E { X.EIEIO - e[rm_EV] }
 
-fun isync[e:E, X:Exec_PPC] : E->E { addsb[e,X,ISYNC[e,X]] }
-fun sync[e:E, X:Exec_PPC] : E->E { addsb[e,X,SYNC[e,X]] }
-fun lwsync[e:E, X:Exec_PPC] : E->E { addsb[e,X,LWSYNC[e,X]] }
-fun eieio[e:E, X:Exec_PPC] : E->E { addsb[e,X,EIEIO[e,X]] }
+fun isync[e:PTag->E, X:Exec_PPC] : E->E { addsb[e,X,ISYNC[e,X]] }
+fun sync[e:PTag->E, X:Exec_PPC] : E->E { addsb[e,X,SYNC[e,X]] }
+fun lwsync[e:PTag->E, X:Exec_PPC] : E->E { addsb[e,X,LWSYNC[e,X]] }
+fun eieio[e:PTag->E, X:Exec_PPC] : E->E { addsb[e,X,EIEIO[e,X]] }

@@ -33,7 +33,7 @@ pred apply_map[X:Exec_C, X':Exec_PPC, map:SE->HE] {
   all e : X.((R - W) & ACQ - SC) | let e1 = e.map {
     one e1 
     e1 in X'.R
-    e1 <: (X'.sb) in (X'.cd) & (isync[none,X'])
+    e1 <: (X'.sb) in (X'.cd) & (isync[none->none,X'])
   }
   
   // an SC read compiles to a full fence followed by a read 
@@ -42,8 +42,8 @@ pred apply_map[X:Exec_C, X':Exec_PPC, map:SE->HE] {
   all e : X.((R - W) & SC) | let e1 = e.map {
     one e1
     e1 in X'.R
-    (X'.sb) :> e1 in (sync[none,X'])
-    e1 <: (X'.sb) in (X'.cd) & (isync[none,X']) 
+    (X'.sb) :> e1 in (sync[none->none,X'])
+    e1 <: (X'.sb) in (X'.cd) & (isync[none->none,X']) 
   }
   
   // a non-atomic or relaxed write compiles to a single write
@@ -57,14 +57,14 @@ pred apply_map[X:Exec_C, X':Exec_PPC, map:SE->HE] {
   all e : X.((W - R) & REL - SC) | let e1 = e.map {
     one e1
     e1 in X'.W
-    (X'.sb) :> e1 in (lwsync[none,X'])
+    (X'.sb) :> e1 in (lwsync[none->none,X'])
   }
   
   // an SC write compiles to a full fence followed by a write
   all e : X.((W - R) & SC) | let e1 = e.map {
     one e1
     e1 in X'.W
-    (X'.sb) :> e1 in (sync[none,X'])
+    (X'.sb) :> e1 in (sync[none->none,X'])
   }
   
   // a relaxed RMW compiles to a read followed by a write, with 
@@ -87,7 +87,7 @@ pred apply_map[X:Exec_C, X':Exec_PPC, map:SE->HE] {
     e2 in X'.W
     (e1 -> e2) in X'.atom & imm[X'.sb]
     e1 <: (X'.sb) in X'.cd
-    e2 <: (X'.sb) in isync[none,X']
+    e2 <: (X'.sb) in isync[none->none,X']
   }
 
   // a release RMW compiles to an lwsync, followed by a read, followed by
@@ -98,7 +98,7 @@ pred apply_map[X:Exec_C, X':Exec_PPC, map:SE->HE] {
     e1 in X'.R
     e2 in X'.W
     (e1 -> e2) in X'.atom & imm[X'.sb]
-    (X'.sb) :> e1 in lwsync[none,X']
+    (X'.sb) :> e1 in lwsync[none->none,X']
     e1 <: (X'.sb) in X'.cd
   }
 
@@ -111,9 +111,9 @@ pred apply_map[X:Exec_C, X':Exec_PPC, map:SE->HE] {
     e1 in X'.R
     e2 in X'.W
     (e1 -> e2) in X'.atom & imm[X'.sb]
-    (X'.sb) :> e1 in lwsync[none,X']
+    (X'.sb) :> e1 in lwsync[none->none,X']
     e1 <: (X'.sb) in X'.cd
-    e2 <: (X'.sb) in isync[none,X']
+    e2 <: (X'.sb) in isync[none->none,X']
   }
 
   // an SC RMW compiles to an sync, followed by a read, followed by
@@ -124,19 +124,19 @@ pred apply_map[X:Exec_C, X':Exec_PPC, map:SE->HE] {
     e1 in X'.R
     e2 in X'.W
     (e1 -> e2) in X'.atom & imm[X'.sb]
-    (X'.sb) :> e1 in sync[none,X']
+    (X'.sb) :> e1 in sync[none->none,X']
     e1 <: (X'.sb) in X'.cd
-    e2 <: (X'.sb) in isync[none,X']
+    e2 <: (X'.sb) in isync[none->none,X']
   }
 
   // release or acquire fences compile to lightweight fences
   all e : X.(F & (ACQ + REL) - SC) {
-    (X.sb) . (stor[e]) . (X.sb) = map . (lwsync[none,X']) . ~map
+    (X.sb) . (stor[e]) . (X.sb) = map . (lwsync[none->none,X']) . ~map
   }
       
   // SC fences compile to full fences
   all e : X.(F & SC) {
-    (X.sb) . (stor[e]) . (X.sb) = map . (sync[none,X']) . ~map
+    (X.sb) . (stor[e]) . (X.sb) = map . (sync[none->none,X']) . ~map
   }
  
   // sb edges are preserved (but more may be introduced)

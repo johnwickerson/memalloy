@@ -31,8 +31,8 @@ pred apply_map[X:SW/Exec_OCaml, X':HW/Exec_PPC, map:SE->HE] {
   all e : X.((R - W) & A) | let e1 = e.map {
     one e1 
     e1 in X'.R
-    (X'.sb) :> e1 in sync[none,X']
-    e1 <: (X'.sb) in sync[none,X']
+    (X'.sb) :> e1 in sync[none->none,X']
+    e1 <: (X'.sb) in sync[none->none,X']
   }
   
   // a non-atomic write compiles to a single write
@@ -45,8 +45,8 @@ pred apply_map[X:SW/Exec_OCaml, X':HW/Exec_PPC, map:SE->HE] {
   all e : X.((W - R) & A) | let e1 = e.map {
     one e1
     e1 in X'.W
-    (X'.sb) :> e1 in sync[none,X']
-    e1 <: (X'.sb) in sync[none,X']
+    (X'.sb) :> e1 in sync[none->none,X']
+    e1 <: (X'.sb) in sync[none->none,X']
   }
  
   // sb edges are preserved (but more may be introduced)

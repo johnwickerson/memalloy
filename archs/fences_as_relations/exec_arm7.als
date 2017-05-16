@@ -13,7 +13,16 @@ sig Exec_Arm7 extends Exec_H {
   dmb in dmbld 
 }
 
-fun isb[e:E, X:Exec_Arm7] : E->E { X.isb - (univ -> e) - (e -> univ) }
-fun dmbst[e:E, X:Exec_Arm7] : E->E { X.dmbst - (univ -> e) - (e -> univ) }
-fun dmbld[e:E, X:Exec_Arm7] : E->E { X.dmbld - (univ -> e) - (e -> univ) }
-fun dmb[e:E, X:Exec_Arm7] : E->E { X.dmb - (univ -> e) - (e -> univ) }
+one sig rm_isb extends PTag {}
+one sig rm_dmbst extends PTag {}
+one sig rm_dmbld extends PTag {}
+one sig rm_dmb extends PTag {}
+
+fun isb[e:PTag->E, X:Exec_Arm7] : E->E {
+  (univ - e[rm_EV] - e[rm_isb]) <: X.isb :> (univ - e[rm_EV]) }
+fun dmbst[e:PTag->E, X:Exec_Arm7] : E->E {
+  (univ - e[rm_EV] - e[rm_dmbst]) <: X.dmbst :> (univ - e[rm_EV]) }
+fun dmbld[e:PTag->E, X:Exec_Arm7] : E->E {
+  (univ - e[rm_EV] - e[rm_dmbld]) <: X.dmbld :> (univ - e[rm_EV]) }
+fun dmb[e:PTag->E, X:Exec_Arm7] : E->E {
+  (univ - e[rm_EV] - e[rm_dmb]) <: X.dmb :> (univ - e[rm_EV]) }

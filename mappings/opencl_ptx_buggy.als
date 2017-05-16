@@ -9,9 +9,9 @@ module opencl_ptx[SE,HE]
 
 fun mk_fence[e:SE, X:SW/Exec_OpenCL, X':HW/Exec_PTX] : HE -> HE
 {
-  (e in X.SY) => membar_sys[none,X'] else
-  (e in X.DV) => membar_gl[none,X'] else
-                 membar_cta[none,X']
+  (e in X.SY) => membar_sys[none->none,X'] else
+  (e in X.DV) => membar_gl[none->none,X'] else
+                 membar_cta[none->none,X']
 }
 
 pred apply_map[X:SW/Exec_OpenCL, X':HW/Exec_PTX, map:SE->HE] {

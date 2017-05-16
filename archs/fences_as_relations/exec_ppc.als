@@ -13,7 +13,16 @@ sig Exec_PPC extends Exec_H {
   sync in lwsync & eieio 
 }
 
-fun isync[e:E, X:Exec_PPC] : E->E { X.isync - (univ -> e) - (e -> univ) }
-fun sync[e:E, X:Exec_PPC] : E->E { X.sync - (univ -> e) - (e -> univ) }
-fun lwsync[e:E, X:Exec_PPC] : E->E { X.lwsync - (univ -> e) - (e -> univ) }
-fun eieio[e:E, X:Exec_PPC] : E->E { X.eieio - (univ -> e) - (e -> univ) }
+one sig rm_isync extends PTag {}
+one sig rm_sync extends PTag {}
+one sig rm_lwsync extends PTag {}
+one sig rm_eieio extends PTag {}
+
+fun isync[e:PTag->E, X:Exec_PPC] : E->E {
+  (univ - e[rm_EV] - e[rm_isync]) <: X.isync :> (univ - e[rm_EV]) }
+fun sync[e:PTag->E, X:Exec_PPC] : E->E {
+  (univ - e[rm_EV] - e[rm_sync]) <: X.sync :> (univ - e[rm_EV]) }
+fun lwsync[e:PTag->E, X:Exec_PPC] : E->E {
+  (univ - e[rm_EV] - e[rm_lwsync]) <: X.lwsync :> (univ - e[rm_EV]) }
+fun eieio[e:PTag->E, X:Exec_PPC] : E->E {
+  (univ - e[rm_EV] - e[rm_eieio]) <: X.eieio :> (univ - e[rm_EV]) }

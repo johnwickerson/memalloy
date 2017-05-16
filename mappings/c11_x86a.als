@@ -42,7 +42,7 @@ pred apply_map[X:SW/Exec_C, X':HW/Exec_X86, map:SE->HE] {
     (e2 -> e1) not in ((X'.co) . (X'.rf))
 
     // read does not observe a too-early value
-    (e1 -> e2) not in ((fr[none,X']) . (X'.co))
+    (e1 -> e2) not in ((fr[none->none,X']) . (X'.co))
   }
 
   // RMWs compile to locked RMWs
@@ -55,7 +55,7 @@ pred apply_map[X:SW/Exec_C, X':HW/Exec_X86, map:SE->HE] {
 
   // SC fences compile to full fences
   all e : X.(F & SC) {
-    (X.sb) . (stor[e]) . (X.sb) = map . (mfence[none,X']) . ~map
+    (X.sb) . (stor[e]) . (X.sb) = map . (mfence[none->none,X']) . ~map
   }
  
   // sb edges are preserved (but more may be introduced)

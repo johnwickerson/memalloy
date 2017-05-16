@@ -9,12 +9,12 @@ sig Exec_Arm7 extends Exec_H {
   DMB = DMBST & DMBLD
 }
 
-fun ISB[e:E, X:Exec_Arm7] : set E { X.ISB - e }
-fun DMBST[e:E, X:Exec_Arm7] : set E { X.DMBST - e }
-fun DMBLD[e:E, X:Exec_Arm7] : set E { X.DMBLD - e }
-fun DMB[e:E, X:Exec_Arm7] : set E { X.DMB - e }
+fun ISB[e:PTag->E, X:Exec_Arm7] : set E { X.ISB - e[rm_EV] }
+fun DMBST[e:PTag->E, X:Exec_Arm7] : set E { X.DMBST - e[rm_EV] }
+fun DMBLD[e:PTag->E, X:Exec_Arm7] : set E { X.DMBLD - e[rm_EV] }
+fun DMB[e:PTag->E, X:Exec_Arm7] : set E { X.DMB - e[rm_EV] }
 
-fun isb[e:E, X:Exec_Arm7] : E->E { addsb[e,X,ISB[e,X]] }
-fun dmbst[e:E, X:Exec_Arm7] : E->E { addsb[e,X,DMBST[e,X]] }
-fun dmbld[e:E, X:Exec_Arm7] : E->E { addsb[e,X,DMBLD[e,X]] }
-fun dmb[e:E, X:Exec_Arm7] : E->E { addsb[e,X,DMB[e,X]] }
+fun isb[e:PTag->E, X:Exec_Arm7] : E->E { addsb[e,X,ISB[e,X]] }
+fun dmbst[e:PTag->E, X:Exec_Arm7] : E->E { addsb[e,X,DMBST[e,X]] }
+fun dmbld[e:PTag->E, X:Exec_Arm7] : E->E { addsb[e,X,DMBLD[e,X]] }
+fun dmb[e:PTag->E, X:Exec_Arm7] : E->E { addsb[e,X,DMB[e,X]] }

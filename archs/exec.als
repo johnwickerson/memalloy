@@ -97,10 +97,10 @@ pred withoutinit[X:Exec] {
   // there are no initial writes
   no X.IW
 }
-/*
-fun addsb[e:E, X:Exec, F:set E] : E->E {
+
+fun addsb[e:PTag->E, X:Exec, F:set E] : E->E {
   *(sb[e,X]) . (stor[F]) . *(sb[e,X]) }
-  */
+  
 
 abstract sig PTag {} // Perturbation Tag
 one sig rm_EV extends PTag {}
@@ -115,11 +115,19 @@ fun R [e:PTag->E, X:Exec] : set E { X.R - e[rm_EV] }
 fun F [e:PTag->E, X:Exec] : set E { X.F - e[rm_EV] }
 fun NAL [e:PTag->E, X:Exec] : set E { X.NAL - e[rm_EV] }
 
-fun sb [e:PTag->E, X:Exec] : E->E { (univ - e[rm_EV]) <: X.sb :> (univ - e[rm_EV]) }
-fun ad [e:PTag->E, X:Exec] : E->E { (univ - e[rm_EV] - e[rm_ad]) <: X.ad :> (univ - e[rm_EV]) }
-fun dd [e:PTag->E, X:Exec] : E->E { (univ - e[rm_EV] - e[rm_dd]) <: X.dd :> (univ - e[rm_EV]) }
-fun cd [e:PTag->E, X:Exec] : E->E { (univ - e[rm_EV] - e[rm_cd]) <: X.cd :> (univ - e[rm_EV]) }
-fun sthd [e:PTag->E, X:Exec] : E->E { (univ - e[rm_EV]) <: X.sthd :> (univ - e[rm_EV]) }
-fun sloc [e:PTag->E, X:Exec] : E->E { (univ - e[rm_EV]) <: X.sloc :> (univ - e[rm_EV]) }
-fun rf [e:PTag->E, X:Exec] : E->E { (univ - e[rm_EV]) <: X.rf :> (univ - e[rm_EV]) }
-fun co [e:PTag->E, X:Exec] : E->E { (univ - e[rm_EV]) <: X.co :> (univ - e[rm_EV]) }
+fun sb [e:PTag->E, X:Exec] : E->E {
+  (univ - e[rm_EV]) <: X.sb :> (univ - e[rm_EV]) }
+fun ad [e:PTag->E, X:Exec] : E->E {
+  (univ - e[rm_EV] - e[rm_ad]) <: X.ad :> (univ - e[rm_EV]) }
+fun dd [e:PTag->E, X:Exec] : E->E {
+  (univ - e[rm_EV] - e[rm_dd]) <: X.dd :> (univ - e[rm_EV]) }
+fun cd [e:PTag->E, X:Exec] : E->E {
+  (univ - e[rm_EV] - e[rm_cd]) <: X.cd :> (univ - e[rm_EV]) }
+fun sthd [e:PTag->E, X:Exec] : E->E {
+  (univ - e[rm_EV]) <: X.sthd :> (univ - e[rm_EV]) }
+fun sloc [e:PTag->E, X:Exec] : E->E {
+  (univ - e[rm_EV]) <: X.sloc :> (univ - e[rm_EV]) }
+fun rf [e:PTag->E, X:Exec] : E->E {
+  (univ - e[rm_EV]) <: X.rf :> (univ - e[rm_EV]) }
+fun co [e:PTag->E, X:Exec] : E->E {
+  (univ - e[rm_EV]) <: X.co :> (univ - e[rm_EV]) }

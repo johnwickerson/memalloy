@@ -22,4 +22,5 @@ sig Exec_H extends Exec {
     
 }
 
-fun atom[e:E, X:Exec_H] : E->E { X.atom - (univ -> e) - (e -> univ) }
+fun atom[e:PTag->E, X:Exec_H] : E->E {
+  (univ - e[rm_EV]) <: X.atom :> (univ - e[rm_EV]) }

@@ -30,12 +30,15 @@ sig Exec_PTX extends Exec_H {
     
 }
 
-fun scta[e:E, X:Exec_PTX] : E->E { X.scta - (univ -> e) - (e -> univ) }
-fun sgl[e:E, X:Exec_PTX] : E->E { X.sgl - (univ -> e) - (e -> univ) }
-fun MEMBAR_SYS[e:E, X:Exec_PTX] : set E { X.MEMBAR_SYS - e }
-fun MEMBAR_GL[e:E, X:Exec_PTX] : set E { X.MEMBAR_GL - e }
-fun MEMBAR_CTA[e:E, X:Exec_PTX] : set E { X.MEMBAR_CTA - e }
+fun scta[e:PTag->E, X:Exec_PTX] : E->E {
+  (univ - e[rm_EV]) <: X.scta :> (univ - e[rm_EV]) }
+fun sgl[e:PTag->E, X:Exec_PTX] : E->E {
+  (univ - e[rm_EV]) <: X.sgl :> (univ - e[rm_EV]) }
+          
+fun MEMBAR_SYS[e:PTag->E, X:Exec_PTX] : set E { X.MEMBAR_SYS - e[rm_EV] }
+fun MEMBAR_GL[e:PTag->E, X:Exec_PTX] : set E { X.MEMBAR_GL - e[rm_EV] }
+fun MEMBAR_CTA[e:PTag->E, X:Exec_PTX] : set E { X.MEMBAR_CTA - e[rm_EV] }
 
-fun membar_sys[e:E, X:Exec_PTX] : E->E { addsb[e,X,MEMBAR_SYS[e,X]] }
-fun membar_gl[e:E, X:Exec_PTX] : E->E { addsb[e,X,MEMBAR_GL[e,X]] }
-fun membar_cta[e:E, X:Exec_PTX] : E->E { addsb[e,X,MEMBAR_CTA[e,X]] }
+fun membar_sys[e:PTag->E, X:Exec_PTX] : E->E { addsb[e,X,MEMBAR_SYS[e,X]] }
+fun membar_gl[e:PTag->E, X:Exec_PTX] : E->E { addsb[e,X,MEMBAR_GL[e,X]] }
+fun membar_cta[e:PTag->E, X:Exec_PTX] : E->E { addsb[e,X,MEMBAR_CTA[e,X]] }

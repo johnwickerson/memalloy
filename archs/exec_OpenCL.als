@@ -39,13 +39,15 @@ sig Exec_OpenCL extends Exec_C {
   REM in A 
 }
 
-fun WG [e:E, X:Exec_OpenCL] : set E { X.WG - e }
-fun DV [e:E, X:Exec_OpenCL] : set E { X.DV - e }
-fun SY [e:E, X:Exec_OpenCL] : set E { X.SY - e }
-fun FGA [e:E, X:Exec_OpenCL] : set E { X.FGA - e }
-fun G [e:E, X:Exec_OpenCL] : set E { X.G - e }
-fun L [e:E, X:Exec_OpenCL] : set E { X.L - e }
-fun REM [e:E, X:Exec_OpenCL] : set E { X.REM - e }
+fun WG [e:PTag->E, X:Exec_OpenCL] : set E { X.WG - e[rm_EV] }
+fun DV [e:PTag->E, X:Exec_OpenCL] : set E { X.DV - e[rm_EV] }
+fun SY [e:PTag->E, X:Exec_OpenCL] : set E { X.SY - e[rm_EV] }
+fun FGA [e:PTag->E, X:Exec_OpenCL] : set E { X.FGA - e[rm_EV] }
+fun G [e:PTag->E, X:Exec_OpenCL] : set E { X.G - e[rm_EV] }
+fun L [e:PTag->E, X:Exec_OpenCL] : set E { X.L - e[rm_EV] }
+fun REM [e:PTag->E, X:Exec_OpenCL] : set E { X.REM - e[rm_EV] }
 
-fun swg [e:E, X:Exec_OpenCL] : E->E { X.swg - (e -> univ) - (univ -> e) }
-fun sdv [e:E, X:Exec_OpenCL] : E->E { X.sdv - (e -> univ) - (univ -> e) }
+fun swg [e:PTag->E, X:Exec_OpenCL] : E->E {
+  (univ - e[rm_EV]) <: X.swg :> (univ - e[rm_EV]) }
+fun sdv [e:PTag->E, X:Exec_OpenCL] : E->E {
+  (univ - e[rm_EV]) <: X.sdv :> (univ - e[rm_EV]) }

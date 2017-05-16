@@ -113,6 +113,10 @@ def extract_gen_comparator_args(args):
                 "locations", "minimal", "withinit"]:
     if not ignore_opt(d[opt]):
       cmd_options.extend(["-" + opt, str(d[opt])])
+  if args.fencerels:
+    cmd_options.extend(["-fencerels"])
+  if args.iter or args.minimal:
+    cmd_options.extend(["-minimal"])      
   return cmd_options
 
 def add_run_alloy_args(parser):

@@ -37,6 +37,7 @@ let eventcount = ref 0
 let eventcount2 = ref 0
 let description = ref ""
 let fencerels = ref false
+let minimal = ref false
 		      
 let min_thds = ref 0
 let max_thds = ref (-1)
@@ -161,20 +162,22 @@ let pp_comparator arch oc =
   pp_violated_models 2 "none->none" "X" oc;
   pp_satisfied_models 2 "none->none" "X" oc;
   pp_also_satisfied_models 2 "none->none" "X" oc;
-  let tag = "rm_EV->e" in
-  fprintf oc "  not some e : X.EV {\n";
-  pp_violated_models 4 tag "X" oc;
-  pp_satisfied_models 4 tag "X" oc;
-  pp_also_satisfied_models 4 tag "X" oc;
-  fprintf oc "  }\n";
-  List.iter (fun rel ->
-      let tag = sprintf "rm_%s->e" rel in
-      fprintf oc "  not some e : dom[X.%s] {\n" rel;
-      pp_violated_models 4 tag "X" oc;
-      pp_satisfied_models 4 tag "X" oc;
-      pp_also_satisfied_models 4 tag "X" oc;
-      fprintf oc "  }\n";
-    ) (Archs.arch_min_rels !fencerels arch);
+  if !minimal then (
+    let tag = "rm_EV->e" in
+    fprintf oc "  not some e : X.EV {\n";
+    pp_violated_models 4 tag "X" oc;
+    pp_satisfied_models 4 tag "X" oc;
+    pp_also_satisfied_models 4 tag "X" oc;
+    fprintf oc "  }\n";
+    List.iter (fun rel ->
+        let tag = sprintf "rm_%s->e" rel in
+        fprintf oc "  not some e : dom[X.%s] {\n" rel;
+        pp_violated_models 4 tag "X" oc;
+        pp_satisfied_models 4 tag "X" oc;
+        pp_also_satisfied_models 4 tag "X" oc;
+        fprintf oc "  }\n";
+      ) (Archs.arch_min_rels !fencerels arch)
+  );
   List.iter (pp_hint_name oc) !hints;
   pp_min_classes "threads" "E" !min_thds "sthd" "EV - IW" oc;
   pp_max_classes "threads" "E" !max_thds "sthd" "EV - IW" oc;
@@ -197,13 +200,10 @@ let pp_comparator2 arch mapping_path arch2 oc =
     Archs.pp_Arch arch Archs.pp_Arch arch2;
   fprintf oc "  withoutinit[X]\n";
   fprintf oc "  withoutinit[Y]\n\n";
-  pp_violated_models 2 "none" "X" oc;
-  pp_satisfied_models 2 "none" "Y" oc;
-  pp_also_satisfied_models 2 "none" "X" oc;
+  pp_violated_models 2 "none->none" "X" oc;
+  pp_satisfied_models 2 "none->none" "Y" oc;
+  pp_also_satisfied_models 2 "none->none" "X" oc;
   List.iter (pp_hint_name oc) !hints;
-  fprintf oc "  not some e : X.EV {\n";
-  pp_violated_models 4 "e" "X" oc;
-  fprintf oc "  }\n";
   fprintf oc "  // We have a valid application of the mapping\n";
   fprintf oc "  apply_map[X, Y, map]\n\n";
   pp_min_classes "threads" "SE" !min_thds "sthd" "EV - IW" oc;
@@ -259,6 +259,8 @@ let get_args () =
        "Option: explicit initial writes");
       ("-fencerels", Arg.Set fencerels,
        "Option: fences as relations");
+      ("-minimal", Arg.Set minimal,
+       "Option: only generate minimal executions")
     ] in
   let usage_msg =
     "Generating an Alloy file that can be run to compare two models.\nUsage: `comparator [options]`. There must be at least one -satisfies or -violates flag.\nOptions available:"
@@ -306,5 +308,5 @@ let main () =
   close_out oc;
   exit 0
        
-let _ = main ()
+     let _ = main ()
 

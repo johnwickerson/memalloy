@@ -38,12 +38,12 @@ sig Exec_C extends Exec {
 
 }
 
-fun A[e:E, X:Exec_C] : set E { X.A - e }
-fun ACQ[e:E, X:Exec_C] : set E { X.ACQ - e }
-fun REL[e:E, X:Exec_C] : set E { X.REL - e }
-fun SC[e:E, X:Exec_C] : set E { X.SC - e }
+fun A[e:PTag->E, X:Exec_C] : set E { X.A - e[rm_EV] }
+fun ACQ[e:PTag->E, X:Exec_C] : set E { X.ACQ - e[rm_EV] }
+fun REL[e:PTag->E, X:Exec_C] : set E { X.REL - e[rm_EV] }
+fun SC[e:PTag->E, X:Exec_C] : set E { X.SC - e[rm_EV] }
 
-pred wf_s[e:E, X:Exec_C, s:E->E] { 
+pred wf_s[e:PTag->E, X:Exec_C, s:E->E] { 
 
   // s is restricted to sc events
   s in SC[e,X] -> SC[e,X]
