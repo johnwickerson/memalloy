@@ -16,4 +16,6 @@ sig Exec_OCaml extends Exec {
 
 }
 
-fun A[e:PTag->E, X:Exec_OCaml] : set E { X.A - e[rm_EV] }
+one sig rm_A extends PTag {}
+
+fun A[e:PTag->E, X:Exec_OCaml] : set E { X.A - e[rm_EV] - e[rm_A] }

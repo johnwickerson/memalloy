@@ -14,5 +14,11 @@ sig Exec_Arm8 extends Exec_Arm7 {
     
 }
 
-fun SCREL[e:PTag->E, X:Exec_Arm8] : set E { X.SCREL - e[rm_EV] }
-fun SCACQ[e:PTag->E, X:Exec_Arm8] : set E { X.SCACQ - e[rm_EV] }
+one sig rm_SCREL extends PTag {}
+one sig rm_SCACQ extends PTag {}
+
+
+fun SCREL[e:PTag->E, X:Exec_Arm8] : set E {
+  X.SCREL - e[rm_EV] - e[rm_SCREL] }
+fun SCACQ[e:PTag->E, X:Exec_Arm8] : set E {
+  X.SCACQ - e[rm_EV] - e[rm_SCACQ] }

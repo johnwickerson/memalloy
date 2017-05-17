@@ -161,6 +161,23 @@ let rec arch_rels = function
   | OpenCL -> arch_rels C @ ["swg"; "sdv"; "sbar"]
   | OCaml -> arch_rels Basic
 
+(** Sets that should be reduced *)
+let arch_min_sets fences_as_relations arch =
+  let rec arch_min_sets = function
+    | Basic -> []
+    | C -> arch_min_sets Basic @ ["A"; "ACQ"; "REL"; "SC"]
+    | Basic_HW -> arch_min_sets Basic
+    | X86 -> arch_min_sets Basic_HW @ ["LOCKED"]
+    | Power -> arch_min_sets Basic_HW
+    | Arm7 -> arch_min_sets Basic_HW
+    | Arm8 -> arch_min_sets Arm7 @ ["SCREL"; "SCACQ"]
+    | PTX -> arch_min_sets Basic_HW
+    | OpenCL -> arch_min_sets C @ ["WG"; "DV"; "SY"]
+    | OCaml -> arch_min_sets Basic @ ["A"]
+  in
+  let fences = if fences_as_relations then [] else fence_sets arch in
+  fences @ arch_min_sets arch
+           
 (** Relations that should be reduced *)
 let arch_min_rels fences_as_relations arch =
   let fences = if fences_as_relations then fence_rels arch else [] in

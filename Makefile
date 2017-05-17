@@ -42,7 +42,7 @@ moretests:
 	tests/Q2_c11_sra_simp_iter.sh -batch
 	tests/Q4_ocaml_ppc_v1.sh -batch
 	tests/Q4_ocaml_ppc_v2.sh -batch
-###	tests/Q2_c11_lidbury_partial_iter.sh -batch
+	tests/Q2_c11_lidbury_partial_iter.sh -batch
 	tests/Q2_ptx.sh -batch
 
 slowtests:

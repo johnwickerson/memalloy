@@ -38,10 +38,19 @@ sig Exec_C extends Exec {
 
 }
 
-fun A[e:PTag->E, X:Exec_C] : set E { X.A - e[rm_EV] }
-fun ACQ[e:PTag->E, X:Exec_C] : set E { X.ACQ - e[rm_EV] }
-fun REL[e:PTag->E, X:Exec_C] : set E { X.REL - e[rm_EV] }
-fun SC[e:PTag->E, X:Exec_C] : set E { X.SC - e[rm_EV] }
+one sig rm_A extends PTag {}
+one sig rm_ACQ extends PTag {}
+one sig rm_REL extends PTag {}
+one sig rm_SC extends PTag {}
+
+fun A[e:PTag->E, X:Exec_C] : set E {
+  X.A - e[rm_EV] - e[rm_A] }
+fun ACQ[e:PTag->E, X:Exec_C] : set E {
+  X.ACQ - e[rm_EV] - e[rm_ACQ] - e[rm_A] }
+fun REL[e:PTag->E, X:Exec_C] : set E {
+  X.REL - e[rm_EV] - e[rm_REL] - e[rm_A] }
+fun SC[e:PTag->E, X:Exec_C] : set E {
+  X.SC - e[rm_EV] - e[rm_SC] - e[rm_REL] - e[rm_ACQ] - e[rm_A] }
 
 pred wf_s[e:PTag->E, X:Exec_C, s:E->E] { 
 

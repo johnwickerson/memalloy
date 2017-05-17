@@ -176,7 +176,15 @@ let pp_comparator arch oc =
         pp_satisfied_models 4 tag "X" oc;
         pp_also_satisfied_models 4 tag "X" oc;
         fprintf oc "  }\n";
-      ) (Archs.arch_min_rels !fencerels arch)
+      ) (Archs.arch_min_rels !fencerels arch);
+    List.iter (fun set ->
+        let tag = sprintf "rm_%s->e" set in
+        fprintf oc "  not some e : X.%s {\n" set;
+        pp_violated_models 4 tag "X" oc;
+        pp_satisfied_models 4 tag "X" oc;
+        pp_also_satisfied_models 4 tag "X" oc;
+        fprintf oc "  }\n";
+      ) (Archs.arch_min_sets !fencerels arch);
   );
   List.iter (pp_hint_name oc) !hints;
   pp_min_classes "threads" "E" !min_thds "sthd" "EV - IW" oc;
