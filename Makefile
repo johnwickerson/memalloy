@@ -13,7 +13,7 @@ install:
 comparator:
 	@ echo "Building top-level executable."
 	@ rm -f $@
-	@ echo '#!/bin/sh\npython top/comparator.py "$$@"' > $@
+	@ printf '#!/bin/sh\npython top/comparator.py "$$@"' > $@
 	@ chmod +x $@
 
 quicktest: 
