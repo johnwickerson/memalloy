@@ -102,7 +102,11 @@ def main(argv=None):
   args.comparator_script = comparator_script
   args.alloystar = "alloystar"
   args.xml_result_dir = xml_result_dir
-  code = run_alloy.main(args)
+  try:
+    code = run_alloy.main(args)
+  except KeyboardInterrupt:
+    code = 0
+    print "WARNING: Alloy was interrupted"
   if code != 0:
     print "ERROR: Alloy was unsuccessful"
     return 1

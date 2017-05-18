@@ -42,11 +42,11 @@ fun scta[e:PTag->E, X:Exec_PTX] : E->E {
 fun sgl[e:PTag->E, X:Exec_PTX] : E->E { 
   (univ - e[rm_EV]) <: X.sgl :> (univ - e[rm_EV]) }
 fun membar_sys[e:PTag->E, X:Exec_PTX] : E->E { 
-  (univ - e[rm_EV] - e[rm_membar_sys] - e[rm_membar_gl] - e[rm_membar_cta])
+  (univ - e[rm_EV] - *(X.sb).(e[rm_membar_sys] + e[rm_membar_gl] + e[rm_membar_cta]))
     <: X.membar_sys :> (univ - e[rm_EV]) }
 fun membar_gl[e:PTag->E, X:Exec_PTX] : E->E { 
-  (univ - e[rm_EV] - e[rm_membar_gl] - e[rm_membar_cta])
+  (univ - e[rm_EV] - *(X.sb).(e[rm_membar_gl] + e[rm_membar_cta]))
     <: X.membar_gl :> (univ - e[rm_EV]) }
 fun membar_cta[e:PTag->E, X:Exec_PTX] : E->E { 
-  (univ - e[rm_EV] - e[rm_membar_cta])
+  (univ - e[rm_EV] - *(X.sb).(e[rm_membar_cta]))
     <: X.membar_cta :> (univ - e[rm_EV]) }

@@ -26,7 +26,6 @@ sig Exec_H extends Exec {
 
 pred is_fence_rel[fence_rel:E->E, sb:E->E] {
     
-/*
   // Consistent with program order
   fence_rel in sb
 
@@ -35,9 +34,9 @@ pred is_fence_rel[fence_rel:E->E, sb:E->E] {
 
   // Can be traced back to an immediate sb-pair
   no ((sb - fence_rel) . (sb - fence_rel)) & fence_rel
-*/
 
-  fence_rel in imm[sb]
+
+  //fence_rel in imm[sb]
 
 }
 

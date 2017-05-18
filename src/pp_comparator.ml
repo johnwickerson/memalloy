@@ -38,6 +38,7 @@ let eventcount2 = ref 0
 let description = ref ""
 let fencerels = ref false
 let minimal = ref false
+let exact = ref false
 		      
 let min_thds = ref 0
 let max_thds = ref (-1)
@@ -115,7 +116,7 @@ let min_classes ev n r dom oc =
   let es = List.map (sprintf "e%d") (range 1 n) in
   fprintf oc "  some disj %a : %s {\n"
 	  (MyList.pp_gen ", " pp_str) es ev;
-  fprintf oc "    %a in X.(%s)\n" (MyList.pp_gen "+" pp_str) es dom;
+  fprintf oc "    %a in %s\n" (MyList.pp_gen "+" pp_str) es dom;
   fprintf oc "    no ((sq[%a]-iden) & X.%s)\n"
 	  (MyList.pp_gen "+" pp_str) es r;
   fprintf oc "  }\n"
@@ -171,7 +172,7 @@ let pp_comparator arch oc =
     fprintf oc "  }\n";
     List.iter (fun rel ->
         let tag = sprintf "rm_%s->e" rel in
-        fprintf oc "  not some e : dom[X.%s] {\n" rel;
+        fprintf oc "  not some e : dom[X.%s & imm[X.sb]] {\n" rel;
         pp_violated_models 4 tag "X" oc;
         pp_satisfied_models 4 tag "X" oc;
         pp_also_satisfied_models 4 tag "X" oc;
@@ -187,13 +188,14 @@ let pp_comparator arch oc =
       ) (Archs.arch_min_sets !fencerels arch);
   );
   List.iter (pp_hint_name oc) !hints;
-  pp_min_classes "threads" "E" !min_thds "sthd" "EV - IW" oc;
-  pp_max_classes "threads" "E" !max_thds "sthd" "EV - IW" oc;
-  pp_min_classes "locations" "E" !min_locs "sloc" "R + W" oc;
-  pp_max_classes "locations" "E" !max_locs "sloc" "R + W" oc;
+  pp_min_classes "threads" "E" !min_thds "sthd" "X.EV - X.IW" oc;
+  pp_max_classes "threads" "E" !max_thds "sthd" "X.EV - X.IW" oc;
+  pp_min_classes "locations" "E" !min_locs "sloc" "X.R + X.W" oc;
+  pp_max_classes "locations" "E" !max_locs "sloc" "X.R + X.W" oc;
   fprintf oc "}\n\n";
   pp_hint_predicates oc;
-  fprintf oc "run gp for 1 Exec, %d E, 3 Int\n" !eventcount
+  fprintf oc "run gp for 1 Exec, %s%d E, 3 Int\n"
+    (if !exact then "exactly " else "") !eventcount
 
 (** [pp_comparator2 arch mapping_path arch2 oc] generates an Alloy file (sent to [oc]) that can be used to find an execution {i X} of type [arch] and an execution {i Y} of type [arch2] such that {i X} satisfies all the models in [!succ_paths], {i Y} violates all the models in [!fail_paths], and {i X} and {i Y} are related by the mapping in [mapping_path] *)
 let pp_comparator2 arch mapping_path arch2 oc =
@@ -268,7 +270,9 @@ let get_args () =
       ("-fencerels", Arg.Set fencerels,
        "Option: fences as relations");
       ("-minimal", Arg.Set minimal,
-       "Option: only generate minimal executions")
+       "Option: only generate minimal executions");
+      ("-exact", Arg.Set exact,
+       "Option: solutions must use all events");
     ] in
   let usage_msg =
     "Generating an Alloy file that can be run to compare two models.\nUsage: `comparator [options]`. There must be at least one -satisfies or -violates flag.\nOptions available:"

@@ -94,6 +94,8 @@ def add_gen_comparator_args(parser):
                       help="Option: find minimal executions")
   parser.add_argument("-withinit", action='store_true',
                       help="Option: explicit initial writes")
+  parser.add_argument("-exact", action='store_true',
+                        help="Option: solution(s) must use exactly the given number of events")
 
 def ignore_opt(option_value):
   return option_value == None or (type(option_value) == bool and option_value == False)
@@ -110,13 +112,15 @@ def extract_gen_comparator_args(args):
   for opt in ["arch", "events", "mapping", "arch2",
                 "events2", "hint", "minthreads", "maxthreads",
                 "threads", "minlocations", "maxlocations",
-                "locations", "minimal", "withinit"]:
+                "locations", "withinit"]:
     if not ignore_opt(d[opt]):
       cmd_options.extend(["-" + opt, str(d[opt])])
   if args.fencerels:
     cmd_options.extend(["-fencerels"])
   if args.iter or args.minimal:
-    cmd_options.extend(["-minimal"])      
+    cmd_options.extend(["-minimal"])
+  if args.exact:
+    cmd_options.extend(["-exact"])
   return cmd_options
 
 def add_run_alloy_args(parser):
