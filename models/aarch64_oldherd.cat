@@ -62,4 +62,5 @@ let Atomics = domain(atom) | range(atom)
 let xx = (W * W) & (Atomics * Atomics) & po
 
 irreflexive prop; rfe; (fence | ppo); fre as Observation
-									      acyclic co | prop;hb* | xx;prop_al;hb* as Propagation
+
+acyclic co | prop;hb* | xx;prop_al;hb* as Propagation

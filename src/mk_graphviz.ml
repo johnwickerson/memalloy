@@ -132,7 +132,7 @@ let dot_of_execution' maps x =
       initials @ List.map dot_of_gl gls
   in
   let visible_rels =
-    Assoc.remove_assocs ["sloc";"sthd";"sgl";"scta"] x.rels
+    Assoc.remove_assocs ["sloc";"sthd";"sgl";"scta";"sdv";"swg"] x.rels
   in
   let edges = List.concat (List.map dot_of_rel visible_rels) in
   {nodes = nodes; edges = edges}
