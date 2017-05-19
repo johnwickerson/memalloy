@@ -78,72 +78,60 @@ let mk_instr x maps reg_map e =
     then Basic (Fence, [f]) :: cs else cs 
   in
   let cs = List.fold_right mk_fence Archs.all_fences cs in
-  List.fold_left (fun c (r,v) -> If(r,v,c)) (Seq cs) c_regvals
+  List.fold_left (fun c (r,v) -> [If(r,v,c)]) cs c_regvals
 
-(** If the list of events [es] comprises a single event, [partition_seq sb es] returns a basic component containing just that event. Otherwise, [partition_seq sb es] partitions the events in [es] into a sequence of components, such that whenever two events are in consecutive components, they are ordered by [sb]. *)
-let rec partition_seq sb = function
-  | [] -> assert false
-  | [e] -> Basic e
-  | es ->
-     let map = Rel.partition false sb es in
-     let classes = Assoc.val_list (Assoc.invert_map map) in
-     let comparator es es' =
-       if MyList.exists_pair (fun e e' -> List.mem (e,e') sb) es es'
-       then -1 else 1
-     in
-     let classes = List.sort comparator classes in
-     Seq (List.map (partition_par sb) classes)
+(** [partition_seq sb es] orders the events in [es] into a sequence of events ordered by [sb]. *)
+let partition_seq sb es : Event.t list =
+  let comparator e e' =
+    if List.mem (e,e') sb then -1 else
+      if List.mem (e',e) sb then 1 else
+        failwith "Partial sb detected!"
+  in
+  List.sort comparator es
 
-(** [partition_par sb es] partitions the events in [es] into a collection of unsequenced components, such that whenever two events are in different components, they are unrelated (in either direction) by [sb]. *)
-and partition_par sb = function
-  | [] -> assert false
-  | es ->
-     let map = Rel.partition true sb es in
-     let classes = Assoc.val_list (Assoc.invert_map map) in
-     Unseq (List.map (partition_seq sb) classes)
-
-  let litmus_of_execution' x maps =
-    let x = tidy_exec x in
-    let locs = Assoc.key_list (Assoc.invert_map maps.loc_map) in
-    let inv_thd_map = Assoc.invert_map maps.thd_map in
-    let inv_thd_map =
-      List.sort (fun (k,_) (k',_) -> compare k k') inv_thd_map
-    in
-    let thd_classes = Assoc.val_list inv_thd_map in
-    let sb = get_rel x "sb" in
-    let thds = List.map (partition_seq sb) thd_classes in
-    let reg_evts = MySet.diff (get_set x "R") (get_set x "W") in
-    let mk_reg_map (i,res) e =
-      let thd = Assoc.strong_assoc maps.thd_map e in
-      (i+1, (e,(thd,i))::res)
-    in
-    let reg_map_thd reg_map thd =
-      let evts = MySet.inter reg_evts thd in
-      snd (List.fold_left mk_reg_map (0,reg_map) evts)
-    in
-    let reg_map = List.fold_left reg_map_thd [] thd_classes in
-    let thds = List.map (map_component (mk_instr x maps reg_map)) thds in
-    let find_reg_val e =
-      try
-	let e', _ = List.find (fun (_,e') -> e'=e) (get_rel x "rf") in
-	Assoc.strong_assoc maps.wval_map e'
+let litmus_of_execution' x maps =
+  let x = tidy_exec x in
+  let locs = Assoc.key_list (Assoc.invert_map maps.loc_map) in
+  let inv_thd_map = Assoc.invert_map maps.thd_map in
+  let inv_thd_map =
+    List.sort (fun (k,_) (k',_) -> compare k k') inv_thd_map
+  in
+  let thd_classes = Assoc.val_list inv_thd_map in
+  let sb = get_rel x "sb" in
+  let thds = List.map (partition_seq sb) thd_classes in
+  let reg_evts = MySet.diff (get_set x "R") (get_set x "W") in
+  let mk_reg_map (i,res) e =
+    let thd = Assoc.strong_assoc maps.thd_map e in
+    (i+1, (e,(thd,i))::res)
+  in
+  let reg_map_thd reg_map thd =
+    let evts = MySet.inter reg_evts thd in
+    snd (List.fold_left mk_reg_map (0,reg_map) evts)
+  in
+  let reg_map = List.fold_left reg_map_thd [] thd_classes in
+  let mk_thd t = List.concat (List.map (mk_instr x maps reg_map) t) in
+  let thds = List.map mk_thd thds in
+  let find_reg_val e =
+    try
+      let e', _ = List.find (fun (_,e') -> e'=e) (get_rel x "rf") in
+      Assoc.strong_assoc maps.wval_map e'
+    with Not_found -> 0
+  in
+  let find_reg e = Reg (Assoc.strong_assoc reg_map e) in
+  let reg_post =
+    List.map (fun e -> (find_reg e, find_reg_val e)) (get_set x "R")
+  in
+  let final_wval (l,es) =
+    let ws = MySet.inter (get_set x "W") es in
+    let co_after e e' = List.mem (e,e') (get_rel x "co") in
+    let co_maximal e = not (List.exists (co_after e) ws) in
+    let wval =
+      try Assoc.strong_assoc maps.wval_map (List.find co_maximal ws)
       with Not_found -> 0
-    in
-    let find_reg e = Reg (Assoc.strong_assoc reg_map e) in
-    let reg_post =
-      List.map (fun e -> (find_reg e, find_reg_val e)) (get_set x "R")
-    in
-    let final_wval (l,es) =
-      let ws = MySet.inter (get_set x "W") es in
-      let co_after e e' = List.mem (e,e') (get_rel x "co") in
-      let co_maximal e = not (List.exists (co_after e) ws) in
-      let wval =
-	try Assoc.strong_assoc maps.wval_map (List.find co_maximal ws)
-	with Not_found -> 0
-      in (Loc l, wval)
-    in
-    let loc_post = List.map final_wval (Assoc.invert_map maps.loc_map) in
-    {locs = locs; thds = thds; post = reg_post @ loc_post}
+    in (Loc l, wval)
+  in
+  let loc_post = List.map final_wval (Assoc.invert_map maps.loc_map) in
+  {locs = locs; thds = thds; post = reg_post @ loc_post}
     
 let litmus_of_execution x =
   let maps = resolve_exec x in

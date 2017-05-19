@@ -26,22 +26,22 @@ ALL_TESTS=x86_not_sc \
 	ptx_orig_not_cumul
 
 c11_partial_not_lidbury:
-	./comparator -arch C -violates models/c11_lidbury.cat -satisfies models/c11_partial.cat -satisfies models/c11_normws.cat -satisfies models/totalsb.cat -events 4 -expect 1 $(ARGS)
+	./comparator -arch C -violates models/c11_lidbury.cat -satisfies models/c11_partial.cat -satisfies models/c11_normws.cat -events 4 -expect 1 $(ARGS)
 
 c11_partial_not_lidbury_iter:
-	./comparator -arch C -violates models/c11_lidbury.cat -satisfies models/c11_partial.cat -satisfies models/c11_normws.cat -satisfies models/totalsb.cat -events 4 -iter -expect 5 $(ARGS)
+	./comparator -arch C -violates models/c11_lidbury.cat -satisfies models/c11_partial.cat -satisfies models/c11_normws.cat -events 4 -iter -expect 5 $(ARGS)
 
 x86_not_sc:
 	./comparator -arch X86 -violates models/sc.cat -satisfies models/x86tso.cat -events 4 -iter -expect 2 $(ARGS)
 
 c11_simp_not_sra:
-	./comparator -arch C -violates models/c11_sra.cat -satisfies models/c11_simp.cat -satisfies models/c11_relacq.cat -satisfies models/c11_normws.cat -satisfies models/c11_simplepost.cat -satisfies models/totalsb.cat -events 6 -expect 1 $(ARGS)
+	./comparator -arch C -violates models/c11_sra.cat -satisfies models/c11_simp.cat -satisfies models/c11_relacq.cat -satisfies models/c11_normws.cat -satisfies models/c11_simplepost.cat -events 6 -expect 1 $(ARGS)
 
 c11_simp_not_sra_iter:
-	./comparator -arch C -violates models/c11_sra.cat -satisfies models/c11_simp.cat -satisfies models/c11_relacq.cat -satisfies models/c11_normws.cat -satisfies models/c11_simplepost.cat -satisfies models/totalsb.cat -events 6 -iter -expect 1 $(ARGS)
+	./comparator -arch C -violates models/c11_sra.cat -satisfies models/c11_simp.cat -satisfies models/c11_relacq.cat -satisfies models/c11_normws.cat -satisfies models/c11_simplepost.cat -events 6 -iter -expect 1 $(ARGS)
 
 c11_simp_not_swrf: #FIXME: remove hint?
-	./comparator -arch C -violates models/c11_swrf.cat -satisfies models/c11_simp.cat -satisfies models/totalsb.cat -solver plingeling -events 12 -hint execution_hints/nienhuis_example.als -expect 1 $(ARGS)
+	./comparator -arch C -violates models/c11_swrf.cat -satisfies models/c11_simp.cat -solver plingeling -events 12 -hint execution_hints/nienhuis_example.als -expect 1 $(ARGS)
 
 c11_orig_not_simp_4ev:
 	./comparator -arch C -violates models/c11_simp.cat -satisfies models/c11_orig.cat -events 4 -expect 0 $(ARGS)
@@ -50,31 +50,31 @@ c11_orig_not_simp_5ev:
 	./comparator -arch C -violates models/c11_simp.cat -satisfies models/c11_orig.cat -events 5 -expect 1 $(ARGS)
 
 c11_scdrf_bug:
-	./comparator -arch C -violates models/sc.cat -satisfies models/c11_nodrf.cat -satisfies models/c11_normws.cat -satisfies models/c11_onlysc.cat -satisfies models/totalsb.cat -events 4 -expect 1 $(ARGS)
+	./comparator -arch C -violates models/sc.cat -satisfies models/c11_nodrf.cat -satisfies models/c11_normws.cat -satisfies models/c11_onlysc.cat -events 4 -expect 1 $(ARGS)
 
-ppc_not_mca: #FIXME: solution looks a bit funny 
-	./comparator -arch PPC -fencerels -violates models/mca_ppc.cat -satisfies models/ppc.cat -events 6 -expect 1 $(ARGS)
+ppc_not_mca: 
+	./comparator -arch PPC -fencerels -violates models/mca_ppc.cat -satisfies models/ppc.cat -events 6 -expect 1 -minimal $(ARGS)
 
 x86_not_mca:
 	./comparator -arch X86 -fencerels -violates models/mca_x86.cat -satisfies models/x86tso.cat -events 7 -expect 0 $(ARGS)
 
 c11_repairing0:
-	./comparator -arch C -violates models/c11_repairing0.cat -satisfies models/c11_repairing1.cat -satisfies models/c11_noscfences.cat -satisfies models/c11_normws.cat -satisfies models/totalsb.cat -events 5 -expect 1 $(ARGS)
+	./comparator -arch C -violates models/c11_repairing0.cat -satisfies models/c11_repairing1.cat -satisfies models/c11_noscfences.cat -satisfies models/c11_normws.cat -events 5 -expect 1 $(ARGS)
 
 c11_repairing1:
-	./comparator -arch C -violates models/c11_repairing2.cat -satisfies models/c11_repairing1.cat -satisfies models/c11_noscfences.cat -satisfies models/c11_normws.cat -satisfies models/totalsb.cat -events 5 -expect 1 $(ARGS)
+	./comparator -arch C -violates models/c11_repairing2.cat -satisfies models/c11_repairing1.cat -satisfies models/c11_noscfences.cat -satisfies models/c11_normws.cat -events 5 -expect 1 $(ARGS)
 
 c11_repairing2:
-	./comparator -arch C -violates models/c11_repairing3.cat -satisfies models/c11_repairing2.cat -satisfies models/c11_normws.cat -satisfies models/totalsb.cat -events 7 -expect 1 $(ARGS)
+	./comparator -arch C -violates models/c11_repairing3.cat -satisfies models/c11_repairing2.cat -satisfies models/c11_normws.cat -events 7 -expect 1 $(ARGS)
 
 c11_repairing3:
-	./comparator -arch C -violates models/c11_repairing3.cat -satisfies models/c11_repairing4.cat -satisfies models/c11_noscfences.cat -satisfies models/c11_normws.cat -satisfies models/totalsb.cat -events 6 -expect 1 $(ARGS)
+	./comparator -arch C -violates models/c11_repairing3.cat -satisfies models/c11_repairing4.cat -satisfies models/c11_noscfences.cat -satisfies models/c11_normws.cat -events 6 -expect 1 $(ARGS)
 
 c11_repairing4:
-	./comparator -arch C -violates models/c11_repairing5.cat -satisfies models/c11_repairing4.cat -satisfies models/c11_noscfences.cat -satisfies models/c11_normws.cat -satisfies models/totalsb.cat -events 6 -expect 1 $(ARGS)
+	./comparator -arch C -violates models/c11_repairing5.cat -satisfies models/c11_repairing4.cat -satisfies models/c11_noscfences.cat -satisfies models/c11_normws.cat -events 6 -expect 1 $(ARGS)
 
 c11_repairing5:
-	./comparator -arch C -violates models/c11_repairing3.cat -satisfies models/c11_repairing5.cat -satisfies models/c11_noscfences.cat -satisfies models/c11_normws.cat -satisfies models/totalsb.cat -events 6 -expect 1 $(ARGS)
+	./comparator -arch C -violates models/c11_repairing3.cat -satisfies models/c11_repairing5.cat -satisfies models/c11_noscfences.cat -satisfies models/c11_normws.cat -events 6 -expect 1 $(ARGS)
 
 ptx_orig_not_cumul:
 	./comparator -arch PTX -fencerels -violates models/ptx_cumul.cat -satisfies models/ptx_orig.cat -satisfies models/normws.cat -satisfies models/ptx_singlegl.cat -events 5 -iter -expect 14 $(ARGS)

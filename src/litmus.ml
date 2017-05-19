@@ -74,52 +74,44 @@ let pp_instr oc = function
      fprintf oc "fence(%a)"
 	     (MyList.pp_gen "" (fun oc -> fprintf oc ",%s")) attrs
       
-(** A component is either a single instruction, a collection of components in sequence, a collection of components that are unsequenced, or an if-statement *)
+(** A component is either a single instruction or an if-statement *)
 type 'a component =
   | Basic of 'a
-  | Seq of 'a component list
-  | Unseq of 'a component list
-  | If of Register.t * Value.t * 'a component
+  | If of Register.t * Value.t * 'a component list
 
 (** [map_component f c] applies [f] to each instruction in [c] *)
 let rec map_component f = function
   | Basic x -> f x
-  | Seq cs -> Seq (List.map (map_component f) cs)
-  | Unseq cs -> Unseq (List.map (map_component f) cs)
-  | If (r,v,c) -> If (r,v, map_component f c)
+  | If (r,v,cs) -> [If (r, v, map_components f cs)]
+and map_components f cs = List.concat (List.map (map_component f) cs)
 
 (** Simple pretty-printing of components *)     
 let rec pp_component k oc = function
-  | Basic b -> k oc b     
-  | Seq [c] | Unseq [c] -> pp_component k oc c
-  | Seq cs -> fparen (MyList.pp_gen "; " (pp_component k)) oc cs
-  | Unseq cs -> fparen (MyList.pp_gen " + " (pp_component k)) oc cs
-  | If (r,v,c) ->
-     fprintf oc "if (%a==%a) %a" Register.pp r Value.pp v
-	     (pp_component k) c
+  | Basic b -> k oc b
+  | If (r,v,cs) ->
+     fprintf oc "if (%a==%a) { %a }"
+       Register.pp r Value.pp v (pp_components k) cs
+and pp_components k = MyList.pp_gen "; " (pp_component k)
 		     
 (** A litmus test comprises a list of locations, a list of threads, and a postcondition *)		     
 type t = {
     locs: Location.t list;
-    thds: (instruction * attribute list) component list;
+    thds: (instruction * attribute list) component list list;
     post: (address, Value.t) Assoc.t;
   }
 
 (** Simple pretty-printing of litmus tests *)	   
 let pp oc lt =
   fprintf oc "Locations: %a.\n\n"
-	  (MyList.pp_gen ", " Location.pp) lt.locs;
-  let rec pp_thd tid = function
-    | Seq cs ->
-       fprintf oc "Thread %d:\n" tid;
-       MyList.pp_gen ";\n" (pp_component pp_instr) oc cs;
-       fprintf oc ";\n\n";
-       tid+1
-    | Basic i -> pp_thd tid (Seq [Basic i])
-    | _ -> assert false
+    (MyList.pp_gen ", " Location.pp) lt.locs;
+  let pp_thd tid cs =
+    fprintf oc "Thread %d:\n" tid;
+    MyList.pp_gen ";\n" (pp_component pp_instr) oc cs;
+    fprintf oc ";\n\n";
+    tid+1
   in
   let _ = List.fold_left pp_thd 0 lt.thds in
   fprintf oc "Final: ";
   let pp_cnstrnt oc (a,v) = fprintf oc "%a==%d" pp_addr a v in
   MyList.pp_gen " && " pp_cnstrnt oc lt.post
-  
+    

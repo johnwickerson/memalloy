@@ -10,9 +10,6 @@ sig Exec_H extends Exec {
     
   // there are no single-event RMWs
   no (R&W)
-    
-  // sequenced-before is total within a thread
-  sthd in *sb + ~*sb
 
   // there are no such things as "atomic" and "non-atomic" locations
   no NAL

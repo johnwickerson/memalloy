@@ -13,9 +13,6 @@ sig Exec_H extends Exec {
 
   // there are no fence events (only fence relations)
   no F
-    
-  // sequenced-before is total within a thread
-  sthd in *sb + ~*sb
 
   // there are no such things as "atomic" and "non-atomic" locations
   no NAL

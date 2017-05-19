@@ -41,7 +41,7 @@ def main(args):
     if os.path.exists(latest_symlink):
       os.remove(latest_symlink)
     os.symlink(abspath, latest_symlink)
-    for d in ["xml", "dot", "png"]:
+    for d in ["xml", "dot", "png", "litmus"]:
       path = os.path.join(abspath, d)
       os.mkdir(path)
     return abspath

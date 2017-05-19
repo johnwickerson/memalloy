@@ -71,6 +71,7 @@ def main(argv=None):
   xml_result_dir = os.path.join(result_dir, "xml")
   dot_result_dir = os.path.join(result_dir, "dot")
   png_result_dir = os.path.join(result_dir, "png")
+  lit_result_dir = os.path.join(result_dir, "litmus")
 
   if args.desc:
     print "\"" + args.desc + "\""
@@ -106,7 +107,7 @@ def main(argv=None):
     code = run_alloy.main(args)
   except KeyboardInterrupt:
     code = 0
-    print "WARNING: Alloy was interrupted"
+    print "\nWARNING: Alloy was interrupted"
   if code != 0:
     print "ERROR: Alloy was unsuccessful"
     return 1
@@ -129,31 +130,45 @@ def main(argv=None):
   print "Partitioned to %d unique solutions" % nsolutions
 
   # TODO: gen changed to operate over a directory not per-file
-  hash_file = os.path.join(result_dir, "xml", "hashes.txt")
+  hash_file = os.path.join(xml_result_dir, "hashes.txt")
   with open(hash_file) as f:
     for test_hash in f:
       test_hash = test_hash.strip()
       if not test_hash: continue
       xml_dir = os.path.join(xml_result_dir, "%s_unique" % test_hash)
       xml_files = [ x for x in os.listdir(xml_dir) if is_xml_file(x) ]
-      dot_file = os.path.join(result_dir, "dot", "test_%s.dot" % test_hash)
       assert 0 < len(xml_files)
+      
+      dot_file = os.path.join(dot_result_dir, "test_%s.dot" % test_hash)
       cmd = [os.path.join(TOOL_PATH, "gen"), "-Tdot", "-o", dot_file, os.path.join(xml_dir, xml_files[0])]
       if args.verbose: print " ".join(cmd)
       code = subprocess.call(cmd)
       if code != 0:
         print "ERROR: dot generation was unsuccessful"
         return 1
-      png_file = os.path.join(result_dir, "png", "test_%s.png" % test_hash)
+      
+      png_file = os.path.join(png_result_dir, "test_%s.png" % test_hash)
       cmd = ["dot", "-Tpng", "-o", png_file, dot_file]
       if args.verbose: print " ".join(cmd)
       code = subprocess.call(cmd)
       if code != 0:
         print "ERROR: png generation was unsuccessful"
         return 1
+      
+      lit_file = os.path.join(lit_result_dir, "test_%s.litmus" % test_hash)
+      cmd = [os.path.join(TOOL_PATH, "gen"), "-Tlit", "-o", lit_file, os.path.join(xml_dir, xml_files[0])]
+      if args.arch in ["ARM8", "PPC"]:
+        cmd.extend(["-arch", args.arch])
+      if args.verbose: print " ".join(cmd)
+      code = subprocess.call(cmd)
+      if code != 0:
+        print "ERROR: litmus-test generation was unsuccessful"
+        return 1
 
   if platform.system() == "Darwin" and args.batch == False:
     if nsolutions == 1:
+      for f in os.listdir(lit_result_dir):
+        subprocess.Popen(["cat", os.path.join(lit_result_dir, f)])
       for f in os.listdir(png_result_dir):
         subprocess.Popen(["open", os.path.join(png_result_dir, f)])
     else:

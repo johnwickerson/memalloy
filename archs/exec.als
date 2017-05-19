@@ -35,10 +35,15 @@ sig Exec {
   // sequenced-before is acyclic and transitive
   strict_partial_order[sb]
 
+  /*
   // sequenced-before has the "N-free" property
   all a,b,c,d : EV | not (
 	((b->d) + (a->d) + (a->c)) in sb and
-      no (((a->b) + (b->c) + (c->d)) & *sb))
+      	no (((a->b) + (b->c) + (c->d)) & *sb))
+  */
+
+  // sequenced-before is total within a thread
+  sthd in *sb + ~*sb
 
   // sthd is an equivalence relation among non-initial events
   is_equivalence[sthd, EV - IW]

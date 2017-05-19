@@ -29,23 +29,21 @@ open! Format
 open! General_purpose
 open Litmus
 
-(** [remove_Ifs r c] removes from the component [c] all if-statements that test the value of the register [r] *)
+(** [remove_Ifs r cs] removes from the component list [cs] all if-statements that test the value of the register [r] *)
 let rec remove_Ifs r = function
-  | Basic b -> Basic b
-  | Seq cs -> Seq (List.map (remove_Ifs r) cs)
-  | Unseq cs -> Unseq (List.map (remove_Ifs r) cs)
-  | If (r',v,c) ->
-     let c' = remove_Ifs r c in
-     if r=r' then c' else If(r',v,c')
-
-(** [combine_Ifs c] seeks to combine consecutive if-statements with the same test. For instance, [combine_Ifs [If(r,v,c1); If(r,v,c2)] = [If(r, v, Seq [c1;c2])]]. This function assumes that "cd;sb \subseteq cd" holds, and that sb is total within a thread. *)
-let rec combine_Ifs = function
   | [] -> []
-  | Basic b :: cs -> Basic b :: combine_Ifs cs
-  | If(r,v,c) :: cs ->
-     [If(r, v, Seq (combine_Ifs (c :: List.map (remove_Ifs r) cs)))]
-  | Seq cs :: cs' -> combine_Ifs (cs @ cs')
-  | Unseq _ :: _ -> failwith "Program-order cannot be partial!"
+  | Basic b :: cs -> Basic b :: remove_Ifs r cs
+  | If (r',v,cs') :: cs ->
+     let cs' = remove_Ifs r cs' in
+     (if r=r' then cs' else [If(r',v,cs')]) @ remove_Ifs r cs
+
+(** [reduce_Ifs c] replaces [(if b then c1);c2] with [if b then (c1;c2)], which is fine when it is assumed that "cd;sb \subseteq cd" holds. *) 
+let rec reduce_Ifs = function
+  | [] -> []
+  | Basic b :: cs ->
+     Basic b :: reduce_Ifs cs
+  | If (r,v,cs') :: cs ->
+     If (r,v,cs') :: reduce_Ifs (remove_Ifs r cs)
 
 (** Builds various flavours of load/store instructions *)
 let mk_Access dir attrs (dst, src, off, sta) = 
@@ -142,21 +140,6 @@ let hw_ins_of_ins use_status_reg mk_fence tid (locs,nr) = function
      in locs, nr, il
   | _, _ -> failwith "Not yet implemented!"
 
-(** A simpler version of the [Litmus.component] type that does not allow non-total sequencing within threads. *)
-type 'a hw_component =
-  | HW_Basic of 'a
-  | HW_If of Register.t * Value.t * 'a hw_component list
-
-(** Convert a generic litmus test component into an ARM8 litmus test component, by removing any unsequenced instructions. In fact, we expect there are already no unsequenced instructions, and fail if there are. *)
-let rec flatten = function
-  | Basic (ins,attrs) -> [HW_Basic (ins,attrs)]
-  | Seq cs -> flatten_list cs
-  | Unseq [c] -> flatten c
-  | Unseq _ -> failwith "Program-order cannot be partial!"
-  | If (r,v,c) -> [HW_If (r, v, flatten c)]
-and flatten_list = function
-  | [] -> []
-  | c :: cs -> flatten c @ flatten_list cs
 
 (** [can_fail il] holds iff the instruction list [il] contains an unconditional branch. Unconditional branches are only inserted to handle possibly-failing code (i.e. store-exclusives), so this function tests for the presence of possibly-failing code. *)
 let can_fail il =
@@ -185,13 +168,13 @@ let rec hw_ins_of_components
      let locs = (-1, r_ok) :: locs in
      locs,nr,nl,il
   | [] -> locs,nr,nl,il
-  | HW_Basic (ins,attrs) :: cs ->
+  | Basic (ins,attrs) :: cs ->
      let locs,nr,il1 =
        hw_ins_of_ins use_status_reg mk_fence tid (locs,nr) (ins,attrs)
      in
      hw_ins_of_components
        use_status_reg mk_fence tid (locs,nr,nl,il@il1) cs
-  | [HW_If (r,_,cs)] ->
+  | If (r,_,cs') :: cs ->
      let lbl = sprintf "LC%02d" nl in
      let nl = nl + 1 in
      let il = il @ [
@@ -200,13 +183,13 @@ let rec hw_ins_of_components
 	   Litmus_HW.LBL lbl
          ]
      in
-     hw_ins_of_components use_status_reg mk_fence tid (locs,nr,nl,il) cs
-  | _ -> assert false
+     hw_ins_of_components
+       use_status_reg mk_fence tid (locs,nr,nl,il) (cs' @ cs)
 
 (** Calculate the first unused register in a thread *)
 let rec next_reg n = function
   | [] -> n
-  | HW_Basic (Load((_,r),_),_) :: cs ->
+  | Basic (Load((_,r),_),_) :: cs ->
      next_reg (max (r+1) n) cs
   | _ :: cs -> next_reg n cs
 
@@ -226,10 +209,9 @@ let rec hw_thds_of_thds use_status_reg mk_fence tid (locs,nl) = function
      locs, nl, il1 :: il2
 
 (** [hw_lit_of_lit name use_status_reg mk_fence lt] converts the generic litmus test [lt] into a hardware litmus test, named [name], using the [mk_fence] function to build architecture-specific fences, and using explicit status registers for store-conditionals iff the [use_status_reg] flag is set *)
-let hw_lit_of_lit name use_status_reg mk_fence lt =
-  let thds = List.map flatten lt.thds in 
+let hw_lit_of_lit name use_status_reg mk_fence lt = 
   let locs, _, thds =
-    hw_thds_of_thds use_status_reg mk_fence 0 ([], 0) thds
+    hw_thds_of_thds use_status_reg mk_fence 0 ([], 0) lt.thds
   in
   let locs = Assoc.group_map locs in
   {Litmus_HW.name = name; locs = locs; thds = thds; post = lt.post}
