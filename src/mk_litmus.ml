@@ -117,9 +117,13 @@ let litmus_of_execution' x maps =
       Assoc.strong_assoc maps.wval_map e'
     with Not_found -> 0
   in
-  let find_reg e = Reg (Assoc.strong_assoc reg_map e) in
+  let find_reg e = try
+      Reg (List.assoc e reg_map)
+    with Not_found ->
+      failwith "Couldn't find register written by event %a." Event.pp e
+  in
   let reg_post =
-    List.map (fun e -> (find_reg e, find_reg_val e)) (get_set x "R")
+    List.map (fun e -> (find_reg e, find_reg_val e)) reg_evts
   in
   let final_wval (l,es) =
     let ws = MySet.inter (get_set x "W") es in
