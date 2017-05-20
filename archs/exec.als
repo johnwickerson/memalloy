@@ -107,7 +107,9 @@ fun addsb[e:PTag->E, X:Exec, F:set E] : E->E {
   *(sb[e,X]) . (stor[F]) . *(sb[e,X]) }
   
 
-abstract sig PTag {} // Perturbation Tag
+// Perturbation Tags are an idea due to Daniel Lustig et al.
+// (ASPLOS'17, http://dl.acm.org/citation.cfm?id=3037723)
+abstract sig PTag {}
 one sig rm_EV extends PTag {}
 one sig rm_ad extends PTag {}
 one sig rm_cd extends PTag {}
