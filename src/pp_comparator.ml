@@ -172,7 +172,11 @@ let pp_comparator arch oc =
     fprintf oc "  }\n";
     List.iter (fun rel ->
         let tag = sprintf "rm_%s->e" rel in
-        fprintf oc "  not some e : dom[X.%s & imm[X.sb]] {\n" rel;
+        let extra =
+          if List.mem rel ["ad";"cd";"dd"] then ""
+          else " & imm[X.sb]"
+        in
+        fprintf oc "  not some e : dom[X.%s%s] {\n" rel extra;
         pp_violated_models 4 tag "X" oc;
         pp_satisfied_models 4 tag "X" oc;
         pp_also_satisfied_models 4 tag "X" oc;
