@@ -16,7 +16,7 @@ comparator:
 	@ printf '#!/bin/sh\npython top/comparator.py "$$@"' > $@
 	@ chmod +x $@
 
-include Makefile.tests
+include tests.makefile
 
 quicktest: 
 	make c11_partial_not_lidbury
