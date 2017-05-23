@@ -100,9 +100,11 @@ let dot_of_execution' maps x =
   let x = tidy_exec x in
   let x = remove_transitive "sb" x in
   let x = remove_transitive "co" x in
-  let mk_cluster ns =
+  let mk_thd_cluster ns = Cluster (ns, ["color", "white"]) in
+  let mk_cta_cluster ns =
     Cluster (ns, ["color", "azure4"; "style", "dashed"])
   in
+  let mk_gl_cluster ns = Cluster (ns, ["color", "white"]) in
   let ev = get_set x "EV" in
   let iw = get_set x "IW" in
   let niw = MySet.diff ev iw in
@@ -114,16 +116,16 @@ let dot_of_execution' maps x =
   let doe = dot_of_event x maps in
   let initials = List.map doe iw in
   let thds = Assoc.val_list (Assoc.invert_map maps.thd_map) in
-  let dot_of_thd thd = mk_cluster (List.map doe thd) in
+  let dot_of_thd thd = mk_thd_cluster (List.map doe thd) in
   let dot_of_cta cta =
     let thd_map = Rel.partition true sthd (MySet.inter cta niw) in
     let thds = Assoc.val_list (Assoc.invert_map thd_map) in
-    mk_cluster (List.map dot_of_thd thds)
+    mk_cta_cluster (List.map dot_of_thd thds)
   in
   let dot_of_gl gl =
     let cta_map = Rel.partition true scta (MySet.inter gl niw) in
     let ctas = Assoc.val_list (Assoc.invert_map cta_map) in
-    mk_cluster (List.map dot_of_cta ctas)
+    mk_gl_cluster (List.map dot_of_cta ctas)
   in
   let nodes =
     if sgl = [] then
