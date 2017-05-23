@@ -22,8 +22,9 @@ ALL_TESTS=x86_not_sc \
 	compile_ocaml_ppc_v1 \
 	compile_ocaml_ppc_v2 \
 	c11_partial_not_lidbury_iter \
-	ptx_orig_not_cumul \
-	ptx_orig_not_cumul
+	ptx_orig_not_cumul_5ev
+
+SLOW_TESTS=ptx_orig_not_cumul_6ev
 
 c11_partial_not_lidbury:
 	./comparator -arch C -violates models/c11_lidbury.cat -satisfies models/c11_partial.cat -satisfies models/c11_normws.cat -events 4 -expect 1 $(ARGS)
@@ -76,8 +77,11 @@ c11_repairing4:
 c11_repairing5:
 	./comparator -arch C -violates models/c11_repairing3.cat -satisfies models/c11_repairing5.cat -satisfies models/c11_noscfences.cat -satisfies models/c11_normws.cat -events 6 -expect 1 $(ARGS)
 
-ptx_orig_not_cumul:
+ptx_orig_not_cumul_5ev:
 	./comparator -arch PTX -fencerels -violates models/ptx_cumul.cat -satisfies models/ptx_orig.cat -satisfies models/normws.cat -satisfies models/ptx_singlegl.cat -events 5 -iter -expect 14 $(ARGS)
+
+ptx_orig_not_cumul_6ev:
+	./comparator -arch PTX -fencerels -violates models/ptx_cumul.cat -satisfies models/ptx_orig.cat -satisfies models/normws.cat -satisfies models/ptx_singlegl.cat -events 6 -exact -iter -expect 189 $(ARGS) #takes about 2hrs
 
 compile_c11_ppc:
 	./comparator -arch C -arch2 PPC -fencerels -violates models/c11_simp.cat -satisfies models/ppc.cat -mapping mappings/fences_as_relations/c11_ppc.als -events 5 -events2 5 -expect 1 $(ARGS)

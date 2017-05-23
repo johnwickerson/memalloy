@@ -155,40 +155,31 @@ let pp_comparator arch oc =
   if !description <> "" then fprintf oc "/* %s */\n" !description;
   pp_open_modules "E" "E" oc;
   fprintf oc "sig E {}\n\n";
+  fprintf oc "pred interesting[e:PTag->E, X:%a] {\n\n" Archs.pp_Arch arch;
+  pp_violated_models 2 "e" "X" oc;
+  pp_satisfied_models 2 "e" "X" oc;
+  pp_also_satisfied_models 2 "e" "X" oc;
+  fprintf oc "}\n\n";
   fprintf oc "pred gp [X:%a] {\n\n" Archs.pp_Arch arch;
   if !withinit then
-    fprintf oc "  withinit[X]\n\n"
+    fprintf oc "  withinit[X]\n"
   else
-    fprintf oc "  withoutinit[X]\n\n";
-  pp_violated_models 2 "none->none" "X" oc;
-  pp_satisfied_models 2 "none->none" "X" oc;
-  pp_also_satisfied_models 2 "none->none" "X" oc;
+    fprintf oc "  withoutinit[X]\n";
+  fprintf oc "  E in X.EV\n\n";
+  fprintf oc "  interesting[none->none, X]\n\n";
   if !minimal then (
-    let tag = "rm_EV->e" in
-    fprintf oc "  not some e : X.EV {\n";
-    pp_violated_models 4 tag "X" oc;
-    pp_satisfied_models 4 tag "X" oc;
-    pp_also_satisfied_models 4 tag "X" oc;
-    fprintf oc "  }\n";
+    fprintf oc "  not some e : X.EV | interesting[rm_EV->e, X]\n";
     List.iter (fun rel ->
-        let tag = sprintf "rm_%s->e" rel in
         let extra =
           if List.mem rel ["ad";"cd";"dd"] then ""
           else " & imm[X.sb]"
         in
-        fprintf oc "  not some e : dom[X.%s%s] {\n" rel extra;
-        pp_violated_models 4 tag "X" oc;
-        pp_satisfied_models 4 tag "X" oc;
-        pp_also_satisfied_models 4 tag "X" oc;
-        fprintf oc "  }\n";
+        fprintf oc "  not some e : dom[X.%s%s] |\n" rel extra;
+        fprintf oc "    interesting[rm_%s->e, X]\n" rel
       ) (Archs.arch_min_rels !fencerels arch);
     List.iter (fun set ->
-        let tag = sprintf "rm_%s->e" set in
-        fprintf oc "  not some e : X.%s {\n" set;
-        pp_violated_models 4 tag "X" oc;
-        pp_satisfied_models 4 tag "X" oc;
-        pp_also_satisfied_models 4 tag "X" oc;
-        fprintf oc "  }\n";
+        fprintf oc
+          "  not some e : X.%s | interesting[rm_%s->e, X]\n" set set
       ) (Archs.arch_min_sets !fencerels arch);
   );
   List.iter (pp_hint_name oc) !hints;

@@ -92,6 +92,7 @@ let tidy_exec x =
   let reduce_fence_rel x f_name =
     let f = get_rel x f_name in
     let f = Rel.remove_edges sb f f in
+    let f = Rel.remove_edges f sb f in
     update_rel x (f_name, f)
   in
   let all_fences =
