@@ -22,7 +22,7 @@ https://github.com/herd/herdtools/blob/master/herd/x86tso.cat
 
 (* Uniproc check *)
   (* let com = rf | fr | co *)
-include "basic.cat"
+include "basic_H.cat"
 include "fr.cat"
 acyclic po-loc | com as Uniproc
 
