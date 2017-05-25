@@ -1,7 +1,7 @@
 ALL_TESTS=x86_not_sc \
 	c11_partial_not_lidbury \
 	c11_simp_not_sra \
-	c11_simp_not_swrf \
+	c11_simp_not_swrf_hint \
 	c11_orig_not_simp_4ev \
 	c11_orig_not_simp_5ev \
 	c11_scdrf_bug \
@@ -24,7 +24,8 @@ ALL_TESTS=x86_not_sc \
 	c11_partial_not_lidbury_iter \
 	ptx_orig_not_cumul_5ev
 
-SLOW_TESTS=ptx_orig_not_cumul_6ev
+SLOW_TESTS=ptx_orig_not_cumul_6ev \
+	c11_simp_not_swrf
 
 c11_partial_not_lidbury:
 	./comparator -arch C -violates models/c11_lidbury.cat -satisfies models/c11_partial.cat -satisfies models/c11_normws.cat -events 4 -expect 1 $(ARGS)
@@ -41,8 +42,11 @@ c11_simp_not_sra:
 c11_simp_not_sra_iter:
 	./comparator -arch C -violates models/c11_sra.cat -satisfies models/c11_simp.cat -satisfies models/c11_relacq.cat -satisfies models/c11_normws.cat -satisfies models/c11_simplepost.cat -events 6 -iter -expect 1 $(ARGS)
 
-c11_simp_not_swrf: #FIXME: remove hint?
+c11_simp_not_swrf_hint:
 	./comparator -arch C -violates models/c11_swrf.cat -satisfies models/c11_simp.cat -solver plingeling -events 12 -hint execution_hints/nienhuis_example.als -expect 1 $(ARGS)
+
+c11_simp_not_swrf:
+	./comparator -arch C -violates models/c11_swrf.cat -satisfies models/c11_simp.cat -solver plingeling -events 12 -expect 1 $(ARGS)
 
 c11_orig_not_simp_4ev:
 	./comparator -arch C -violates models/c11_simp.cat -satisfies models/c11_orig.cat -events 4 -expect 0 $(ARGS)

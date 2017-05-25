@@ -26,6 +26,7 @@
 
 import argparse
 import os
+from shutil import copyfile
 import sys
 import subprocess
 import platform
@@ -61,6 +62,7 @@ def main(argv=None):
   parser.add_argument("-desc", type=str, help="Textual description (optional)")
   parser.add_argument("-batch", action="store_true",
                         help="Option: suppress GUI")
+  parser.add_argument("-customscript", type=str, help="Custom comparator script (optional)")
   argparsing.add_setup_result_dir_args(parser)
   argparsing.add_gen_comparator_args(parser)
   argparsing.add_run_alloy_args(parser)
@@ -75,30 +77,42 @@ def main(argv=None):
 
   if args.desc:
     print "\"" + args.desc + "\""
-  
-  for model in args.satisfies + args.alsosatisfies + args.violates:
-    if is_cat_file(model):
-      if args.fencerels:
-        code = subprocess.call([os.path.join(TOOL_PATH, "cat2als"), "-fencerels", model])
-      else:
-        code = subprocess.call([os.path.join(TOOL_PATH, "cat2als"), model])
-      if code != 0:
-        print "ERROR: Unable to convert cat file"
-        return 1
-    elif is_als_file(model):
-      pass
-    else:
-      print "ERROR: Unrecognised model type [%s]" % model
-      return 1
 
   comparator_script = os.path.join(result_dir, "comparator.als")
-  cmd = [os.path.join(TOOL_PATH, "pp_comparator"), "-o", comparator_script]
-  cmd.extend(argparsing.extract_gen_comparator_args(args))
-  if args.verbose: print " ".join(cmd)
-  code = subprocess.call(cmd)
-  if code != 0:
-    print "ERROR: Generation of comparator script was unsuccessful"
-    return 1
+  
+  if args.customscript:
+
+    if not os.path.exists(args.customscript):
+      print "ERROR: Custom comparator script '%s' not found" % args.customscript
+      return 1
+    copyfile(args.customscript, comparator_script)
+
+  else:
+  
+    for model in args.satisfies + args.alsosatisfies + args.violates:
+      if is_cat_file(model):
+        if args.fencerels:
+          code = subprocess.call([os.path.join(TOOL_PATH, "cat2als"), "-fencerels", model])
+        else:
+          code = subprocess.call([os.path.join(TOOL_PATH, "cat2als"), model])
+        if code != 0:
+          print "ERROR: Unable to convert cat file"
+          return 1
+      elif is_als_file(model):
+        pass
+      else:
+        print "ERROR: Unrecognised model type [%s]" % model
+        return 1
+
+    cmd = [os.path.join(TOOL_PATH, "pp_comparator"), "-o", comparator_script]
+    cmd.extend(argparsing.extract_gen_comparator_args(args))
+    if args.verbose: print " ".join(cmd)
+    code = subprocess.call(cmd)
+    if code != 0:
+      print "ERROR: Generation of comparator script was unsuccessful"
+      return 1
+    
+  #end if args.customscript
 
   args.comparator_script = comparator_script
   args.alloystar = "alloystar"
