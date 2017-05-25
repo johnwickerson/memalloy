@@ -20,7 +20,9 @@ https://github.com/herd/herdtools/blob/master/herd/arm.cat
 "ARM7"
 (* Model for ARM, ie with po-loc ommited from ppo *)
 
-include "basic.cat"
+include "basic_H.cat"
+include "fr.cat"
+      
 let ctrlisync = ctrl & isb
 	  
 (* Uniproc *)

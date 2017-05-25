@@ -20,7 +20,9 @@ https://github.com/herd/herdtools/blob/master/herd/ppc.cat
 PPC
 (* Model for Power *)
 
-include "basic.cat"
+include "basic_H.cat"
+include "fr.cat"
+      
 let ctrlisync = ctrl & isync
 
 (* Uniproc *)

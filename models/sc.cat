@@ -3,6 +3,7 @@
 (* Sequential consistency *)
 
 include "basic.cat"
-
+include "fr.cat"
+          
 acyclic po | rf | fr | co as ShashaSnir
 			   

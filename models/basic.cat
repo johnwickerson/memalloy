@@ -2,9 +2,6 @@
           
 let id = [EV]
 let uni = EV * EV
-         
-let fr_init = ([R] \ (rf^-1;rf)); sloc; [W]
-let fr = (fr_init | (rf^-1;co)) \ id
 
 let M = R | W
        
@@ -19,12 +16,8 @@ let ext = !sthd
   
 let rfe = rf \ sthd
 let rfi = rf & sthd
-let fre = fr \ sthd
-let fri = fr & sthd
 let coe = co \ sthd
 let coi = co & sthd
-
-let com = rf | fr | co
 
 let if_zero = (id & (ctrl;ctrl^-1)) \ (rf^-1;rf)
 

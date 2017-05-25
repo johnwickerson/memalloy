@@ -20,7 +20,8 @@ https://github.com/herd/herdtools/blob/master/herd/ptx.cat
 "PTX"
 
 include "basic_H.cat"
-
+include "fr.cat"
+          
 empty (atom & (fre;coe)) as Atomic
 					
 let polocLLH = poloc & ((W*M) | (M*W))

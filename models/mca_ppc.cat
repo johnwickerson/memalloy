@@ -1,7 +1,9 @@
 PPC
 (* Multi-copy atomicity, applied to Power *)
 
-include "basic.cat"
+include "basic_H.cat"
+include "fr.cat"
+      
 let ctrlisync = ctrl & isync
 
 (* Utilities *)

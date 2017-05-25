@@ -59,6 +59,7 @@ https://raw.githubusercontent.com/herd/herdtools7/daa126680b6ecba97ba47b3e05bbaa
  *)
 #include "aarch64fences.cat"
 include "basic_H.cat"
+include "fr.cat"
 
 (*
  * As a restriction of the model, all observers are limited to the same

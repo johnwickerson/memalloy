@@ -18,8 +18,9 @@ available online: http://diy.inria.fr/
 
 "ARM8"
 
-include "basic.cat" 
-  
+include "basic_H.cat" 
+include "fr.cat"
+      
 let ctrlisb = ctrl & isb
 
 let dep = addr | data

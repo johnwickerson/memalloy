@@ -1,7 +1,8 @@
 "C"
 
 include "basic.cat"
-
+include "fr.cat"
+      
 (* let rs = poloc*; rf* *)
 let rs = poloc*;[W]
 	  

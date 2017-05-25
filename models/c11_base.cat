@@ -11,6 +11,7 @@ Tyler Sorensen and George A. Constantinides (POPL'17).
 "C"
 
 include "basic.cat"
+include "fr.cat"
 
 let fsb = [F]; po
 let sbf = po; [F]

@@ -1,7 +1,8 @@
 "OCaml"
 
 include "basic.cat"
-
+include "fr.cat"
+      
 let hb = (
   (* Happens-before between two events to the same
      location on the same thread, if not both reads *)
