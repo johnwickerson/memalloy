@@ -37,13 +37,6 @@ sig Exec {
   // sequenced-before is acyclic and transitive
   strict_partial_order[sb]
 
-  /*
-  // sequenced-before has the "N-free" property
-  all a,b,c,d : EV | not (
-	((b->d) + (a->d) + (a->c)) in sb and
-      	no (((a->b) + (b->c) + (c->d)) & *sb))
-  */
-
   // sequenced-before is total within a thread
   sthd in *sb + ~*sb
 
@@ -174,19 +167,3 @@ fun rf [e:PTag->E, X:Exec] : E->E {
   (univ - e[rm_EV]) <: X.rf :> (univ - e[rm_EV]) }
 fun co [e:PTag->E, X:Exec] : E->E {
   (univ - e[rm_EV]) <: X.co :> (univ - e[rm_EV]) }
-
-// Well-formed transaction-order
-pred wf_to[X:Exec, to:E->E] {
-  
-  // two transactional events in the same transaction
-  // will *not* be ordered by "to"
-  no (X.stxn & to)
-
-  // two transactional events in different transactions
-  // will be ordered (one way or t'other) by "to"
-  (dom[X.stxn] -> dom[X.stxn]) - X.stxn = to + ~to
-
-  // "to" is a strict partial order
-  strict_partial_order[to]
-
-}
