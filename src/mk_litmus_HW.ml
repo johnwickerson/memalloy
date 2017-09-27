@@ -314,6 +314,7 @@ let can_fail il =
 let rec hw_ins_of_components arch_params tid (state,il) =
   function
   | [] when (List.exists is_st_excl il) ->
+     (* TODO: Check that there exists a store-exclusive *inside a txn* *)
      let state, r_zero = get_fresh_reg tid state in
      let state, r_ok = get_fresh_reg tid state in
      let state = add_to_loc_map (-1, r_ok) state in
