@@ -5,7 +5,6 @@ sig Exec {
   EV : set E,      // domain of all events
   W, R, F : set E, // writes, reads, fences
   IW : set E,      // initial writes
-  NAL : set E,     // events accessing non-atomic locations
   sb : E->E,       // sequenced before
   ad,cd,dd : E->E, // address, control, data dependencies
   sthd : E->E,     // same thread (partial E.R.)
@@ -18,9 +17,6 @@ sig Exec {
 }{
   // EV captures all and only the events involved
   W + R + F = EV
-
-  // some reads and writes may access "non-atomic" locations
-  NAL in (R + W)
     
   // fences are disjoint from accesses
   no ((R + W) & F)
@@ -37,6 +33,13 @@ sig Exec {
   // sequenced-before is acyclic and transitive
   strict_partial_order[sb]
 
+  /*
+  // sequenced-before has the "N-free" property
+  all a,b,c,d : EV | not (
+	((b->d) + (a->d) + (a->c)) in sb and
+      	no (((a->b) + (b->c) + (c->d)) & *sb))
+  */
+
   // sequenced-before is total within a thread
   sthd in *sb + ~*sb
 
@@ -46,18 +49,14 @@ sig Exec {
   // loc is an equivalence relation among reads and writes
   is_equivalence[sloc, R + W]
 
-  // naL contains zero or more sloc-classes
-  NAL . sloc = NAL
-
   rf in sloc
 
   // co is acyclic and transitive
   strict_partial_order[co]
 
-  // co is a union of strict total orders on writes, one per location
-  // except for non-atomic locations, and it avoids writes that are in
-  // failed transactions
-  (co + ~co) = ((W - NAL) -> (W - NAL)) & sloc - iden
+  // co is a union, over all locations x, of strict
+  // total orders on writes to x
+  (co + ~co) = (W -> W) & sloc - iden
 
   // Event e2 has an "address dependency" on e1 if
   // location[e2] depends on valr[e1]. Therefore "(e1,e2) in ad"
@@ -106,6 +105,7 @@ sig Exec {
 
   // address/data dependencies cannot escape failing transactions
   no (dom[ftxn] <: ((ad + dd) - ftxn))
+    
 }
 
 pred withinit[X:Exec] {
@@ -130,6 +130,7 @@ pred withoutinit[X:Exec] {
 
 fun addsb[e:PTag->E, X:Exec, F:set E] : E->E {
   *(sb[e,X]) . (stor[F]) . *(sb[e,X]) }
+  
 
 // Perturbation Tags are an idea due to Daniel Lustig et al.
 // (ASPLOS'17, http://dl.acm.org/citation.cfm?id=3037723)
@@ -145,7 +146,6 @@ fun W [e:PTag->E, X:Exec] : set E { X.W - e[rm_EV] }
 fun IW [e:PTag->E, X:Exec] : set E { X.IW - e[rm_EV] }
 fun R [e:PTag->E, X:Exec] : set E { X.R - e[rm_EV] }
 fun F [e:PTag->E, X:Exec] : set E { X.F - e[rm_EV] }
-fun NAL [e:PTag->E, X:Exec] : set E { X.NAL - e[rm_EV] }
 
 fun sb [e:PTag->E, X:Exec] : E->E {
   (univ - e[rm_EV]) <: X.sb :> (univ - e[rm_EV]) }

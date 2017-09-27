@@ -107,9 +107,11 @@ def main(argv=None):
         model = os.path.join(argparsing.MEMALLOY_ROOT_DIR, tmp_cat)
       if is_cat_file(model):
         if args.fencerels:
-          code = call([os.path.join(TOOL_PATH, "cat2als"), "-fencerels", model, "-u", str(args.unroll)])
+          cmd = [os.path.join(TOOL_PATH, "cat2als"), "-fencerels", model]
         else:
-          code = call([os.path.join(TOOL_PATH, "cat2als"), model, "-u", str(args.unroll)])
+          cmd = [os.path.join(TOOL_PATH, "cat2als"), model]
+        cmd.extend(["-u", str(args.unroll)])
+        code = call(cmd)
         if code != 0:
           print "ERROR: Unable to convert cat file"
           return 1

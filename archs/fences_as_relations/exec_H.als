@@ -14,9 +14,6 @@ sig Exec_H extends Exec {
   // there are no fence events (only fence relations)
   no F
 
-  // there are no such things as "atomic" and "non-atomic" locations
-  no NAL
-
   // control dependencies are defined differently in assembly
   cd.sb in cd
 

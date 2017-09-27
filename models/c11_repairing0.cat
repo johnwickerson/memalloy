@@ -4,5 +4,5 @@
 include "c11_base.cat"
 
 (* Starting point (Batty et al.): *)
-let rb = [R]; rf^-1; co
-acyclic [SC]; fsb?; (hb | co | rb); sbf?; [SC] as Srepaired0
+let rb = [R]; rf^-1; myco
+acyclic [SC]; fsb?; (hb | myco | rb); sbf?; [SC] as Srepaired0

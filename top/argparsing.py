@@ -45,6 +45,8 @@ def is_existing_dir(arg):
 def add_common_args(parser):
   parser.add_argument("-verbose", action="store_true")
   parser.add_argument("-fencerels", action="store_true")
+  parser.add_argument("-unroll", type=int, default=3,
+                        help="Unroll fixpoints")
 
 def add_setup_result_dir_args(parser):
   add_common_args(parser)
@@ -121,11 +123,13 @@ def extract_gen_comparator_args(args):
   for opt in ["arch", "events", "mapping", "arch2",
                 "events2", "hint", "minthreads", "maxthreads",
                 "threads", "minlocations", "maxlocations",
-                "locations", "withinit",
+                "locations",
                 "mintransactions", "maxtransactions",
                 "transactions"]:
     if not ignore_opt(d[opt]):
       cmd_options.extend(["-" + opt, str(d[opt])])
+  if args.withinit:
+    cmd_options.extend(["-withinit"])
   if args.emptytxns:
     cmd_options.extend(["-emptytxns"])
   if args.fencerels:

@@ -1,4 +1,6 @@
 "C"
 
+include "c11_base.cat"
+
 (* The postcondition need not read the values of shared locations *)
-empty co \ (rf?; (sb; (rf^-1)?)?) as SimplePost
+empty myco \ (rf?; (sb; (rf^-1)?)?) as SimplePost
