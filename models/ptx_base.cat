@@ -23,7 +23,8 @@ include "basic_H.cat"
 include "fr.cat"
           
 empty (atom & (fre;coe)) as Atomic
-					
+
+let com = rf | fr | co
 let polocLLH = poloc & ((W*M) | (M*W))
 acyclic polocLLH | com as ScPerLocLLH
 

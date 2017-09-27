@@ -2,6 +2,8 @@
 
 include "basic.cat"
 include "fr.cat"
+
+let com = rf | co | fr
       
 let hb = (
   (* Happens-before between two events to the same
