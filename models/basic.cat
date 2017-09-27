@@ -16,12 +16,12 @@ let ext = !sthd
   
 let rfe = rf \ sthd
 let rfi = rf & sthd
-let coe = co \ sthd
-let coi = co & sthd
 
 let if_zero = (id & (ctrl;ctrl^-1)) \ (rf^-1;rf)
 
 let imm(r) = r \ (r;r+)
 
+let coe = co \ sthd
+let coi = co & sthd           
 let unforced_co =
   (imm(co); imm(co); (imm(co))^-1) \ (rf?; (po; (rf^-1)?)?)

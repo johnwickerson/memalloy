@@ -11,9 +11,6 @@ sig Exec_H extends Exec {
   // there are no single-event RMWs
   no (R&W)
 
-  // there are no such things as "atomic" and "non-atomic" locations
-  no NAL
-
   // control dependencies are defined differently in assembly
   cd.sb in cd 
     

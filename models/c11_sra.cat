@@ -6,4 +6,4 @@
 include "c11_base.cat"
 
 acyclic scp as Ssimp
-acyclic co | po | sw as SRA
+acyclic myco | po | sw as SRA

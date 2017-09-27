@@ -5,7 +5,6 @@ sig Exec {
   EV : set E,      // domain of all events
   W, R, F : set E, // writes, reads, fences
   IW : set E,      // initial writes
-  NAL : set E,     // events accessing non-atomic locations
   sb : E->E,       // sequenced before
   ad,cd,dd : E->E, // address, control, data dependencies
   sthd : E->E,     // same thread (partial E.R.)
@@ -16,9 +15,6 @@ sig Exec {
 }{
   // EV captures all and only the events involved
   W + R + F = EV
-
-  // some reads and writes may access "non-atomic" locations
-  NAL in (R + W)
     
   // fences are disjoint from accesses
   no ((R + W) & F)
@@ -51,17 +47,14 @@ sig Exec {
   // loc is an equivalence relation among reads and writes
   is_equivalence[sloc, R + W]
 
-  // naL contains zero or more sloc-classes
-  NAL . sloc = NAL
-
   rf in sloc
 
   // co is acyclic and transitive
   strict_partial_order[co]
 
-  // co is a union, over all atomic locations x, of strict
+  // co is a union, over all locations x, of strict
   // total orders on writes to x
-  (co + ~co) = ((W - NAL) -> (W - NAL)) & sloc - iden
+  (co + ~co) = (W -> W) & sloc - iden
 
   // Event e2 has an "address dependency" on e1 if
   // location[e2] depends on valr[e1]. Therefore "(e1,e2) in ad"
@@ -120,7 +113,6 @@ fun W [e:PTag->E, X:Exec] : set E { X.W - e[rm_EV] }
 fun IW [e:PTag->E, X:Exec] : set E { X.IW - e[rm_EV] }
 fun R [e:PTag->E, X:Exec] : set E { X.R - e[rm_EV] }
 fun F [e:PTag->E, X:Exec] : set E { X.F - e[rm_EV] }
-fun NAL [e:PTag->E, X:Exec] : set E { X.NAL - e[rm_EV] }
 
 fun sb [e:PTag->E, X:Exec] : E->E {
   (univ - e[rm_EV]) <: X.sb :> (univ - e[rm_EV]) }

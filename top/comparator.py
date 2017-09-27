@@ -92,9 +92,11 @@ def main(argv=None):
     for model in args.satisfies + args.alsosatisfies + args.violates:
       if is_cat_file(model):
         if args.fencerels:
-          code = subprocess.call([os.path.join(TOOL_PATH, "cat2als"), "-fencerels", model])
+          cmd = [os.path.join(TOOL_PATH, "cat2als"), "-fencerels", model]
         else:
-          code = subprocess.call([os.path.join(TOOL_PATH, "cat2als"), model])
+          cmd = [os.path.join(TOOL_PATH, "cat2als"), model]
+        cmd.extend(["-u", str(args.unroll)])
+        code = subprocess.call(cmd)
         if code != 0:
           print "ERROR: Unable to convert cat file"
           return 1

@@ -4,7 +4,7 @@
 include "c11_base.cat"
 
 (* Stronger SC fences: *)
-let rb = [R]; rf^-1; co
+let rb = [R]; rf^-1; myco
 let shsb = po;hb;po
-let eco = (rf | co | rb)+
+let eco = (rf | myco | rb)+
 acyclic [SC]; fsb?; (po | shsb | eco); sbf?; [SC] as Srepaired2

@@ -3,11 +3,15 @@ open exec[E]
 
 sig Exec_C extends Exec {
   A : set E,            // atomic events
+  NAL : set E,          // events accessing non-atomic locations
   ACQ, REL, SC : set E, // acquire, release, sc events
 }{
 
   // initial writes are non-atomic
   A in EV - IW
+
+  // some reads and writes may access "non-atomic" locations
+  NAL in (R + W)
 
   // acquires, releases, and SC operations are all atomic
   ACQ + REL + SC in A
@@ -30,6 +34,9 @@ sig Exec_C extends Exec {
   // sc fences can acquire and release
   (F & SC) in (ACQ & REL)
 
+  // naL contains zero or more sloc-classes
+  NAL . sloc = NAL
+
   // atomic events do not access non-atomic locations
   no (A & NAL)
 
@@ -51,7 +58,8 @@ fun REL[e:PTag->E, X:Exec_C] : set E {
   X.REL - e[rm_EV] - e[rm_REL] - e[rm_A] }
 fun SC[e:PTag->E, X:Exec_C] : set E {
   X.SC - e[rm_EV] - e[rm_SC] - e[rm_REL] - e[rm_ACQ] - e[rm_A] }
-
+fun NAL [e:PTag->E, X:Exec] : set E { X.NAL - e[rm_EV] }
+    
 pred wf_s[e:PTag->E, X:Exec_C, s:E->E] { 
 
   // s is restricted to sc events

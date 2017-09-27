@@ -32,14 +32,14 @@ open Litmus_HW
 type fence = DMB | DMBLD | DMBST | ISB
 
 let mk_fence attrs =
-  match List.mem "dmb" attrs,
-        List.mem "dmbst" attrs,
-        List.mem "dmbld" attrs,
-        List.mem "isb" attrs with
-  | true, false, false, false -> DMB
-  | false, true, false, false -> DMBST
-  | false, false, true, false -> DMBLD
-  | false, false, false, true -> ISB
+  match List.mem "dmb" attrs || List.mem "DMB" attrs,
+        List.mem "dmbst" attrs || List.mem "DMBST" attrs,
+        List.mem "dmbld" attrs || List.mem "DMBLD" attrs,
+        List.mem "isb" attrs || List.mem "ISB" attrs with
+  | true,     _,      _, false -> DMB
+  | false,  true, false, false -> DMBST
+  | false, false,  true, false -> DMBLD
+  | false, false, false, true  -> ISB
   | _ -> failwith "Invalid fence attributes!"
    
 (** Print a register in 64-bit mode *)

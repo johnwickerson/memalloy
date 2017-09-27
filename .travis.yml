@@ -2,11 +2,11 @@ language: java
 jdk: oraclejdk8
 sudo: required
 env:
-  - OCAML_VERSION=4.01.0
-  - OCAML_VERSION=4.02.1
+   - OCAML_VERSION=4.01.0
+#  - OCAML_VERSION=4.02.1
 #  - OCAML_VERSION=4.02.3 # this causes problems in Travis
-  - OCAML_VERSION=4.03.0
-  - OCAML_VERSION=4.04.0
+#  - OCAML_VERSION=4.03.0
+#  - OCAML_VERSION=4.04.0
 before_install:
   - sudo apt-get update
 # Installing graphviz
