@@ -44,25 +44,6 @@ type mem_access = {
     is_acq_rel : bool; (** for ARM8 *)
   }
 
-let mem_access_to_str a =
-  sprintf "dir %s; " (if a.dir = LD then "LD" else "ST") ^
-  sprintf "dst %d %d; " (fst a.dst) (snd a.dst) ^
-  sprintf "src %d %d; " (fst a.src) (snd a.src) ^
-  (match a.off with
-  | None -> sprintf "off None; "
-  | Some r -> sprintf "off %d %d; " (fst r) (snd r)) ^
-  (match a.sta with
-  | None -> sprintf "sta None; "
-  | Some r -> sprintf "sta %d %d; " (fst r) (snd r)) ^
-  (match a.imm with
-  | None -> sprintf "imm None; "
-  | Some v -> sprintf "imm %d; " v) ^
-  (match a.loc with
-  | None -> sprintf "loc None; "
-  | Some l -> sprintf "loc %d; " l) ^
-  sprintf "is_exclusive %b; " a.is_exclusive ^
-  sprintf "is_acq_rel %b" a.is_acq_rel
-
 (** Instruction label *)
 type label = string
 
