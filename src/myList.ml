@@ -62,6 +62,22 @@ let iteri f xs =
     | x::xs -> f n x; iteri (n+1) f xs
   in
   iteri 0 f xs
-					     
+
+let filteri p xs =
+  let helper (n,acc) x =
+    let n' = n + 1 in
+    if p n x then (n', acc @ [x]) else (n', acc)
+  in
+  let _, xs' = (List.fold_left helper (0,[]) xs) in
+  xs'
+
 let max xs =
   hd (rev (sort compare xs))
+
+let rec take p = function
+  | [] -> []
+  | x::xs -> if p x then x::(take p xs) else []
+
+let rec drop n xs =
+  if n == 0 then xs
+  else drop (n-1) (List.tl xs)

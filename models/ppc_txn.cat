@@ -1,0 +1,97 @@
+(* 
+This file is a slightly modified version of one that is distributed with 
+the Herd tool, the licence of which is given below. The original file is
+available online:
+https://github.com/herd/herdtools/blob/master/herd/ppc.cat
+*)
+
+(*********************************************************************)
+(*                        Herd                                       *)
+(*                                                                   *)
+(* Luc Maranget, INRIA Paris-Rocquencourt, France.                   *)
+(* Jade Alglave, University College London, UK.                      *)
+(*                                                                   *)
+(*  Copyright 2013 Institut National de Recherche en Informatique et *)
+(*  en Automatique and the authors. All rights reserved.             *)
+(*  This file is distributed  under the terms of the Lesser GNU      *)
+(*  General Public License.                                          *)
+(*********************************************************************)
+
+PPC
+(* Model for Power *)
+
+include "basic_H.cat"
+include "ftxn.cat" (* subsumes fr.cat *)
+
+(* Uniproc *)
+acyclic po-loc | rf | fr | co as Uniproc
+
+(* Utilities *)
+let dep = addr | data
+let rdw = po-loc & (fre;rfe)
+let detour = po-loc & (coe ; rfe)
+
+
+(*******)
+(* ppo *)
+(*******)
+
+(* Initial value *)
+let ci0 = (ctrl & isync) | detour
+let ii0 = dep | rfi | rdw
+let cc0 = dep | po-loc | ctrl | (addr;po)
+let ic0 = 0
+
+(* Fixpoint from i -> c in instructions and transitivity *)
+(* let rec ci = ci0 | (ci;ii) | (cc;ci)
+and ii = ii0 | ci | (ic;ci) | (ii;ii)
+and cc = cc0 | ci | (ci;ic) | (cc;cc)
+and ic = ic0 | ii | cc | (ic;cc) | (ii ; ic) *)
+
+(* Simplified (equivalent) version, still fixpointy *)
+(* let rec ci = (cc0 | ci;ic)*; ci0; (ii0 | ic;ci)*
+and ic = (ii0 | ic;ci)*; (cc0 | ci;ic)*
+let ii = (ii0 | ic;ci)+ *)
+
+(* Extra-simple version, no fixpoint *)
+let ic = ii0*; cc0*
+let ii = (ii0 | ii0*; cc0*; ci0; ii0*)+
+
+let ppo = ((R * R) & ii) | ((R * W) & ic)
+
+let fence = sync | (lwsync \ (W*R))
+| [ST]; (po \ stxn) (* TCOMMIT => barrier *)
+| (po \ stxn); [ST] (* TSTART => barrier *)
+
+(* extensions *)
+let ppoext = rfe?;ppo;rfe?
+let fenceext = rfe?;fence;rfe?
+
+(* happens before *)
+let hb = ppoext | fenceext
+acyclic hb as NoThinAir
+
+(* prop *)
+let propbase = fenceext;hb*
+
+let chapo = rfe|fre|coe|(fre;rfe)|(coe;rfe)
+let com = rf | fr | co | co;rf
+                                
+let txn_prop = (com\sthd); stxn; hb*
+                                
+let prop = (W * W) & propbase | (chapo? ; propbase*; sync; hb*)
+           | txn_prop
+
+acyclic co|prop as Propagation
+irreflexive fre;prop;hb* as Observation
+
+let Ato = domain(atom) | range(atom)
+let xx = po & (Ato * Ato)
+acyclic co | xx as ScXX
+
+empty (atom & (fre;coe)) as AtomicRMW
+
+acyclic stronglift(com, stxn) as TxnAtomic
+#acyclic stronglift(hb, stxn) as TxnOrder
+acyclic stronglift(co | prop, stxn) as TxnPropagation
+empty ftxn & ((fre|coe); rfe) as AtomicFtxn

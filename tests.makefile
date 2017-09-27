@@ -25,7 +25,8 @@ ALL_TESTS=x86_not_sc \
 	ptx_orig_not_cumul_5ev
 
 SLOW_TESTS=ptx_orig_not_cumul_6ev \
-	c11_simp_not_swrf
+	c11_simp_not_swrf \
+	arm8_strengthening_6ev
 
 c11_partial_not_lidbury:
 	./comparator -arch C -violates models/c11_lidbury.cat -satisfies models/c11_partial.cat -satisfies models/c11_normws.cat -events 4 -expect 1 $(ARGS)
@@ -107,3 +108,27 @@ compile_ocaml_ppc_v1:
 
 compile_ocaml_ppc_v2:
 	./comparator -arch OCaml -arch2 PPC -fencerels -violates models/ocaml.cat -satisfies models/ppc.cat -alsosatisfies models/ocaml_restrictions.cat -mapping mappings/fences_as_relations/ocaml_ppc_v2.als -events 4 -events2 4 -expect 0 $(ARGS)
+
+TXN_TESTS=weak_vs_strong_atomicity_3ev \
+	weak_vs_strong_atomicity_5ev \
+	adding_txns_arm8_3ev \
+	adding_txns_arm8_4ev \
+	arm8_strengthening_5ev \
+
+weak_vs_strong_atomicity_3ev:
+	./comparator -arch HW -satisfies models/txn_weak_atomicity.cat -satisfies models/sc.cat -violates models/txn_strong_atomicity.cat -events 3 -iter -expect 7 $(ARGS) # takes about 3 seconds
+
+weak_vs_strong_atomicity_5ev:
+	./comparator -arch HW -satisfies models/txn_weak_atomicity.cat -satisfies models/sc.cat -violates models/txn_strong_atomicity.cat -events 5 -iter -expect 24 $(ARGS) # takes about 20 seconds
+
+adding_txns_arm8_3ev:
+	./comparator -arch ARM8 -satisfies models/aarch64.cat -violates models/aarch64_txn.cat -fencerels -events 3 -iter -expect 4 $(ARGS) # takes about 6 seconds
+
+adding_txns_arm8_4ev:
+	./comparator -arch ARM8 -satisfies models/aarch64.cat -violates models/aarch64_txn.cat -fencerels -events 4 -iter -expect 127 $(ARGS) # takes about 3 minutes
+
+arm8_strengthening_5ev:
+	./comparator -arch ARM8 -satisfies models/aarch64_weak.cat -violates models/aarch64.cat -fencerels -maxtransactions 0 -events 5 -iter -expect 95 $(ARGS) # takes about 10 mins
+
+arm8_strengthening_6ev:
+	./comparator -arch ARM8 -satisfies models/aarch64_weak.cat -violates models/aarch64.cat -fencerels -maxtransactions 0 -events 6 -exact -iter -expect 657 $(ARGS) # takes about 8 hours

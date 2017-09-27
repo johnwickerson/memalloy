@@ -1,0 +1,6 @@
+"BASIC"
+
+include "basic_H.cat"
+include "ftxn.cat"
+
+irreflexive ((weaklift(rf, stxn) | weaklift(co, stxn)); (weaklift(fr, stxn))?)+ as SI

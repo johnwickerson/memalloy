@@ -24,10 +24,12 @@
 # OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION
 # WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
+import argparsing
 import argparse
 import os
 import sys
-import subprocess
+from subprocess32 import Popen, TimeoutExpired
+import signal
 
 def main(args):
   if not os.path.exists(args.comparator_script):
@@ -36,19 +38,28 @@ def main(args):
   if not os.path.isdir(args.xml_result_dir):
     parser.error("ERROR: output dir [%s] not found" % args.xml_result_dir)
   xml_result_dir = os.path.abspath(args.xml_result_dir)
-  prevdir = os.getcwd()
-  os.chdir(args.alloystar_dir)
   os.environ['SOLVER'] = args.solver
   alloy_cmd = "./runalloy_%s.sh" % ("iter" if args.iter else "once")
   cmd = [alloy_cmd, comparator_script, "0", xml_result_dir]
   if args.verbose:
     print " ". join(cmd)
-  code = subprocess.call(cmd)
-  os.chdir(prevdir)
-  return code
+  with Popen(cmd, cwd=args.alloystar_dir, preexec_fn=os.setsid) as process:
+    try:
+      process.communicate(timeout=args.timeout)
+      return process.returncode
+    except KeyboardInterrupt:
+      os.killpg(process.pid, signal.SIGINT)
+      raise
+    except TimeoutExpired:
+      if args.verbose: print "Timeout of %d seconds" % args.timeout
+      os.killpg(process.pid, signal.SIGINT)
+      raise
+  assert False
 
 if __name__ == '__main__':
   parser = argparse.ArgumentParser(description="Invoke Alloy on comparator script")
   argparsing.add_run_alloy_args(parser)
+  parser.add_argument("comparator_script")
+  parser.add_argument("xml_result_dir")
   args = parser.parse_args(sys.argv[1:])
   sys.exit(main(args))

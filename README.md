@@ -8,12 +8,15 @@
 - Tested with the following versions of OCaml:
     - 4.01.0
     - 4.02.1
-	- 4.03.0
-	- 4.04.0
+    - 4.02.3
+    - 4.03.0
+    - 4.04.0
 
 - OPAM packages `xml-light`, `ocamlfind`, and `ocamlbuild`
 
-- Python packages `progressbar`
+- Python 2.7
+
+- Python packages `progressbar` and `subprocess32`
 
 - Java runtime version 8 (Java SE 8).
 

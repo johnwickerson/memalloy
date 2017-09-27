@@ -11,6 +11,9 @@ sig Exec_OCaml extends Exec {
   // RMWs and fences are atomic
   (F + (R & W)) in A
 
+  // no concept of atomic or non-atomic locations
+  no NAL
+
 }
 
 one sig rm_A extends PTag {}

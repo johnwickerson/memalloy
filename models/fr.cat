@@ -5,4 +5,3 @@ let fr = (fr_init | (rf^-1;co)) \ [EV]
 
 let fre = fr \ sthd
 let fri = fr & sthd
-let com = rf | fr | co

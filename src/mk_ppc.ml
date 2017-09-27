@@ -29,18 +29,36 @@ open! Format
 open! General_purpose
 open Litmus_HW
 
-type fence = SYNC | LWSYNC | EIEIO | ISYNC
+type fence = SYNC | LWSYNC | ISYNC
 
 let mk_fence attrs =
   match List.mem "sync" attrs,
         List.mem "lwsync" attrs,
-        List.mem "eieio" attrs,
         List.mem "isync" attrs with
-  | true, false, false, false -> SYNC
-  | false, true, false, false -> LWSYNC
-  | false, false, true, false -> EIEIO
-  | false, false, false, true -> ISYNC
+  | true, false, false -> SYNC
+  | false, true, false -> LWSYNC
+  | false, false, true -> ISYNC
   | _ -> failwith "Invalid fence attributes!"
+
+let mk_tstart reg lbl = [TSTART (reg, lbl); BEQ lbl]
+
+let mk_tabort reg imm = [MOV (reg, imm); TABORT (reg, imm)]
+
+let mk_tabort_handler reg _tstart_reg =
+  let texasr = (fst reg, -1) in
+  (* we shift to get the bottom word of the 64-bit texasr *)
+  [ MOVREG (reg, texasr); SHIFT (Litmus_HW.LSR, reg, reg, 32) ]
+
+let encode_sentinel imm8 =
+  assert (0 <= imm8 && imm8 < 256);
+  let abt_caused_by_tabort = 0x1 in
+  (imm8 lsl 24) lor abt_caused_by_tabort
+                                                                    
+let ppc_specific_params = {
+    use_status_reg=false;
+    mk_fence; mk_tstart; mk_tabort; mk_tabort_handler;
+    encode_sentinel;
+}
    
 (** Print a register *)
 let pp_reg oc (_,r) = fprintf oc "r%d" r
@@ -68,32 +86,52 @@ let pp_ins oc = function
 	 fprintf oc "stw %a, 0(%a)"
 	   pp_reg a.src pp_reg a.dst
       | ST, None, None when a.is_exclusive ->
-         fprintf oc "stwcx %a, 0, %a"
+         fprintf oc "stwcx. %a, 0, %a"
            pp_reg a.src pp_reg a.dst
       | ST, Some off, None ->
-         fprintf oc "stw%sx %a, %a, %a"
+         fprintf oc "stw%sx%s %a, %a, %a"
            (if a.is_exclusive then "c" else "")
+           (if a.is_exclusive then "." else "")
            pp_reg a.src pp_reg off pp_reg a.dst
       | _, _, _ -> assert false)
   | ADD (dst, src, v) ->
      fprintf oc "addi %a, %a, %d"
        pp_reg dst pp_reg src v
+  | ADDREG (dst, src1, src2) ->
+     fprintf oc "add %a, %a, %a"
+       pp_reg dst pp_reg src1 pp_reg src2
   | EOR (dst, src1, src2) ->
      fprintf oc "xor %a, %a, %a"
        pp_reg dst pp_reg src1 pp_reg src2
+  | SHIFT (kind, dst, src, v) ->
+     (match kind with
+     | Litmus_HW.LSL ->
+       fprintf oc "sldi %a, %a, %d"
+         pp_reg dst pp_reg src v
+     | Litmus_HW.LSR ->
+       fprintf oc "srdi %a, %a, %d"
+         pp_reg dst pp_reg src v)
   | MOV (dst, v) ->
      fprintf oc "li %a, %d" pp_reg dst v
+  | MOVREG (dst, src) ->
+     (match src with
+     | (_,-1) ->
+       fprintf oc "mftexasr %a" pp_reg dst
+     | _ -> failwith "MOVREG only expected from TABORT sequence")
   | HW_fence SYNC -> fprintf oc "sync"
   | HW_fence LWSYNC -> fprintf oc "lwsync"
-  | HW_fence EIEIO -> fprintf oc "eieio"
   | HW_fence ISYNC -> fprintf oc "isync"         
+  | CMPIMM (src, imm) -> fprintf oc "cmpwi %a, %d" pp_reg src imm
   | CMP src -> fprintf oc "cmpwi %a, 0" pp_reg src
+  | BEQ lbl -> fprintf oc "beq %s" lbl
   | BNZ lbl -> fprintf oc "bne %s" lbl
   | J lbl -> fprintf oc "b %s" lbl
   | LBL lbl -> fprintf oc "%s:" lbl
+  | TSTART (_, _) -> fprintf oc "tbegin." (* ignore reg parameter *)
+  | TCOMMIT -> fprintf oc "tend."
+  | TABORT (src, _) -> fprintf oc "tabort. %a" pp_reg src
 
 let ppc_of_lit name lt =
-  let use_status_reg = false in
-  Mk_litmus_HW.hw_lit_of_lit name use_status_reg mk_fence lt
+  Mk_litmus_HW.hw_lit_of_lit name ppc_specific_params lt
              
 let pp oc lt = Litmus_HW.pp "PPC" pp_reg_full pp_ins oc lt

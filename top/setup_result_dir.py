@@ -34,8 +34,17 @@ import tempfile
 
 def main(args):
   timestamp = "{:%y%m%d-%H%M%S}".format(datetime.datetime.now())
+  if args.stamp:
+    timestamp = args.stamp
   try:
+    for d in ["models", "archs"]:
+      if not os.path.exists(os.path.join(args.base_result_dir, "..", d)):
+        d_abspath = os.path.join(argparsing.MEMALLOY_ROOT_DIR, d)
+        d_symlink = os.path.join(args.base_result_dir, "..", d)
+        os.symlink(d_abspath, d_symlink)
     abspath = os.path.join(args.base_result_dir, timestamp)
+    if os.path.exists(abspath):
+      raise Exception("ERROR: results_dir [%s] already exists")
     os.mkdir(abspath)
     latest_symlink = os.path.join(args.base_result_dir, "_latest")
     if os.path.exists(latest_symlink):
@@ -43,6 +52,12 @@ def main(args):
     os.symlink(abspath, latest_symlink)
     for d in ["xml", "dot", "png", "litmus"]:
       path = os.path.join(abspath, d)
+      os.mkdir(path)
+
+    archs = ["ARM8", "PPC", "X86"]
+    if args.arch and args.arch != "HW": archs = [args.arch]
+    for arch in archs:
+      path = os.path.join(abspath, "litmus", arch)
       os.mkdir(path)
     return abspath
   except OSError as e:

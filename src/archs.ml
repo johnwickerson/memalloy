@@ -117,7 +117,7 @@ let all = ["BASIC"; "C"; "HW"; "X86"; "PPC"; "ARM7";
 (** Pre-defined fence sets for given architecture *)
 let fence_sets = function
   | X86 -> ["MFENCE"]
-  | Power -> ["SYNC"; "LWSYNC"; "EIEIO"; "ISYNC"]
+  | Power -> ["SYNC"; "LWSYNC"; "ISYNC"]
   | Arm7 | Arm8 -> ["DMB"; "DMBST"; "DMBLD"; "ISB"]
   | PTX -> ["MEMBAR_CTA"; "MEMBAR_GL"; "MEMBAR_SYS"]
   | _ -> []
@@ -125,7 +125,7 @@ let fence_sets = function
 (** Pre-defined fence relations for given architecture *)
 let fence_rels = function
   | X86 -> ["mfence"]
-  | Power -> ["sync"; "lwsync"; "eieio"; "isync"]
+  | Power -> ["sync"; "lwsync"; "isync"]
   | Arm7 | Arm8 -> ["dmb"; "dmbst"; "dmbld"; "isb"]
   | PTX -> ["membar_cta"; "membar_gl"; "membar_sys"]
   | _ -> []
@@ -136,7 +136,7 @@ let arch_sets fences_as_relations arch =
     | Basic -> ["EV"; "W"; "R"; "F"; "NAL"; "IW"]
     | C -> arch_sets Basic @ ["A"; "ACQ"; "REL"; "SC"]
     | Basic_HW -> arch_sets Basic
-    | X86 -> arch_sets Basic_HW @ ["LOCKED"]
+    | X86 -> arch_sets Basic_HW
     | Power -> arch_sets Basic_HW
     | Arm7 -> arch_sets Basic_HW
     | Arm8 -> arch_sets Arm7 @ ["SCREL"; "SCACQ"]
@@ -149,11 +149,11 @@ let arch_sets fences_as_relations arch =
 
 (** Pre-defined event relations for given architecture *)
 let rec arch_rels = function
-  | Basic -> ["ad"; "cd"; "co"; "dd"; "rf"; "sb"; "sloc"; "sthd"]
+  | Basic -> ["ad"; "cd"; "co"; "dd"; "ftxn"; "rf"; "sb"; "sloc"; "sthd"; "stxn"]
   | C -> arch_rels Basic
   | Basic_HW -> arch_rels Basic @ ["atom"]
   | X86 -> arch_rels Basic_HW @ ["mfence"]
-  | Power -> arch_rels Basic_HW @ ["sync"; "lwsync"; "eieio"; "isync"]
+  | Power -> arch_rels Basic_HW @ ["sync"; "lwsync"; "isync"]
   | Arm7 -> arch_rels Basic_HW @ ["dmb"; "dmbst"; "dmbld"; "isb"]
   | Arm8 -> arch_rels Arm7
   | PTX -> arch_rels Basic_HW @
@@ -167,7 +167,7 @@ let arch_min_sets fences_as_relations arch =
     | Basic -> []
     | C -> arch_min_sets Basic @ ["A"; "ACQ"; "REL"; "SC"]
     | Basic_HW -> arch_min_sets Basic
-    | X86 -> arch_min_sets Basic_HW @ ["LOCKED"]
+    | X86 -> arch_min_sets Basic_HW
     | Power -> arch_min_sets Basic_HW
     | Arm7 -> arch_min_sets Basic_HW
     | Arm8 -> arch_min_sets Arm7 @ ["SCREL"; "SCACQ"]
@@ -186,7 +186,7 @@ let arch_min_rels fences_as_relations arch =
 (** List of all fence relations *)
 let all_fences =
   ["dmb"; "dmbst"; "dmbld"; "isb";
-   "sync"; "lwsync"; "eieio"; "isync";
+   "sync"; "lwsync"; "isync";
    "membar_cta"; "membar_gl"; "membar_sys";
    "mfence"]
 
@@ -195,7 +195,6 @@ let all_implied_rels =
   ["dmb", "dmbst";
    "dmb", "dmbld";
    "sync", "lwsync";
-   "sync", "eieio";
    "membar_gl", "membar_cta";
    "membar_sys", "membar_gl";
    "membar_sys", "membar_cta"]
@@ -208,13 +207,13 @@ let all_implied_sets =
 (** List of all sets that should be reduced as much as possible *)
 let min_sets = [
     "SC"; "ACQ"; "REL"; "A"; "SCREL"; "SCACQ"; "MFENCE"; "SYNC";
-    "LWSYNC"; "EIEIO"; "ISYNC"; "DMB"; "DMBST"; "DMBLD"; "ISB";
-    "MEMBAR_CTA"; "MEMBAR_GL"; "MEMBAR_SYS"; "LOCKED"
+    "LWSYNC"; "ISYNC"; "DMB"; "DMBST"; "DMBLD"; "ISB";
+    "MEMBAR_CTA"; "MEMBAR_GL"; "MEMBAR_SYS"
   ]
 
 (** List of all relations that should be reduced as much as possible *)
 let min_rels = [
     "ad"; "cd"; "dd"; "dmb"; "dmbst"; "dmbld"; "isb"; "sync";
-    "lwsync"; "eieio"; "isync"; "membar_cta"; "membar_gl";
-    "membar_sys"; "mfence"
+    "lwsync"; "isync"; "membar_cta"; "membar_gl";
+    "membar_sys"; "mfence"; "stxn"
   ]

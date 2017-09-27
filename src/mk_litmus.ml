@@ -72,6 +72,28 @@ let mk_instr x maps reg_map e =
     | _ -> assert false
   in
   let cs = [Basic (ins, attrs)] in
+
+  let mk_txn_block txn_rel outcome cs =
+    let txn_sb =
+      MySet.inter (get_rel x txn_rel) (get_rel x "sb") in
+    let txn_events = Rel.dom (get_rel x txn_rel) in
+    let is_first_in_txn =
+      List.mem e txn_events &&
+	not (List.exists (fun e' -> List.mem (e',e) txn_sb) ev)
+    in
+    let is_last_in_txn =
+      List.mem e txn_events &&
+	not (List.exists (fun e' -> List.mem (e,e') txn_sb) ev)
+    in
+    let txn_beg =
+      if is_first_in_txn then [Basic (TxnBegin, [])] else [] in
+    let txn_end =
+      if is_last_in_txn then [Basic (TxnEnd outcome, [])] else [] in
+    txn_beg @ cs @ txn_end
+  in
+  let cs = mk_txn_block "stxn" TxnCommit cs in
+  let cs = mk_txn_block "ftxn" TxnAbort cs in
+
   let mk_fence f cs =
     if List.mem e (Rel.rng (get_rel x f))
                 (* FIXME: This currently inserts too many fences *)
@@ -127,6 +149,8 @@ let litmus_of_execution' x maps =
   in
   let final_wval (l,es) =
     let ws = MySet.inter (get_set x "W") es in
+    let ft = Rel.dom (get_rel x "ftxn") in
+    let ws = MySet.diff ws ft in
     let co_after e e' = List.mem (e,e') (get_rel x "co") in
     let co_maximal e = not (List.exists (co_after e) ws) in
     let wval =

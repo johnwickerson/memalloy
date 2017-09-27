@@ -3,10 +3,18 @@ open ../archs/exec_x86[HE] as HW
 
 /*
 A C11-to-x86 mapping that implements SC atomics using 
-atomic hardware events. 
+atomic hardware events. Currently broken.
 */
 
 module c11_x86a[SE,HE]
+
+fun myfr_init [X:HW/Exec_X86] : HE->HE {
+  ((stor[X.R]) - ((~(X.rf)) . (X.rf))) . (X.sloc) . (stor[X.W])
+}
+
+fun myfr [X:HW/Exec_X86] : HE->HE {
+  (((myfr_init[X]) + ((~(X.rf)) . (X.co))) - iden)
+}
 
 pred apply_map[X:SW/Exec_C, X':HW/Exec_X86, map:SE->HE] {
 
@@ -22,34 +30,34 @@ pred apply_map[X:SW/Exec_C, X':HW/Exec_X86, map:SE->HE] {
   // a read compiles to a single non-locked read
   all e : X.(R - W) {
     one e.map
-    e.map in X'.(R - LOCKED)
+    e.map in X'.R - (X'.atom).univ
   }
     
   // a non-SC write compiles to a single non-locked write
   all e : X.((W - R) - SC) {
     one e.map
-    e.map in X'.(W - LOCKED)
+    e.map in X'.W - univ.(X'.atom)
   }
 
   // an SC write compiles to an RMW
   all e : X.((W - R) & SC) | some disj e1,e2 : X'.EV {
     e.map = e1 + e2
-    e1 in X'.(R & LOCKED)
-    e2 in X'.(W & LOCKED)
+    e1 in X'.R
+    e2 in X'.W
     (e1 -> e2) in X'.atom & imm[X'.sb]
 
     // read does not observe a too-late value
     (e2 -> e1) not in ((X'.co) . (X'.rf))
 
     // read does not observe a too-early value
-    (e1 -> e2) not in ((fr[none->none,X']) . (X'.co))
+    (e1 -> e2) not in ((myfr[X']) . (X'.co))
   }
 
   // RMWs compile to locked RMWs
   all e : X.(R & W) | some disj e1, e2 : X'.EV {
     e.map = e1 + e2
-    e1 in X'.(R & LOCKED)
-    e2 in X'.(W & LOCKED)
+    e1 in X'.R
+    e2 in X'.W
     (e1 -> e2) in X'.atom & imm[X'.sb]
   }
 
@@ -61,8 +69,10 @@ pred apply_map[X:SW/Exec_C, X':HW/Exec_X86, map:SE->HE] {
   // sb edges are preserved (but more may be introduced)
   X.sb in map . (X'.sb) . ~map
   
-  // rf edges are preserved (but more may be introduced)
-  X.rf in map . (X'.rf) . ~map
+  // rf edges (except those entering the RMWs induced
+  // by SC writes) are preserved
+  let newR = X'.R & map[X.((W - R) & SC)] |
+  X'.rf - (X'.EV -> newR) = ~map . (X.rf) . map
 
   // the mapping preserves co
   X.co = map . (X'.co) . ~map
@@ -81,5 +91,9 @@ pred apply_map[X:SW/Exec_C, X':HW/Exec_X86, map:SE->HE] {
 
   // the mapping preserves threads
   X.sthd = map . (X'.sthd) . ~map
+
+  // the mapping preserves transactions
+  X.stxn = map . (X'.stxn) . ~map
+  X.ftxn = map . (X'.ftxn) . ~map
 
 }

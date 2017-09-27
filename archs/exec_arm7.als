@@ -4,7 +4,7 @@ open exec_H[E]
 sig Exec_Arm7 extends Exec_H {
   ISB, DMBST, DMBLD, DMB : set E
 }{
-  ISB + DMBST + DMBLD + DMB in F
+  ISB + DMBST + DMBLD + DMB = F
   disj[ISB, DMBST + DMBLD]
   DMB = DMBST & DMBLD
 }

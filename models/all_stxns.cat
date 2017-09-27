@@ -1,0 +1,4 @@
+"BASIC"
+
+empty [!domain(stxn)] as everything_successful
+empty [NAL] as no_NALs

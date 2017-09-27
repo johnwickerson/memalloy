@@ -5,8 +5,8 @@
 include "c11_base.cat"
 
 let s1 = hb
-let s2 = fsb?; myco; sbf?
-let s3 = rf^-1; [SC]; myco
+let s2 = fsb?; co; sbf?
+let s3 = rf^-1; [SC]; co
 let s4 = rf^-1; hbl; [W]
 let s44 = ([R] \ (rf^-1; rf)); fr
 let s5 = fsb; fr
@@ -16,5 +16,5 @@ let sall = s1|s2|s3|s4|s44|s5|s6|s7
 let sp = (sall & (SC*SC)) \ id
 
 acyclic sp as Spartial
-acyclic sp | po | rf | myco as Lidbury
+acyclic sp | po | rf | co as Lidbury
 

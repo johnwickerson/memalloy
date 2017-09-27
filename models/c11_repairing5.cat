@@ -4,9 +4,9 @@
 include "c11_base.cat"
 
 (* Allowing further elimination of SC accesses: *)
-let rb = [R]; rf^-1; myco
+let rb = [R]; rf^-1; co
 let shsb = (po \ ([W];loc;[W])); hb; (po \ ([R];loc;[R]))
-let eco = (rf | myco | rb)+
+let eco = (rf | co | rb)+
 let fhb = [F];hb
 let hbf = hb;[F]
 acyclic [SC]; fhb?; (po | shsb | eco); hbf?; [SC] as Srepaired5

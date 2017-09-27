@@ -22,8 +22,6 @@ PPC
 
 include "basic_H.cat"
 include "fr.cat"
-      
-let ctrlisync = ctrl & isync
 
 (* Uniproc *)
 acyclic po-loc | rf | fr | co as Uniproc
@@ -32,7 +30,6 @@ acyclic po-loc | rf | fr | co as Uniproc
 let dep = addr | data
 let rdw = po-loc & (fre;rfe)
 let detour = po-loc & (coe ; rfe)
-let addrpo = addr;po
 
 
 (*******)
@@ -40,58 +37,51 @@ let addrpo = addr;po
 (*******)
 
 (* Initial value *)
-let ci0 = ctrlisync | detour
+let ci0 = (ctrl & isync) | detour
 let ii0 = dep | rfi | rdw
-let cc0 = dep | po-loc | ctrl | addrpo
+let cc0 = dep | po-loc | ctrl | (addr;po)
 let ic0 = 0
 
 (* Fixpoint from i -> c in instructions and transitivity *)
-let rec ci = ci0 | (ci;ii) | (cc;ci)
+(* let rec ci = ci0 | (ci;ii) | (cc;ci)
 and ii = ii0 | ci | (ic;ci) | (ii;ii)
 and cc = cc0 | ci | (ci;ic) | (cc;cc)
-and ic = ic0 | ii | cc | (ic;cc) | (ii ; ic) (* | ci inclus dans ii et cc *)
+and ic = ic0 | ii | cc | (ic;cc) | (ii ; ic) *)
 
-let ppoR = (R * R) & ii
-let ppoW = (R * W) & ic
-let ppo = ppoR | ppoW
-show ppo
+(* Simplified (equivalent) version, still fixpointy *)
+(* let rec ci = (cc0 | ci;ic)*; ci0; (ii0 | ic;ci)*
+and ic = (ii0 | ic;ci)*; (cc0 | ci;ic)*
+let ii = (ii0 | ic;ci)+ *)
 
-(* fences *)
-let lwsyncREL = ([W];lwsync;[W]) | ([R];lwsync;[R]) | ([R];lwsync;[W])
-let eieioREL = ([W];eieio;[W])
-show sync, lwsyncREL, eieioREL
+(* Extra-simple version, no fixpoint *)
+let ic = ii0*; cc0*
+let ii = (ii0 | ii0*; cc0*; ci0; ii0*)+
 
-(* All arm barriers are strong *)
-let strong = sync
-let light = lwsyncREL|eieioREL
-let fence = strong|light
+let ppo = ((R * R) & ii) | ((R * W) & ic)
+
+let fence = sync | (lwsync \ (W*R))
 
 (* extensions *)
-let ppoext = (rfe;ppo)|(ppo;rfe)|(rfe;ppo;rfe)
-let fenceext = (rfe;fence)|(fence;rfe)|(rfe;fence;rfe)
+let ppoext = rfe?;ppo;rfe?
+let fenceext = rfe?;fence;rfe?
 
 (* happens before *)
-let hb = ppo | ppoext | fence | fenceext
-let ghb = hb
-show ghb
+let hb = ppoext | fenceext
 acyclic hb as NoThinAir
 
 (* prop *)
-let hbstar = hb*
-let propbase = (fence|fenceext);hbstar
-show propbase
+let propbase = fenceext;hb*
 
 let chapo = rfe|fre|coe|(fre;rfe)|(coe;rfe)
 
-let prop = (W * W) & propbase | (chapo? ; propbase*; strong; hbstar)
+let prop = (W * W) & propbase | (chapo? ; propbase*; sync; hb*)
 
-#show prop
 acyclic co|prop as Propagation
-irreflexive fre;prop;hbstar as Observation
+irreflexive fre;prop;hb* as Observation
 
 let Ato = domain(atom) | range(atom)
 let xx = po & (Ato * Ato)
 acyclic co | xx as ScXX
 
-empty (atom & (fre;coe)) as Atomic
+empty (atom & (fre;coe)) as AtomicRMW
 

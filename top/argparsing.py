@@ -45,8 +45,6 @@ def is_existing_dir(arg):
 def add_common_args(parser):
   parser.add_argument("-verbose", action="store_true")
   parser.add_argument("-fencerels", action="store_true")
-  parser.add_argument("-unroll", type=int, default=3,
-                        help="Unroll fixpoints")
 
 def add_setup_result_dir_args(parser):
   add_common_args(parser)
@@ -56,9 +54,8 @@ def add_setup_result_dir_args(parser):
   parser.add_argument("-base_result_dir", type=is_existing_dir,
                       default=default_result_dir,
                       help="Results will be placed in base_result_dir/<stamp>")
-  parser.add_argument("-arch_dir", type=is_existing_dir,
-                      default=os.path.join(MEMALLOY_ROOT_DIR, "archs"),
-                      help="Arch als directory")
+  parser.add_argument("-stamp", type=str, default=None,
+                      help="Results will be placed in base_result_dir/<stamp>")
 
 def add_gen_comparator_args(parser):
   add_common_args(parser)
@@ -92,12 +89,22 @@ def add_gen_comparator_args(parser):
                       help="Find executions with at most N locations")
   parser.add_argument("-locations", type=int,
                       help="Find executions with exactly N locations")
+  parser.add_argument("-mintransactions", type=int, default=0,
+                      help="Find executions with at least N transactions (default 0)")
+  parser.add_argument("-maxtransactions", type=int, default=None,
+                      help="Find executions with at most N transactions")
+  parser.add_argument("-transactions", type=int,
+                      help="Find executions with exactly N transactions")
   parser.add_argument("-minimal", action='store_true',
                       help="Option: find minimal executions")
   parser.add_argument("-withinit", action='store_true',
                       help="Option: explicit initial writes")
   parser.add_argument("-exact", action='store_true',
-                        help="Option: solution(s) must use exactly the given number of events")
+                      help="Option: solution(s) must use exactly the given number of events")
+  parser.add_argument("-emptytxns", action='store_true',
+                      help="Option: allow empty transactions")
+  parser.add_argument("-unroll", type=int, default=3, help="Unroll fixpoints")
+
 
 def ignore_opt(option_value):
   return option_value == None or (type(option_value) == bool and option_value == False)
@@ -114,11 +121,13 @@ def extract_gen_comparator_args(args):
   for opt in ["arch", "events", "mapping", "arch2",
                 "events2", "hint", "minthreads", "maxthreads",
                 "threads", "minlocations", "maxlocations",
-                "locations"]:
+                "locations", "withinit",
+                "mintransactions", "maxtransactions",
+                "transactions"]:
     if not ignore_opt(d[opt]):
       cmd_options.extend(["-" + opt, str(d[opt])])
-  if args.withinit:
-    cmd_options.extend(["-withinit"])
+  if args.emptytxns:
+    cmd_options.extend(["-emptytxns"])
   if args.fencerels:
     cmd_options.extend(["-fencerels"])
   if args.iter or args.minimal:
@@ -129,6 +138,7 @@ def extract_gen_comparator_args(args):
 
 def add_run_alloy_args(parser):
   add_common_args(parser)
+  parser.add_argument("-timeout", type=int, default=None, help="Timeout (in seconds) for solver")
   parser.add_argument("-solver", choices=SOLVERS, default="glucose",
                       help="Which SAT solver to use (optional). One of: %s" % ", ".join(SOLVERS))
   parser.add_argument("-iter", action='store_true',

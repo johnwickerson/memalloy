@@ -1,0 +1,10 @@
+"BASIC"
+
+include "basic_H.cat"
+include "ftxn.cat"
+
+let psi_0 = weaklift(rf, stxn) | weaklift(co, stxn)
+
+let psi_x = ((stxn; psi_0*; stxn) & sloc); (fr \ stxn)
+          
+acyclic psi_x as PSI

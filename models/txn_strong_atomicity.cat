@@ -1,0 +1,7 @@
+"BASIC"
+
+include "basic_H.cat"
+include "ftxn.cat"
+let com = rf | fr | co | co;rf
+          
+acyclic stronglift(com, txn) as Strong_atomicity

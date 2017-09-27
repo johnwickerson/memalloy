@@ -97,7 +97,7 @@ let tidy_exec x =
   in
   let all_fences =
     ["dmb"; "dmbst"; "dmbld"; "isb";
-     "sync"; "lwsync"; "eieio"; "isync";
+     "sync"; "lwsync"; "isync";
      "mfence";
      "membar_cta"; "membar_gl"; "membar_sys"]
   in

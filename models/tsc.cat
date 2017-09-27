@@ -1,0 +1,14 @@
+"BASIC"
+
+include "basic_H.cat"
+include "ftxn.cat" (* subsumes fr.cat *)
+let com = rf | fr | co | co;rf
+          
+empty atom & (fre;coe) as AtomicRMW
+      
+(* Partial Order Transactional Sequential Consistency *)
+
+let order = po | com
+
+acyclic order as SC
+acyclic stronglift(order, txn) as TSC

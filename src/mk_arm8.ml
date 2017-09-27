@@ -32,16 +32,34 @@ open Litmus_HW
 type fence = DMB | DMBLD | DMBST | ISB
 
 let mk_fence attrs =
-  match List.mem "dmb" attrs || List.mem "DMB" attrs,
-        List.mem "dmbst" attrs || List.mem "DMBST" attrs,
-        List.mem "dmbld" attrs || List.mem "DMBLD" attrs,
-        List.mem "isb" attrs || List.mem "ISB" attrs with
-  | true,     _,      _, false -> DMB
-  | false,  true, false, false -> DMBST
-  | false, false,  true, false -> DMBLD
-  | false, false, false, true  -> ISB
+  match List.mem "dmb" attrs,
+        List.mem "dmbst" attrs,
+        List.mem "dmbld" attrs,
+        List.mem "isb" attrs with
+  | true, false, false, false -> DMB
+  | false, true, false, false -> DMBST
+  | false, false, true, false -> DMBLD
+  | false, false, false, true -> ISB
   | _ -> failwith "Invalid fence attributes!"
-   
+
+let mk_tstart reg lbl =
+  [TSTART (reg, lbl); CMP reg; BNZ lbl]
+
+let mk_tabort reg imm = [TABORT (reg, imm)]
+
+let mk_tabort_handler reg tstart_reg = [MOVREG (reg, tstart_reg)]
+
+let encode_sentinel imm8 =
+  assert (0 <= imm8 && imm8 < 256);
+  let abt_caused_by_tabort = 0x1 in
+  (imm8 lsl 24) lor abt_caused_by_tabort
+
+let arm8_specific_params = {
+    use_status_reg=true;
+    mk_fence; mk_tstart; mk_tabort; mk_tabort_handler;
+    encode_sentinel;
+}
+
 (** Print a register in 64-bit mode *)
 let pp_64reg oc (_,r) = fprintf oc "X%d" r
 
@@ -88,23 +106,40 @@ let pp_ins oc = function
       | _, _, _ -> assert false)
   | ADD (dst, src, v) ->
      fprintf oc "ADD %a, %a, #%d"
-	     pp_32reg dst pp_32reg src v
+       pp_32reg dst pp_32reg src v
+  | ADDREG (dst, src1, src2) ->
+     fprintf oc "ADD %a, %a, %a"
+	     pp_32reg dst pp_32reg src1 pp_32reg src2
   | EOR (dst, src1, src2) ->
      fprintf oc "EOR %a, %a, %a"
 	     pp_32reg dst pp_32reg src1 pp_32reg src2
+  | SHIFT (kind, dst, src, v) ->
+     (match kind with
+     | Litmus_HW.LSL ->
+       fprintf oc "LSL %a, %a, #%d"
+         pp_32reg dst pp_32reg src v
+     | Litmus_HW.LSR ->
+       fprintf oc "LSR %a, %a, #%d"
+         pp_32reg dst pp_32reg src v)
   | MOV (dst, v) ->
      fprintf oc "MOV %a, #%d" pp_32reg dst v
+  | MOVREG (dst, src) ->
+     fprintf oc "MOV %a, %a" pp_32reg dst pp_32reg src
   | HW_fence DMB -> fprintf oc "DMB SY"
-  | HW_fence DMBLD -> fprintf oc "DMB LB"
+  | HW_fence DMBLD -> fprintf oc "DMB LD"
   | HW_fence DMBST -> fprintf oc "DMB ST"
   | HW_fence ISB -> fprintf oc "ISB"
+  | CMPIMM (src, imm) -> fprintf oc "CMP %a, #%d" pp_32reg src imm
   | CMP src -> fprintf oc "CMP %a, #0" pp_32reg src
+  | BEQ lbl -> fprintf oc "BEQ %s" lbl
   | BNZ lbl -> fprintf oc "BNE %s" lbl
   | J lbl -> fprintf oc "B %s" lbl
   | LBL lbl -> fprintf oc "%s:" lbl
+  | TSTART (r, _) -> fprintf oc "TXSTART %a" pp_32reg r
+  | TCOMMIT -> fprintf oc "TXCOMMIT"
+  | TABORT (_, imm) -> fprintf oc "TXABORT #%d" imm
 
 let arm8_of_lit name lt =
-  let use_status_reg = true in
-  Mk_litmus_HW.hw_lit_of_lit name use_status_reg mk_fence lt
-             
+  Mk_litmus_HW.hw_lit_of_lit name arm8_specific_params lt
+
 let pp oc lt = Litmus_HW.pp "AArch64" pp_reg_full pp_ins oc lt

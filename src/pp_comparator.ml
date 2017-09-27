@@ -39,7 +39,9 @@ let description = ref ""
 let fencerels = ref false
 let minimal = ref false
 let exact = ref false
-		      
+
+let emptytxns = ref false	      
+
 let min_thds = ref 0
 let max_thds = ref (-1)
 let min_locs = ref 0
@@ -166,6 +168,13 @@ let pp_comparator arch oc =
   else
     fprintf oc "  withoutinit[X]\n";
   fprintf oc "  E in X.EV\n\n";
+  if !emptytxns then (
+    fprintf oc "  // Every event is a read, write, fence or transaction\n";
+    fprintf oc "  E in X.R + X.W + X.F + dom[X.stxn]\n\n";
+    fprintf oc "  // All nop events are singleton-transactions\n";
+    fprintf oc "  all n : dom[X.stxn] - (X.R + X.W + X.F) |\n";
+    fprintf oc "    one n.(X.stxn)\n\n"
+  );
   fprintf oc "  interesting[none->none, X]\n\n";
   if !minimal then (
     fprintf oc "  not some e : X.EV | interesting[rm_EV->e, X]\n";
@@ -181,12 +190,22 @@ let pp_comparator arch oc =
         fprintf oc
           "  not some e : X.%s | interesting[rm_%s->e, X]\n" set set
       ) (Archs.arch_min_sets !fencerels arch);
+    let tag = "rm_txn->e" in
+    fprintf oc "  not some e : dom[X.stxn] + dom[X.ftxn]  {\n";
+    fprintf oc "    let tpo = X.sb & (X.stxn + X.ftxn) |\n";
+    fprintf oc "    no tpo.e or no e.tpo\n";
+    pp_violated_models 4 tag "X" oc;
+    pp_satisfied_models 4 tag "X" oc;
+    pp_also_satisfied_models 4 tag "X" oc;
+    fprintf oc "  }\n";
   );
   List.iter (pp_hint_name oc) !hints;
   pp_min_classes "threads" "E" !min_thds "sthd" "X.EV - X.IW" oc;
   pp_max_classes "threads" "E" !max_thds "sthd" "X.EV - X.IW" oc;
   pp_min_classes "locations" "E" !min_locs "sloc" "X.R + X.W" oc;
   pp_max_classes "locations" "E" !max_locs "sloc" "X.R + X.W" oc;
+  pp_min_classes "transactions" "E" !min_txns "stxn" "dom[X.stxn]" oc;
+  pp_max_classes "transactions" "E" !max_txns "stxn" "dom[X.stxn]" oc;
   fprintf oc "}\n\n";
   pp_hint_predicates oc;
   fprintf oc "run gp for 1 Exec, %s%d E, 3 Int\n"
@@ -211,10 +230,12 @@ let pp_comparator2 arch mapping_path arch2 oc =
   List.iter (pp_hint_name oc) !hints;
   fprintf oc "  // We have a valid application of the mapping\n";
   fprintf oc "  apply_map[X, Y, map]\n\n";
-  pp_min_classes "threads" "SE" !min_thds "sthd" "EV - IW" oc;
-  pp_max_classes "threads" "SE" !max_thds "sthd" "EV - IW" oc;
-  pp_min_classes "locations" "SE" !min_locs "sloc" "R + W" oc;
-  pp_max_classes "locations" "SE" !max_locs "sloc" "R + W" oc;
+  pp_min_classes "threads" "SE" !min_thds "sthd" "X.EV - X.IW" oc;
+  pp_max_classes "threads" "SE" !max_thds "sthd" "X.EV - X.IW" oc;
+  pp_min_classes "locations" "SE" !min_locs "sloc" "X.R + X.W" oc;
+  pp_max_classes "locations" "SE" !max_locs "sloc" "X.R + X.W" oc;
+  pp_min_classes "transactions" "SE" !min_txns "stxn" "dom[X.stxn]" oc;
+  pp_max_classes "transactions" "SE" !max_txns "stxn" "dom[X.stxn]" oc;
   fprintf oc "}\n\n";
   pp_hint_predicates oc;
   fprintf oc "run gp for exactly 1 M1/Exec, exactly 1 N1/Exec, %d SE, %d HE, 3 Int\n" !eventcount !eventcount2
@@ -260,6 +281,14 @@ let get_args () =
       ("-locations",
        Arg.Int (fun i -> min_locs := i; max_locs := i),
        "Find executions with exactly N locations");
+      ("-mintransactions", Arg.Set_int min_txns,
+       "Find executions with at least N transactions (default 0)");
+      ("-maxtransactions", Arg.Set_int max_txns,
+       "Find executions with at most N transactions");
+      ("-transactions",
+       Arg.Int (fun i -> min_txns := i; max_txns := i),
+       "Find executions with exactly N transactions");
+      ("-emptytxns", Arg.Set emptytxns, "Option: allow empty transactions");
       ("-withinit", Arg.Set withinit,
        "Option: explicit initial writes");
       ("-fencerels", Arg.Set fencerels,

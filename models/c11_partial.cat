@@ -9,8 +9,8 @@ http://multicore.doc.ic.ac.uk/overhauling/
 include "c11_base.cat"
 
 let s1 = hb
-let s2 = fsb?; myco; sbf?
-let s3 = rf^-1; [SC]; myco
+let s2 = fsb?; co; sbf?
+let s3 = rf^-1; [SC]; co
 let s4 = rf^-1; hbl; [W]
 let s44 = ([R] \ (rf^-1; rf)); fr
 let s5 = fsb; fr

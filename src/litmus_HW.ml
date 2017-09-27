@@ -37,25 +37,68 @@ type mem_access = {
     off : Register.t option;
     (** offset register (for address dependencies) *)
     sta : Register.t option;
-    (** status register (only for ARM8 exclusive stores) *)
+    (** status register (only for ARM8/PPC exclusive stores) *)
+    imm : Value.t option;    (** only for X86 *)
+    loc : Location.t option; (** only for X86 *)
     is_exclusive : bool;
     is_acq_rel : bool; (** for ARM8 *)
   }
 
+let mem_access_to_str a =
+  sprintf "dir %s; " (if a.dir = LD then "LD" else "ST") ^
+  sprintf "dst %d %d; " (fst a.dst) (snd a.dst) ^
+  sprintf "src %d %d; " (fst a.src) (snd a.src) ^
+  (match a.off with
+  | None -> sprintf "off None; "
+  | Some r -> sprintf "off %d %d; " (fst r) (snd r)) ^
+  (match a.sta with
+  | None -> sprintf "sta None; "
+  | Some r -> sprintf "sta %d %d; " (fst r) (snd r)) ^
+  (match a.imm with
+  | None -> sprintf "imm None; "
+  | Some v -> sprintf "imm %d; " v) ^
+  (match a.loc with
+  | None -> sprintf "loc None; "
+  | Some l -> sprintf "loc %d; " l) ^
+  sprintf "is_exclusive %b; " a.is_exclusive ^
+  sprintf "is_acq_rel %b" a.is_acq_rel
+
 (** Instruction label *)
 type label = string
-		     
+
+(** Shift types *)
+type shift =
+    LSL (** logical shift left *)
+  | LSR (** logical shift right *)
+
 (** Instruction in a hardware litmus test *)       
 type 'fence hw_instruction =
   | Access of mem_access (** loads and stores *)
   | ADD of Register.t * Register.t * int (** addition *)
+  | ADDREG of Register.t (* dst *) * Register.t * Register.t
   | EOR of Register.t * Register.t * Register.t (** exclusive or *)
+  | SHIFT of shift * Register.t * Register.t * int (** shift immediate *)
   | MOV of Register.t * int (** constant *)
+  | MOVREG of Register.t (* dst *) * Register.t (* src *)
   | HW_fence of 'fence (** memory fence *)
+  | CMPIMM of Register.t * int (** compare a register with an immediate *)
   | CMP of Register.t (** compare a register ... *)
+  | BEQ of label (** ... and branch if it is zero *)
   | BNZ of label (** ... and branch if it is nonzero *)
   | J of label (** unconditional branch *)
   | LBL of label (** label *)
+  | TSTART of Register.t * label (** begin transaction *)
+  | TCOMMIT (** end transaction *)
+  | TABORT of Register.t * int (** abort transaction *)
+
+type 'fence arch_specific_params = {
+  use_status_reg : bool;
+  mk_fence : string list -> 'fence;
+  mk_tstart : Register.t -> label -> 'fence hw_instruction list;
+  mk_tabort : Register.t -> int -> 'fence hw_instruction list;
+  mk_tabort_handler : Register.t -> Register.t -> 'fence hw_instruction list;
+  encode_sentinel : int -> int;
+}
 
 (** Type of hardware litmus tests *)
 type 'fence t = {
@@ -108,7 +151,12 @@ let pp_addr pp_reg oc = function
 let pp_post pp_reg oc post =
   fprintf oc "exists\n";
   fprintf oc "(";
-  let pp_cnstrnt oc (a,v) = fprintf oc "%a=%d" (pp_addr pp_reg) a v in
+  let pp_cnstrnt oc (a,v) =
+    if 0x1000 < v then
+      fprintf oc "%a=0x%08x" (pp_addr pp_reg) a v
+    else
+      fprintf oc "%a=%d" (pp_addr pp_reg) a v
+  in
   MyList.pp_gen " /\\ " pp_cnstrnt oc post;
   fprintf oc ")\n"
 	   

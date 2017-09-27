@@ -6,13 +6,24 @@ sig Exec_H extends Exec {
 }{
 
   // the atom relation relates a consecutively-sequenced read/write pair
-  atom in (R->W) & sb & sloc
+  atom in (R->W) & imm[sb] & sloc
     
   // there are no single-event RMWs
   no (R&W)
 
+  // there are no such things as "atomic" and "non-atomic" locations
+  no NAL
+
   // control dependencies are defined differently in assembly
-  cd.sb in cd 
+  cd.sb in cd
+
+  // the atom relation relates either
+  // - two events in the same transaction or
+  // - two events that are non-transactional
+  atom in stxn + ((EV - dom[stxn]) -> (EV - dom[stxn]))
+
+  // no atomics inside failing transactions
+  no ftxn.atom + atom.ftxn
     
 }
 

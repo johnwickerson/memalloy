@@ -60,7 +60,6 @@ https://raw.githubusercontent.com/herd/herdtools7/daa126680b6ecba97ba47b3e05bbaa
 #include "aarch64fences.cat"
 include "basic_H.cat"
 include "fr.cat"
-let rmw = atom
 
 (*
  * As a restriction of the model, all observers are limited to the same
@@ -79,6 +78,7 @@ let rmw = atom
 #let dmb.full = DMB.ISH | DMB.OSH | DMB.SY | dsb.full
 #let dmb.ld = DMB.ISHLD | DMB.OSHLD | DMB.LD | dsb.ld
 #let dmb.st = DMB.ISHST | DMB.OSHST | DMB.ST | dsb.st
+let dmb.full = dmb
 
 (* Flag any use of shareability options, due to the restrictions above. *)
 #flag ~empty (dmb.full | dmb.ld | dmb.st) \
@@ -104,12 +104,12 @@ let aob = rmw
     | rmw; rfi
 
 (* Barrier-ordered-before *)
-let bob = po; [DMB]; po
+let bob = po; [dmb.full]; po
     | [SCREL]; po; [SCACQ]
-    | [R]; po; [DMBLD]; po
+    | [R]; po; [dmb.ld]; po
     (*| [SCACQ | Q]; po*) (* Q corresponds to read-acquires of LDAPR *)
     | [SCACQ]; po
-    | [W]; po; [DMBST]; po; [W]
+    | [W]; po; [dmb.st]; po; [W]
     | po; [SCREL]
     | po; [SCREL]; coi
 

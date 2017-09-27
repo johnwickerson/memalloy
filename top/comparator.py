@@ -28,8 +28,10 @@ import argparse
 import os
 from shutil import copyfile
 import sys
-import subprocess
+from subprocess32 import call, Popen, TimeoutExpired
 import platform
+from timeit import default_timer as timer
+import collections
 
 import argparsing
 from argparsing import TOOL_PATH
@@ -69,6 +71,10 @@ def main(argv=None):
   argparsing.add_remove_dups_args(parser, is_standalone=False)
   args = parser.parse_args(argv)
 
+  timing = collections.OrderedDict()
+
+  # Stage 1: setup directory structure and generate comparator script
+  start = timer()
   result_dir = setup_result_dir.main(args)
   xml_result_dir = os.path.join(result_dir, "xml")
   dot_result_dir = os.path.join(result_dir, "dot")
@@ -79,7 +85,7 @@ def main(argv=None):
     print "\"" + args.desc + "\""
 
   comparator_script = os.path.join(result_dir, "comparator.als")
-  
+
   if args.customscript:
 
     if not os.path.exists(args.customscript):
@@ -88,15 +94,22 @@ def main(argv=None):
     copyfile(args.customscript, comparator_script)
 
   else:
-  
+
+    # Deal with non-local models by copying them into models/_tmp_<n>.{cat,als}
+    # and patching the command-line arguments
+    nonlocal_model_map = {} # for temporaries
     for model in args.satisfies + args.alsosatisfies + args.violates:
+      model_path = os.path.abspath(model)
+      if not os.path.dirname(model_path).startswith(argparsing.MEMALLOY_ROOT_DIR):
+        tmp_cat = os.path.join("models", "_tmp_%d%s" % (len(nonlocal_model_map), ext_of_file(model)))
+        nonlocal_model_map[model] = tmp_cat
+        copyfile(model_path, os.path.join(argparsing.MEMALLOY_ROOT_DIR, tmp_cat))
+        model = os.path.join(argparsing.MEMALLOY_ROOT_DIR, tmp_cat)
       if is_cat_file(model):
         if args.fencerels:
-          cmd = [os.path.join(TOOL_PATH, "cat2als"), "-fencerels", model]
+          code = call([os.path.join(TOOL_PATH, "cat2als"), "-fencerels", model, "-u", str(args.unroll)])
         else:
-          cmd = [os.path.join(TOOL_PATH, "cat2als"), model]
-        cmd.extend(["-u", str(args.unroll)])
-        code = subprocess.call(cmd)
+          code = call([os.path.join(TOOL_PATH, "cat2als"), model, "-u", str(args.unroll)])
         if code != 0:
           print "ERROR: Unable to convert cat file"
           return 1
@@ -106,16 +119,28 @@ def main(argv=None):
         print "ERROR: Unrecognised model type [%s]" % model
         return 1
 
+    if nonlocal_model_map:
+      for k in ["satisfies", "alsosatisfies", "violates"]:
+        for i,m in enumerate(args.__dict__[k]):
+          if m in nonlocal_model_map:
+            new_m = nonlocal_model_map[m]
+            if args.verbose: print "Patching %s |-> %s" % (m, new_m)
+            args.__dict__[k][i] = new_m
+
     cmd = [os.path.join(TOOL_PATH, "pp_comparator"), "-o", comparator_script]
     cmd.extend(argparsing.extract_gen_comparator_args(args))
     if args.verbose: print " ".join(cmd)
-    code = subprocess.call(cmd)
+    code = call(cmd)
     if code != 0:
       print "ERROR: Generation of comparator script was unsuccessful"
       return 1
+  end = timer()
+  timing['setup'] = (end-start)
     
   #end if args.customscript
 
+  # Stage 2: Alloy solving
+  start = timer()
   args.comparator_script = comparator_script
   args.alloystar = "alloystar"
   args.xml_result_dir = xml_result_dir
@@ -124,11 +149,16 @@ def main(argv=None):
   except KeyboardInterrupt:
     code = 0
     print "\nWARNING: Alloy was interrupted"
+  except TimeoutExpired:
+    code = 0
+    print "\nWARNING: Alloy timeout (only partial solutions)"
   if code != 0:
     print "ERROR: Alloy was unsuccessful"
     return 1
   nsolutions = len([x for x in os.listdir(xml_result_dir) if is_xml_file(x)])
-  print "Alloy found %d solutions" % nsolutions
+  end = timer()
+  print "Alloy found %d solutions in %.2f sec" % (nsolutions, end-start)
+  timing['alloy'] = (end-start)
   
   if nsolutions == 0:
     if args.expect and args.expect != 0:
@@ -136,17 +166,23 @@ def main(argv=None):
       return 1
     else:
       return 0
-  
+ 
+  # Stage 3: Remove duplicates
   print "Remove duplicates"
+  start = timer()
   code = remove_dups.main(args)
   if code != 0:
     print "ERROR: Remove duplicates script was unsuccessful"
     return 1
   nsolutions = len([x for x in os.listdir(xml_result_dir) if x.endswith("_unique")])
-  print "Partitioned to %d unique solutions" % nsolutions
+  end = timer()
+  print "Partitioned to %d unique solutions in %.2f sec" % (nsolutions, end-start)
+  timing['rmdups'] = (end-start)
 
-  # TODO: gen changed to operate over a directory not per-file
+  # Stage 4: Generate litmus test output
+  start = timer()
   hash_file = os.path.join(xml_result_dir, "hashes.txt")
+  litmus_filenames = []
   with open(hash_file) as f:
     for test_hash in f:
       test_hash = test_hash.strip()
@@ -158,7 +194,7 @@ def main(argv=None):
       dot_file = os.path.join(dot_result_dir, "test_%s.dot" % test_hash)
       cmd = [os.path.join(TOOL_PATH, "gen"), "-Tdot", "-o", dot_file, os.path.join(xml_dir, xml_files[0])]
       if args.verbose: print " ".join(cmd)
-      code = subprocess.call(cmd)
+      code = call(cmd)
       if code != 0:
         print "ERROR: dot generation was unsuccessful"
         return 1
@@ -166,34 +202,63 @@ def main(argv=None):
       png_file = os.path.join(png_result_dir, "test_%s.png" % test_hash)
       cmd = ["dot", "-Tpng", "-o", png_file, dot_file]
       if args.verbose: print " ".join(cmd)
-      code = subprocess.call(cmd)
+      code = call(cmd)
       if code != 0:
         print "ERROR: png generation was unsuccessful"
         return 1
-      
-      lit_file = os.path.join(lit_result_dir, "test_%s.litmus" % test_hash)
-      cmd = [os.path.join(TOOL_PATH, "gen"), "-Tlit", "-o", lit_file, os.path.join(xml_dir, xml_files[0])]
-      if args.arch in ["ARM8", "PPC"]:
-        cmd.extend(["-arch", args.arch])
-      if args.verbose: print " ".join(cmd)
-      code = subprocess.call(cmd)
-      if code != 0:
-        print "ERROR: litmus-test generation was unsuccessful"
-        return 1
+
+      litmus = "test_%s.litmus" % test_hash
+      litmus_filenames.append(litmus)
+
+      archs = [args.arch]
+      if args.arch == "HW":
+        archs = ["ARM8", "PPC", "X86"]
+      for arch in archs:
+        lit_file = os.path.join(lit_result_dir, arch, litmus)
+        cmd = [os.path.join(TOOL_PATH, "gen"), "-Tlit", \
+               "-arch", arch, \
+               "-o", lit_file, \
+               os.path.join(xml_dir, xml_files[0])]
+        if args.verbose: print " ".join(cmd)
+        code = call(cmd)
+        if code != 0:
+          print "ERROR: litmus-test generation was unsuccessful"
+          return 1
+
+  # litmus7 @all
+  archs = [args.arch]
+  if args.arch == "HW":
+    archs = ["ARM8", "PPC", "X86"]
+  for arch in archs:
+    with open(os.path.join(lit_result_dir, arch, "@all"), "w+") as f:
+      for test in litmus_filenames:
+        print >>f, test
+
+  # litmus7 forbid file
+  with open(os.path.join(lit_result_dir, "forbid.txt"), "w+") as f:
+    for test in litmus_filenames:
+      testname, _ext = os.path.splitext(test)
+      print >>f, "%s Forbid" % testname
+  end = timer()
+  timing['dump'] = (end-start)
 
   if platform.system() == "Darwin" and args.batch == False:
     if nsolutions == 1:
-      for f in os.listdir(lit_result_dir):
-        subprocess.Popen(["cat", os.path.join(lit_result_dir, f)])
+      f = os.path.join(lit_result_dir, args.arch, litmus_filenames[0])
+      if os.path.isfile(f):
+        Popen(["cat", os.path.join(lit_result_dir, f)])
       for f in os.listdir(png_result_dir):
-        subprocess.Popen(["open", os.path.join(png_result_dir, f)])
+        Popen(["open", os.path.join(png_result_dir, f)])
     else:
-      subprocess.Popen(["open", os.path.join(png_result_dir)])
+      Popen(["open", os.path.join(png_result_dir)])
 
   if args.expect:
     if args.expect != nsolutions:
       print "ERROR: Expected %d unique solutions, found %d" % (args.expect, nsolutions)
       return 1
+
+  for (k,d) in timing.items():
+    print "%s\t%.2f sec" % (k,d)
       
   return 0
 

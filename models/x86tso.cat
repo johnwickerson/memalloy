@@ -20,26 +20,15 @@ https://github.com/herd/herdtools/blob/master/herd/x86tso.cat
 
 "X86"
 
-(* Uniproc check *)
-  (* let com = rf | fr | co *)
 include "basic_H.cat"
 include "fr.cat"
-acyclic po-loc | com as Uniproc
-
-(* Atomic *)
-empty atom & (fre;coe) as Atomic
+acyclic po-loc | rf | fr | co as Uniproc
+empty atom & (fre;coe) as AtomicRMW
   
-(* GHB *)
-#ppo
 let ppo = (W * W) & po | (R * M) & po
 
-#implied barriers
-let poWR = (W * R) & po
-let i1 = (!LOCKED * LOCKED) & poWR
-let i2 = (LOCKED * !LOCKED) & poWR
-let implied = i1 | i2
+let LOCKED = domain(atom) | range(atom)
+let implied = [LOCKED]; po | po; [LOCKED]
 
-let ghb = mfence | implied | ppo | rfe | fr | co
-show mfence
-show implied
-acyclic ghb as GHB
+let hb = mfence | implied | ppo | rfe | fr | co
+acyclic hb as Order
