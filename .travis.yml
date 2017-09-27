@@ -19,6 +19,7 @@ before_install:
   - opam install --yes ocamlfind xml-light ocamlbuild
 # Installing Python dependencies
   - sudo easy_install progressbar
+  - sudo easy_install subprocess32
   - export OS=amd64-linux
   - export JAVA_HEAP_SIZE=3g
 install:
