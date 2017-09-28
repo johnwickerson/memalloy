@@ -37,16 +37,13 @@ one sig rm_membar_sys extends PTag {}
 one sig rm_membar_gl extends PTag {}
 one sig rm_membar_cta extends PTag {}
 
-fun scta[e:PTag->E, X:Exec_PTX] : E->E { 
-  (univ - e[rm_EV]) <: X.scta :> (univ - e[rm_EV]) }
-fun sgl[e:PTag->E, X:Exec_PTX] : E->E { 
-  (univ - e[rm_EV]) <: X.sgl :> (univ - e[rm_EV]) }
-fun membar_sys[e:PTag->E, X:Exec_PTX] : E->E { 
-  (univ - e[rm_EV] - *(X.sb).(e[rm_membar_sys] + e[rm_membar_gl] + e[rm_membar_cta]))
-    <: X.membar_sys :> (univ - e[rm_EV]) }
-fun membar_gl[e:PTag->E, X:Exec_PTX] : E->E { 
-  (univ - e[rm_EV] - *(X.sb).(e[rm_membar_gl] + e[rm_membar_cta]))
-    <: X.membar_gl :> (univ - e[rm_EV]) }
-fun membar_cta[e:PTag->E, X:Exec_PTX] : E->E { 
-  (univ - e[rm_EV] - *(X.sb).(e[rm_membar_cta]))
-    <: X.membar_cta :> (univ - e[rm_EV]) }
+fun scta[e:PTag->E, X:Exec_PTX] : E->E { rm_EV_rel[e, X.scta] }
+fun sgl[e:PTag->E, X:Exec_PTX] : E->E { rm_EV_rel[e, X.sgl] }
+
+fun membar_sys[e:PTag->E, X:Exec_PTX] : E->E {
+  mk_fence_rel[e, rm_membar_sys+rm_membar_gl+rm_membar_cta,
+    X.membar_sys, X.sb] }
+fun membar_gl[e:PTag->E, X:Exec_PTX] : E->E {
+  mk_fence_rel[e, rm_membar_gl + rm_membar_cta, X.membar_gl, X.sb] } 
+fun membar_cta[e:PTag->E, X:Exec_PTX] : E->E {
+  mk_fence_rel[e, rm_membar_cta, X.membar_cta, X.sb] }

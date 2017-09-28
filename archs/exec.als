@@ -141,29 +141,29 @@ one sig rm_cd extends PTag {}
 one sig rm_dd extends PTag {}
 one sig rm_txn extends PTag {}
 
+fun rm_EV_rel[e:PTag->E, r:E->E] : E->E {
+  (univ - e[rm_EV]) <: r :> (univ - e[rm_EV])
+}
+
 fun EV [e:PTag->E, X:Exec] : set E { X.EV - e[rm_EV] }
 fun W [e:PTag->E, X:Exec] : set E { X.W - e[rm_EV] }
 fun IW [e:PTag->E, X:Exec] : set E { X.IW - e[rm_EV] }
 fun R [e:PTag->E, X:Exec] : set E { X.R - e[rm_EV] }
 fun F [e:PTag->E, X:Exec] : set E { X.F - e[rm_EV] }
 
-fun sb [e:PTag->E, X:Exec] : E->E {
-  (univ - e[rm_EV]) <: X.sb :> (univ - e[rm_EV]) }
+fun sb [e:PTag->E, X:Exec] : E->E { rm_EV_rel[e, X.sb] }
+fun sthd [e:PTag->E, X:Exec] : E->E { rm_EV_rel[e, X.sthd] }
+fun sloc [e:PTag->E, X:Exec] : E->E { rm_EV_rel[e, X.sloc] }
+fun rf [e:PTag->E, X:Exec] : E->E { rm_EV_rel[e, X.rf] }
+fun co [e:PTag->E, X:Exec] : E->E { rm_EV_rel[e, X.co] }
+
 fun ad [e:PTag->E, X:Exec] : E->E {
-  (univ - e[rm_EV] - e[rm_ad]) <: X.ad :> (univ - e[rm_EV]) }
+  rm_EV_rel[e, (univ - e[rm_ad]) <: X.ad] }
 fun dd [e:PTag->E, X:Exec] : E->E {
-  (univ - e[rm_EV] - e[rm_dd]) <: X.dd :> (univ - e[rm_EV]) }
+  rm_EV_rel[e, (univ - e[rm_dd]) <: X.dd] }
 fun cd [e:PTag->E, X:Exec] : E->E {
-  (univ - e[rm_EV] - e[rm_cd]) <: X.cd :> (univ - e[rm_EV]) }
-fun sthd [e:PTag->E, X:Exec] : E->E {
-  (univ - e[rm_EV]) <: X.sthd :> (univ - e[rm_EV]) }
-fun sloc [e:PTag->E, X:Exec] : E->E {
-  (univ - e[rm_EV]) <: X.sloc :> (univ - e[rm_EV]) }
+  rm_EV_rel[e, (univ - e[rm_cd]) <: X.cd] }
 fun stxn[e:PTag->E, X:Exec] : E->E {
-  (univ - e[rm_EV] - e[rm_txn]) <: X.stxn :> (univ - e[rm_EV] - e[rm_txn]) }
+  rm_EV_rel[e, (univ - e[rm_txn]) <: X.stxn :> (univ - e[rm_txn])] }
 fun ftxn[e:PTag->E, X:Exec] : E->E {
-  (univ - e[rm_EV] - e[rm_txn]) <: X.ftxn :> (univ - e[rm_EV] - e[rm_txn]) }
-fun rf [e:PTag->E, X:Exec] : E->E {
-  (univ - e[rm_EV]) <: X.rf :> (univ - e[rm_EV]) }
-fun co [e:PTag->E, X:Exec] : E->E {
-  (univ - e[rm_EV]) <: X.co :> (univ - e[rm_EV]) }
+  rm_EV_rel[e, (univ - e[rm_txn]) <: X.ftxn :> (univ - e[rm_txn])] }

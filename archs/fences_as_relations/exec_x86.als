@@ -10,4 +10,4 @@ sig Exec_X86 extends Exec_H {
 one sig rm_mfence extends PTag {}
 
 fun mfence[e:PTag->E, X:Exec_X86] : E->E {
-  (univ - e[rm_EV] - e[rm_mfence]) <: X.mfence :> (univ - e[rm_EV]) }
+  mk_fence_rel[e, rm_mfence, X.mfence, X.sb] }

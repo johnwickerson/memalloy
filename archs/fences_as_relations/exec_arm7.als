@@ -19,10 +19,11 @@ one sig rm_dmbld extends PTag {}
 one sig rm_dmb extends PTag {}
 
 fun isb[e:PTag->E, X:Exec_Arm7] : E->E {
-  (univ - e[rm_EV] - *(X.sb).(e[rm_isb])) <: X.isb :> (univ - e[rm_EV]) }
+  mk_fence_rel[e, rm_isb, X.isb, X.sb] }
+
 fun dmbst[e:PTag->E, X:Exec_Arm7] : E->E {
-  (univ - e[rm_EV] - *(X.sb).(e[rm_dmbst])) <: X.dmbst :> (univ - e[rm_EV]) }
+  mk_fence_rel[e, rm_dmbst, X.dmbst, X.sb] }
 fun dmbld[e:PTag->E, X:Exec_Arm7] : E->E {
-  (univ - e[rm_EV] - *(X.sb).(e[rm_dmbld])) <: X.dmbld :> (univ - e[rm_EV]) }
+  mk_fence_rel[e, rm_dmbld, X.dmbld, X.sb] }
 fun dmb[e:PTag->E, X:Exec_Arm7] : E->E {
-  (univ - e[rm_EV] - *(X.sb).(e[rm_dmb] + e[rm_dmbld] + e[rm_dmbst])) <: X.dmb :> (univ - e[rm_EV]) }
+  mk_fence_rel[e, rm_dmb + rm_dmbld + rm_dmbst, X.dmb, X.sb] }

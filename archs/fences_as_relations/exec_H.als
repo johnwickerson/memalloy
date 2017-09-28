@@ -40,7 +40,10 @@ pred is_fence_rel[fence_rel:E->E, sb:E->E] {
 
 }
 
+fun mk_fence_rel[e:PTag->E, t:PTag, f:E->E, sb:E->E] : E->E {
+  rm_EV_rel[e, *sb.((univ - e[t]) <: imm[f]).*sb] }
+
 one sig rm_atom extends PTag {}
 
 fun atom[e:PTag->E, X:Exec_H] : E->E { 
-  (univ - e[rm_EV] - e[rm_atom]) <: X.atom :> (univ - e[rm_EV]) }
+  rm_EV_rel[e, (univ - e[rm_atom]) <: X.atom] }

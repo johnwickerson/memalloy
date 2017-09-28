@@ -17,8 +17,10 @@ one sig rm_sync extends PTag {}
 one sig rm_lwsync extends PTag {}
 
 fun isync[e:PTag->E, X:Exec_PPC] : E->E {
-  (univ - e[rm_EV] - *(X.sb).(e[rm_isync])) <: X.isync :> (univ - e[rm_EV]) }
+  mk_fence_rel[e, rm_isync, X.isync, X.sb] }
+
 fun sync[e:PTag->E, X:Exec_PPC] : E->E {
-  (univ - e[rm_EV] - *(X.sb).(e[rm_sync] + e[rm_lwsync])) <: X.sync :> (univ - e[rm_EV]) }
+  mk_fence_rel[e, rm_sync + rm_lwsync, X.sync, X.sb] }
+    
 fun lwsync[e:PTag->E, X:Exec_PPC] : E->E {
-  (univ - e[rm_EV] - *(X.sb).(e[rm_lwsync])) <: X.lwsync :> (univ - e[rm_EV]) }
+  mk_fence_rel[e, rm_lwsync, X.lwsync, X.sb] }
