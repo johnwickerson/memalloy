@@ -29,6 +29,10 @@ for f in os.listdir('.'):
         with open(f, 'r') as ic:
             first_line = ic.readline()
             s = "/* Automatically generated"
-            is_auto_generated = first_line.startswith(s)
+            if first_line.startswith(s):
+                is_auto_generated = True
+            s = "// Automatically generated"
+            if first_line.startswith(s):
+                is_auto_generated = True
         if is_auto_generated:
             os.remove(f)
