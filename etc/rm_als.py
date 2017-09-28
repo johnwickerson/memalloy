@@ -23,13 +23,12 @@
 
 import os
 
-os.chdir('models')
 for f in os.listdir('.'):
     if f.endswith(".als"):
         is_auto_generated = False
         with open(f, 'r') as ic:
             first_line = ic.readline()
-            s = "/* Automatically generated from"
+            s = "/* Automatically generated"
             is_auto_generated = first_line.startswith(s)
         if is_auto_generated:
             os.remove(f)

@@ -4,6 +4,7 @@ rebuild:
 	make -C src
 	@ make comparator
 	@ make -C mappings
+	@ make -C archs
 
 install:
 	git submodule update --init --recursive
@@ -28,9 +29,10 @@ moretests:
 slowtests:
 
 clean:
-	python etc/rm_als.py
+	cd models && python ../etc/rm_als.py
 	make -C src clean
 	make -C mappings clean
+	make -C archs clean
 	rm -f top/*.pyc
 	rm -f comparator
 
