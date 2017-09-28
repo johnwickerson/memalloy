@@ -177,11 +177,16 @@ let arch_min_sets fences_as_relations arch =
   in
   let fences = if fences_as_relations then [] else fence_sets arch in
   fences @ arch_min_sets arch
-           
+
+let is_hw = function
+  | Basic | C | OpenCL | OCaml -> false
+  | Basic_HW | X86 | Power | Arm7 | Arm8 | PTX -> true
+  
 (** Relations that should be reduced *)
 let arch_min_rels fences_as_relations arch =
   let fences = if fences_as_relations then fence_rels arch else [] in
-  fences @ ["ad"; "cd"; "dd"]
+  let atom = if is_hw arch then ["atom"] else [] in
+  fences @ ["ad"; "cd"; "dd"] @ atom
 
 (** List of all fence relations *)
 let all_fences =
