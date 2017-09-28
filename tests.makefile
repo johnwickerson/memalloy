@@ -143,11 +143,11 @@ TXN_TESTS=weak_vs_strong_atomicity_3ev \
 
 weak_vs_strong_atomicity_3ev:
 	@ echo "\n\n=============\nmake $@"
-	./comparator -arch HW -satisfies models/txn_weak_atomicity.cat -satisfies models/sc.cat -violates models/txn_strong_atomicity.cat -events 3 -iter -expect 7 $(ARGS) # takes about 3 seconds
+	./comparator -arch HW -satisfies models/txn_weak_atomicity.cat -satisfies models/sc.cat -violates models/txn_strong_atomicity.cat -events 3 -iter -expect 6 $(ARGS) # takes about 3 seconds
 
 weak_vs_strong_atomicity_5ev:
 	@ echo "\n\n=============\nmake $@"
-	./comparator -arch HW -satisfies models/txn_weak_atomicity.cat -satisfies models/sc.cat -violates models/txn_strong_atomicity.cat -events 5 -iter -expect 43 $(ARGS) # takes about 20 seconds
+	./comparator -arch HW -satisfies models/txn_weak_atomicity.cat -satisfies models/sc.cat -violates models/txn_strong_atomicity.cat -events 5 -iter -expect 42 $(ARGS) # takes about 20 seconds
 
 adding_txns_arm8_3ev:
 	@ echo "\n\n=============\nmake $@"
