@@ -3,7 +3,12 @@ This file is a slightly modified version of the new aarch64.cat file that is
 distributed with the Herd tool, the licence of which is given below. The
 original file is available online:
 
-https://raw.githubusercontent.com/herd/herdtools7/daa126680b6ecba97ba47b3e05bbaa51a89f27b7/herd/libdir/aarch64.cat
+https://raw.githubusercontent.com/herd/herdtools7/8f0d153/herd/libdir/aarch64.cat
+
+Explicitly
+- We represent fences as edges
+- We do not model the Q event type for LDAPR from v8.3
+- [minor] We rename A and L (acquire and release) with SCACQ and SCREL
  *)
 
 (*
@@ -65,13 +70,13 @@ let dob = addr | data
 
 (* Atomic-ordered-before *)
 let aob = atom
-    | atom; rfi
+    | [range(atom)]; rfi; [SCACQ] (* removed case for Q *)
 
 (* Barrier-ordered-before *)
 let bob = dmb
     | [SCREL]; po; [SCACQ]
     | [R]; dmbld
-    | [SCACQ]; po
+    | [SCACQ]; po (* removed case for Q *)
     | [W]; dmbst; [W]
     | po; [SCREL]
     | po; [SCREL]; coi

@@ -24,13 +24,13 @@ let dob = addr | data
 
 (* Atomic-ordered-before *)
 let aob = atom
-    | atom; rfi
+    | [range(atom)]; rfi; [SCACQ] (* removed case for Q *)
 
 (* Barrier-ordered-before *)
 let bob = dmb
     | [SCREL]; po; [SCACQ]
     | [R]; dmbld
-    | [SCACQ]; po
+    | [SCACQ]; po (* removed case for Q *)
     | [W]; dmbst; [W]
     | po; [SCREL]
     | po; [SCREL]; coi
