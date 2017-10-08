@@ -14,6 +14,9 @@ pred apply_map[X,X':Exec_Arm8L, map:E->E] {
   // don't worry about failing transactions for now
   no X.ftxn + X'.ftxn
 
+  // suppose we don't have transactions in the source program
+  //no X.stxn
+
   // events in the same critical section (where the critical
   // section is one that is to be transactionalised), map to events 
   // in the same transaction.
@@ -199,4 +202,4 @@ pred hint_tgt[X:Exec_Arm8L] {
   }
 }
 
-run p for 2 Exec, 6 E
+run p for 2 Exec, 7 E
