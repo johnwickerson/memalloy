@@ -1,9 +1,9 @@
-open ../archs/exec_arm8L[E]
-open ../models/aarch64_txn[E] as M
+open ../archs/exec_x86L[E]
+open ../models/x86tso_txn[E] as M
 
-module arm8_lock_elision[E]
+module x86_lock_elision[E]
 
-pred apply_map[X,X':Exec_Arm8L, map:E->E] { 
+pred apply_map[X,X':Exec_X86L, map:E->E] { 
 
 
   map in (X.EV one->some X'.EV)
@@ -37,16 +37,11 @@ pred apply_map[X,X':Exec_Arm8L, map:E->E] {
     X.atom = map.((X'.EV - L) <: (X'.atom) :> (X'.EV - L)).~map
     X.rf =   map.((X'.EV - L) <: (X'.rf)   :> (X'.EV - L)).~map
     X.co =   map.((X'.EV - L) <: (X'.co)   :> (X'.EV - L)).~map
-
-    X.R     = (X'.R     - L).~map
-    X.W     = (X'.W     - L).~map
-    X.F     = (X'.F     - L).~map
-    X.DMB   = (X'.DMB   - L).~map
-    X.DMBST = (X'.DMBST - L).~map
-    X.DMBLD = (X'.DMBLD - L).~map
-    X.ISB   = (X'.ISB   - L).~map
-    X.SCACQ = (X'.SCACQ - L).~map
-    X.SCREL = (X'.SCREL - L).~map 
+ 
+    X.R      = (X'.R      - L).~map
+    X.W      = (X'.W      - L).~map
+    X.F      = (X'.F      - L).~map
+    X.MFENCE = (X'.MFENCE - L).~map
 
     // the set of lock-related events introduced by the mapping
     L in X'.EV 
@@ -81,7 +76,7 @@ pred apply_map[X,X':Exec_Arm8L, map:E->E] {
           e' not in L // e' is not a lock-related event
           (eLR -> eLW) in imm[X'.sb] & X'.atom // eLR and eLW form an RMW pair
           (eLW -> e') in imm[X'.sb] // eLW precedes e' in program order
-          eLR in L & X'.SCACQ & X'.R // eLR is a lock-related acquire read
+          eLR in L & X'.R // eLR is a lock-related acquire read
           eLW in L & X'.W // eLW is a lock-related write
         }
       )
@@ -91,7 +86,7 @@ pred apply_map[X,X':Exec_Arm8L, map:E->E] {
           e.map = e' + eL // e maps to two events, e' and eL
           e' not in L // e' is not a lock-related event
           (e' -> eL) in imm[X'.sb] // eL follows e' in program order
-          eL in L & X'.SCREL & X'.W // eL is a lock-related release write 
+          eL in L & X'.W // eL is a lock-related release write 
         }
       ) 
       e in dom[X.sb & X.scsl] & ran[X.sb & X.scsl] => {
@@ -111,14 +106,14 @@ pred apply_map[X,X':Exec_Arm8L, map:E->E] {
    
 }
 
-pred consistent_critical_sections[X:Exec_Arm8L] {
+pred consistent_critical_sections[X:Exec_X86L] {
   // no (po|com)-cycles among critical sections
   let com = X.rf + X.co + fr[none->none,X] |
   let scs = X.scst + X.scsl |
   is_acyclic[ scs . (X.sb + com - scs) . scs ]
 }
 
-pred p[X,X':Exec_Arm8L, map:E->E] {
+pred p[X,X':Exec_X86L, map:E->E] {
   withoutinit[X]
   withoutinit[X']
 
@@ -132,75 +127,6 @@ pred p[X,X':Exec_Arm8L, map:E->E] {
   M/consistent[none->none, X']
 
   apply_map[X,X',map]
-
-  //hint_src[X]
-  //hint_tgt[X']
 }
 
-pred hint_src[X:Exec_Arm8L] {
-//     lock[t] { ||     lock {
-// E0:   W x 1   || E1:   R x 0
-//     }         ||       [data]
-//               || E2:   W x 2
-//               ||     }
-  some disj E0, E1, E2 : E {
-    X.EV = E0+E1+E2
-    X.R = E1
-    X.W = E0+E2
-    X.F = none
-    X.SCACQ = none
-    X.SCREL = none
-    X.DMBLD = none
-    X.DMBST = none
-    X.DMB = none
-    X.co = (E0->E2)
-    X.rf = none->none
-    X.sloc = sq[E0+E1+E2]
-    X.sthd = sq[E0] + sq[E1+E2]
-    X.cd = none->none
-    X.dd = E1->E2
-    X.ad = none->none
-    X.sb = (E1->E2)
-    X.atom = none->none
-    X.scst = sq[E0]
-    X.scsl = sq[E1+E2]
-    X.ftxn = none->none
-    X.stxn = none->none
-  }
-}
-
-pred hint_tgt[X:Exec_Arm8L] {
-//     txn {      || E5: R*[ACQ] lock 0   
-// E3:   R lock 0 || E6: W* lock 1 
-// E4:   W x 1    || E7: R x 0
-//     }          ||     [data]
-//                || E8: W x 2
-//                || E9: W[REL] lock 2
-
-  some disj E3, E4, E5, E6, E7, E8, E9 : E {
-    X.EV = E3+E4+E5+E6+E7+E8+E9
-    X.R = E3+E5+E7
-    X.W = E4+E6+E8+E9
-    X.F = none
-    X.SCACQ = E5
-    X.SCREL = E9
-    X.DMBLD = none
-    X.DMBST = none
-    X.DMB = none
-    X.co = (E4->E8)+(E6->E9)
-    X.rf = none->none
-    X.sloc = sq[E4+E7+E8] + sq[E3+E5+E6+E9]
-    X.sthd = sq[E3+E4] + sq[E5+E6+E7+E8+E9]
-    X.cd = none->none
-    X.dd = E7->E8
-    X.ad = none->none
-    X.sb = (E3->E4) + ^((E5->E6)+(E6->E7)+(E7->E8)+(E8->E9))
-    X.atom = (E5->E6)
-    X.scst = none->none
-    X.scsl = none->none
-    X.ftxn = none->none
-    X.stxn = sq[E3+E4]
-  }
-}
-
-run p for 2 Exec, 7 E
+run p for 2 Exec, 8 E
