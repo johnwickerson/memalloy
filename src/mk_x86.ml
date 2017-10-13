@@ -32,12 +32,8 @@ open Litmus_HW
 type fence = MFENCE | LFENCE | SFENCE
 
 let mk_fence attrs =
-  match List.mem "mfence" attrs,
-        List.mem "lfence" attrs,
-        List.mem "sfence" attrs with
-  | true, false, false -> MFENCE
-  | false, true, false -> LFENCE
-  | false, false, true -> SFENCE
+  match (List.mem "mfence" attrs || List.mem "MFENCE" attrs) with
+  | true -> MFENCE
   | _ -> failwith "Invalid fence attributes!"
 
 let mk_tstart reg lbl = [TSTART (reg, lbl)]

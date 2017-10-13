@@ -32,11 +32,11 @@ open Litmus_HW
 type fence = DMB | DMBLD | DMBST | ISB
 
 let mk_fence attrs =
-  match List.mem "dmb" attrs,
-        List.mem "dmbst" attrs,
-        List.mem "dmbld" attrs,
-        List.mem "isb" attrs with
-  | true, false, false, false -> DMB
+  match (List.mem "dmb" attrs || List.mem "DMB" attrs),
+        (List.mem "dmbst" attrs || List.mem "DMBST" attrs),
+        (List.mem "dmbld" attrs || List.mem "DMBLD" attrs),
+        (List.mem "isb" attrs || List.mem "ISB" attrs) with
+  | true, _, _, false -> DMB (* dmb is also dmbst and dmbld *)
   | false, true, false, false -> DMBST
   | false, false, true, false -> DMBLD
   | false, false, false, true -> ISB
