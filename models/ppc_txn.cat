@@ -78,7 +78,8 @@ let propbase = fenceext;hb*
 let chapo = rfe|fre|coe|(fre;rfe)|(coe;rfe)
 let com = rf | fr | co | co;rf
                                 
-let txn_prop = (com\sthd); stxn; hb*
+let txn_prop = rfe; stxn; [W]      (* for Cain+ WRC *)
+             | fre; stxn; rfe; ppo (* for Cain+ IRIW *)
                                 
 let prop = (W * W) & propbase | (chapo? ; propbase*; (sync|implied); hb*)
            | txn_prop
@@ -90,9 +91,11 @@ let Ato = domain(atom) | range(atom)
 let xx = po & (Ato * Ato)
 acyclic co | xx as ScXX
 
-empty (atom & (fre;coe)) as AtomicRMW
+empty atom & (fre;coe) as AtomicRMW
 
-acyclic stronglift(com, stxn) as TxnAtomic
+empty atom & into(stxn) as TBeginClearsReservation
+empty atom & outof(stxn) as TEndClearsReservation
+                              
+acyclic stronglift(com, stxn) as StrongIsol
 #acyclic stronglift(hb, stxn) as TxnOrder
-acyclic stronglift(co | prop, stxn) as TxnPropagation
-empty ftxn & ((fre|coe); rfe) as AtomicFtxn
+#acyclic stronglift(co | prop, stxn) as TxnPropagation
