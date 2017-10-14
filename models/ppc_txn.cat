@@ -97,5 +97,6 @@ empty atom & into(stxn) as TBeginClearsReservation
 empty atom & outof(stxn) as TEndClearsReservation
                               
 acyclic stronglift(com, stxn) as StrongIsol
-#acyclic stronglift(hb, stxn) as TxnOrder
-#acyclic stronglift(co | prop, stxn) as TxnPropagation
+acyclic stronglift(hb, stxn) as TxnOrder
+acyclic stronglift(co | prop, stxn) as TxnPropagation
+#irreflexive stronglift(fre;prop;hb*,stxn) as TxnObservation
