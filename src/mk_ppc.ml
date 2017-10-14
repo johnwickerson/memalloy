@@ -32,10 +32,10 @@ open Litmus_HW
 type fence = SYNC | LWSYNC | ISYNC
 
 let mk_fence attrs =
-  match List.mem "sync" attrs,
-        List.mem "lwsync" attrs,
-        List.mem "isync" attrs with
-  | true, false, false -> SYNC
+  match (List.mem "sync" attrs || List.mem "SYNC" attrs),
+        (List.mem "lwsync" attrs || List.mem "LWSYNC" attrs),
+        (List.mem "isync" attrs || List.mem "ISYNC" attrs) with
+  | true , _, false -> SYNC (* sync is also lwsync *)
   | false, true, false -> LWSYNC
   | false, false, true -> ISYNC
   | _ -> failwith "Invalid fence attributes!"
