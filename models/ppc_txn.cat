@@ -59,9 +59,10 @@ let ii = (ii0 | ii0*; cc0*; ci0; ii0*)+
 
 let ppo = ((R * R) & ii) | ((R * W) & ic)
 
-let fence = sync | (lwsync \ (W*R))
-| [ST]; (po \ stxn) (* TCOMMIT => barrier *)
-| (po \ stxn); [ST] (* TSTART => barrier *)
+let implied = [ST]; (po \ stxn) (* TCOMMIT => barrier *)
+            | (po \ stxn); [ST] (* TSTART => barrier *)
+                         
+let fence = sync | (lwsync \ (W*R)) | implied
 
 (* extensions *)
 let ppoext = rfe?;ppo;rfe?
@@ -79,7 +80,7 @@ let com = rf | fr | co | co;rf
                                 
 let txn_prop = (com\sthd); stxn; hb*
                                 
-let prop = (W * W) & propbase | (chapo? ; propbase*; sync; hb*)
+let prop = (W * W) & propbase | (chapo? ; propbase*; (sync|implied); hb*)
            | txn_prop
 
 acyclic co|prop as Propagation
