@@ -165,6 +165,5 @@ pred apply_map[X:Exec_C, X':Exec_PPC, map:SE->HE] {
 
   // the mapping preserves transactions
   X.stxn = map . (X'.stxn) . ~map
-  X.ftxn = map . (X'.ftxn) . ~map
   
 }

@@ -191,8 +191,8 @@ let pp_comparator arch oc =
           "  not some e : X.%s | interesting[rm_%s->e, X]\n" set set
       ) (Archs.arch_min_sets !fencerels arch);
     let tag = "rm_txn->e" in
-    fprintf oc "  not some e : dom[X.stxn] + dom[X.ftxn]  {\n";
-    fprintf oc "    let tpo = X.sb & (X.stxn + X.ftxn) |\n";
+    fprintf oc "  not some e : dom[X.stxn]  {\n";
+    fprintf oc "    let tpo = X.sb & X.stxn |\n";
     fprintf oc "    no tpo.e or no e.tpo\n";
     pp_violated_models 4 tag "X" oc;
     pp_satisfied_models 4 tag "X" oc;

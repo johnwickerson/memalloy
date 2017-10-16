@@ -92,8 +92,6 @@ let mk_instr x maps reg_map e =
     txn_beg @ cs @ txn_end
   in
   let cs = mk_txn_block "stxn" TxnCommit cs in
-  let cs = mk_txn_block "ftxn" TxnAbort cs in
-
   let mk_fence f cs =
     if List.mem e (Rel.rng (get_rel x f))
                 (* FIXME: This currently inserts too many fences *)
@@ -149,8 +147,6 @@ let litmus_of_execution' x maps =
   in
   let final_wval (l,es) =
     let ws = MySet.inter (get_set x "W") es in
-    let ft = Rel.dom (get_rel x "ftxn") in
-    let ws = MySet.diff ws ft in
     let co_after e e' = List.mem (e,e') (get_rel x "co") in
     let co_maximal e = not (List.exists (co_after e) ws) in
     let wval =

@@ -21,7 +21,7 @@ https://github.com/herd/herdtools/blob/master/herd/x86tso.cat
 "X86"
 
 include "basic_H.cat"
-include "ftxn.cat" (* subsumes fr.cat *)
+include "txn.cat"
 acyclic po-loc | rf | fr | co as Uniproc
 
 empty atom & (fre;coe) as AtomicRMW
@@ -36,7 +36,6 @@ let implied = [LOCKED]; po | po; [LOCKED] | tbegin_barrier | tend_barrier
 let hb = mfence | implied | ppo | rfe | fr | co
 acyclic hb as Order
 
-let com = rf | fr | co | co;rf
+let com = rf | fr | co
 acyclic stronglift(com, stxn) as StrongIsolation
 acyclic stronglift(hb, stxn) as TxnOrder
-empty ftxn & ((fre|coe); rfe) as AtomicFtxn

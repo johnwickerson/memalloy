@@ -1,7 +1,7 @@
 "BASIC"
 
 include "basic_H.cat"
-include "ftxn.cat"
-let com = rf | fr | co | co;rf
+include "txn.cat"
+let com = rf | fr | co
                               
-acyclic weaklift(com, txn) as Weak_atomicity
+acyclic weaklift(com, stxn) as Weak_atomicity

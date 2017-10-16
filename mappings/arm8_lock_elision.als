@@ -11,9 +11,6 @@ pred apply_map[X,X':Exec_Arm8L, map:E->E] {
   // no critical sections remain
   no X'.(scst+scsl)
 
-  // don't worry about failing transactions for now
-  no X.ftxn + X'.ftxn
-
   // suppose we don't have transactions in the source program
   //no X.stxn
 
@@ -164,7 +161,6 @@ pred hint_src[X:Exec_Arm8L] {
     X.atom = none->none
     X.scst = sq[E0]
     X.scsl = sq[E1+E2]
-    X.ftxn = none->none
     X.stxn = none->none
   }
 }
@@ -198,7 +194,6 @@ pred hint_tgt[X:Exec_Arm8L] {
     X.atom = (E5->E6)
     X.scst = none->none
     X.scsl = none->none
-    X.ftxn = none->none
     X.stxn = sq[E3+E4]
   }
 }

@@ -1,7 +1,7 @@
 "BASIC"
 
-include "basic_H.cat"
-include "ftxn.cat"
+include "basic.cat"
+include "txn.cat"
 
 let psi_0 = weaklift(rf, stxn) | weaklift(co, stxn)
 

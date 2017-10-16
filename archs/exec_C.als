@@ -44,7 +44,7 @@ sig Exec_C extends Exec {
   R-A in NAL
 
   // transactions do not contain atomic operations
-  no (A & dom[stxn+ftxn])
+  no (A & dom[stxn])
 
 }
 

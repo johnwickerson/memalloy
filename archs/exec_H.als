@@ -18,7 +18,6 @@ sig Exec_H extends Exec {
   // - two events in the same transaction or
   // - two events that are non-transactional
   atom in stxn + ((EV - dom[stxn]) -> (EV - dom[stxn]))
-  atom in ftxn + ((EV - dom[ftxn]) -> (EV - dom[ftxn]))
     
 }
 

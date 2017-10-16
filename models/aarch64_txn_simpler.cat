@@ -6,7 +6,7 @@
 "ARM8"
 
 include "basic_H.cat"
-include "ftxn.cat" (* subsumes fr.cat *)
+include "txn.cat"
 
 (* Coherence-after *)
 let ca = fr | co
@@ -58,4 +58,3 @@ empty atom & (fre; coe) as AtomicRMW
 
 (* Also subsumes StrongIsolation *)
 acyclic tob as TxnOrder
-empty ftxn & ((fre|coe); rfe) as AtomicFtxn

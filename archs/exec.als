@@ -10,7 +10,6 @@ sig Exec {
   sthd : E->E,     // same thread (partial E.R.)
   sloc : E->E,     // same location (partial E.R.)
   stxn : E -> E,   // same transaction (partial E.R.)
-  ftxn : E -> E,   // failed transaction (partial E.R.)
   //////////////////////////////////////
   rf : E->E,       // reads-from
   co : E->E,       // coherence order
@@ -78,7 +77,6 @@ sig Exec {
     
   // transactions are intra-thread
   stxn in sthd
-  ftxn in sthd
 
   // stxn is a partial equivalence relation among a subset of
   // the non-initalisation events
@@ -86,25 +84,8 @@ sig Exec {
   symmetric[stxn]
   transitive[stxn]
 
-  // ftxn is a partial equivalence relation among a subset of
-  // the non-initalisation events
-  ftxn in (EV - IW) -> (EV - IW)
-  symmetric[ftxn]
-  transitive[ftxn]
-
-  // no overlap between stxn and ftxn
-  no stxn & ftxn
-
   // transactions must be contiguous
   ((sb.sb & stxn) . ~sb) & sb in stxn
-  ((sb.sb & ftxn) . ~sb) & sb in ftxn
-
-  // events sequenced after an failing transaction are control-
-  // dependent on all the reads inside that ftxn
-  (R & dom[ftxn]) <: (sb - ftxn) in cd
-
-  // address/data dependencies cannot escape failing transactions
-  no (dom[ftxn] <: ((ad + dd) - ftxn))
     
 }
 
@@ -165,5 +146,3 @@ fun cd [e:PTag->E, X:Exec] : E->E {
   rm_EV_rel[e, (univ - e[rm_cd]) <: X.cd] }
 fun stxn[e:PTag->E, X:Exec] : E->E {
   rm_EV_rel[e, (univ - e[rm_txn]) <: X.stxn :> (univ - e[rm_txn])] }
-fun ftxn[e:PTag->E, X:Exec] : E->E {
-  rm_EV_rel[e, (univ - e[rm_txn]) <: X.ftxn :> (univ - e[rm_txn])] }

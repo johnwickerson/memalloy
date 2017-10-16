@@ -80,6 +80,5 @@ pred apply_map[
 
   // the mapping preserves transactions
   X.stxn = map . (X'.stxn) . ~map
-  X.ftxn = map . (X'.ftxn) . ~map
 
 }

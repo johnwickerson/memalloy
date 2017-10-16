@@ -21,7 +21,7 @@ PPC
 (* Model for Power *)
 
 include "basic_H.cat"
-include "ftxn.cat" (* subsumes fr.cat *)
+include "txn.cat"
 
 (* Uniproc *)
 acyclic po-loc | rf | fr | co as Uniproc
@@ -76,7 +76,7 @@ acyclic hb as NoThinAir
 let propbase = fenceext;hb*
 
 let chapo = rfe|fre|coe|(fre;rfe)|(coe;rfe)
-let com = rf | fr | co | co;rf
+let com = rf | fr | co
                                 
 let txn_prop = rfe; stxn; [W]      (* for Cain+ WRC *)
              | fre; stxn; rfe; ppo (* for Cain+ IRIW *)
@@ -97,6 +97,6 @@ empty atom & into(stxn) as TBeginClearsReservation
 empty atom & outof(stxn) as TEndClearsReservation
                               
 acyclic stronglift(com, stxn) as StrongIsol
-acyclic stronglift(hb, stxn) as TxnOrder
-acyclic stronglift(co | prop, stxn) as TxnPropagation
+#acyclic stronglift(hb, stxn) as TxnOrder
+#acyclic stronglift(co | prop, stxn) as TxnPropagation
 #irreflexive stronglift(fre;prop;hb*,stxn) as TxnObservation

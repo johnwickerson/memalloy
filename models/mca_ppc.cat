@@ -35,6 +35,7 @@ let ppo = ppoR | ppoW
 
 (* Defining multicopy atomicity *)
 acyclic po-loc | co as MCA_part1
+let fr_init = ([R] \ (rf^-1;rf)); sloc; [W]
 let wo = (((rfe; ppo; rfe^-1) \ id); co)
        | (rfe; ppo; fr_init)    
 acyclic wo as MCA_part2

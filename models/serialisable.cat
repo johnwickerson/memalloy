@@ -1,6 +1,6 @@
 "BASIC"
 
-include "basic_H.cat"
-include "ftxn.cat"
+include "basic.cat"
+include "txn.cat"
 
 acyclic weaklift(rf | co | fr, stxn) as Serialisable

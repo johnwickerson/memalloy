@@ -1,7 +1,7 @@
 "C"
 
 include "basic.cat"
-include "ftxn.cat"
+include "txn.cat"
 
 let fsb = [F]; po
 let sbf = po; [F]
@@ -15,7 +15,7 @@ let cnf = (((W*M) | (M*W)) & loc) \ id
 (* synchronises with *)
 let sw_ra = ([REL]; fsb?; [A & W]; rs; rf; [R & A]; sbf?; [ACQ]) \ thd
 let com = rf | fr | co | co;rf
-let tsw = weaklift(com, txn)
+let tsw = weaklift(com, stxn)
 let sw = sw_ra | tsw
   
 (* happens before *)

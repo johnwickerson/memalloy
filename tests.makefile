@@ -1,21 +1,11 @@
 ALL_TESTS=x86_not_sc \
 	c11_partial_not_lidbury \
 	c11_simp_not_sra \
-	c11_simp_not_swrf_hint \
 	c11_orig_not_simp_4ev \
 	c11_orig_not_simp_5ev \
 	c11_scdrf_bug \
 	ppc_not_mca \
 	x86_not_mca \
-	c11_repairing0 \
-	c11_repairing1 \
-	c11_repairing2 \
-	c11_repairing3 \
-	c11_repairing4 \
-	c11_repairing5 \
-	compile_c11_ppc \
-	compile_c11_arm7_v1 \
-	compile_c11_arm7_v2 \
 	compile_opencl_ptx_orig \
 	compile_opencl_ptx_cumul \
 	c11_simp_not_sra_iter \
@@ -24,9 +14,19 @@ ALL_TESTS=x86_not_sc \
 	c11_partial_not_lidbury_iter \
 	ptx_orig_not_cumul_5ev
 
-SLOW_TESTS=ptx_orig_not_cumul_6ev \
+SLOW_TESTS=c11_simp_not_swrf_hint \
+	ptx_orig_not_cumul_6ev \
 	c11_simp_not_swrf \
-	arm8_strengthening_6ev
+	arm8_strengthening_6ev \
+	c11_repairing0 \
+	c11_repairing1 \
+	c11_repairing2 \
+	c11_repairing3 \
+	c11_repairing4 \
+	c11_repairing5 \
+	compile_c11_ppc \
+	compile_c11_arm7_v1 \
+	compile_c11_arm7_v2 
 
 c11_partial_not_lidbury:
 	@ echo "\n\n=============\nmake $@"
@@ -143,16 +143,16 @@ TXN_TESTS=weak_vs_strong_atomicity_3ev \
 
 weak_vs_strong_atomicity_3ev:
 	@ echo "\n\n=============\nmake $@"
-	./comparator -arch HW -satisfies models/txn_weak_atomicity.cat -satisfies models/sc.cat -violates models/txn_strong_atomicity.cat -events 3 -iter -expect 6 $(ARGS) # takes about 3 seconds
+	./comparator -arch HW -satisfies models/txn_weak_atomicity.cat -satisfies models/sc.cat -violates models/txn_strong_atomicity.cat -events 3 -iter -expect 4 $(ARGS) # takes about 3 seconds
 
 weak_vs_strong_atomicity_5ev:
 	@ echo "\n\n=============\nmake $@"
-	./comparator -arch HW -satisfies models/txn_weak_atomicity.cat -satisfies models/sc.cat -violates models/txn_strong_atomicity.cat -events 5 -iter -expect 42 $(ARGS) # takes about 20 seconds
+	./comparator -arch HW -satisfies models/txn_weak_atomicity.cat -satisfies models/sc.cat -violates models/txn_strong_atomicity.cat -events 5 -exact -iter -expect 43 $(ARGS) # takes about 20 seconds
 
 adding_txns_arm8_3ev:
 	@ echo "\n\n=============\nmake $@"
-	./comparator -arch ARM8 -satisfies models/aarch64.cat -violates models/aarch64_txn.cat -fencerels -events 3 -iter -expect 8 $(ARGS) # takes about 6 seconds
+	./comparator -arch ARM8 -satisfies models/aarch64.cat -violates models/aarch64_txn.cat -fencerels -events 3 -iter -expect 4 $(ARGS) # takes about 6 seconds
 
 adding_txns_arm8_4ev:
 	@ echo "\n\n=============\nmake $@"
-	./comparator -arch ARM8 -satisfies models/aarch64.cat -violates models/aarch64_txn.cat -fencerels -events 4 -iter -expect 137 $(ARGS) # takes about 3 minutes
+	./comparator -arch ARM8 -satisfies models/aarch64.cat -violates models/aarch64_txn.cat -fencerels -events 4 -iter -expect 133 $(ARGS) # takes about 3 minutes

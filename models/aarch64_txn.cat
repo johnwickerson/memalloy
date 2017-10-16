@@ -6,7 +6,7 @@
 "ARM8"
 
 include "basic_H.cat"
-include "ftxn.cat" (* subsumes fr.cat *)
+include "txn.cat"
 
 (* Coherence-after *)
 let ca = fr | co
@@ -53,7 +53,6 @@ irreflexive ob as external
 (* Atomic: Basic LDXR/STXR constraint to forbid intervening writes. *)
 empty atom & (fre; coe) as AtomicRMW
 
-let com = rf | fr | co | co;rf
+let com = rf | fr | co
 acyclic stronglift(com, stxn) as StrongIsolation
 acyclic stronglift(ob, stxn) as TxnOrder
-empty ftxn & ((fre|coe); rfe) as AtomicFtxn

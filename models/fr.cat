@@ -1,7 +1,3 @@
 "BASIC"
 
-let fr_init = ([R] \ (rf^-1;rf)); sloc; [W]
-let fr = (fr_init | (rf^-1;co)) \ [EV]
 
-let fre = fr \ sthd
-let fri = fr & sthd

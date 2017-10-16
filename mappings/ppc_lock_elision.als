@@ -11,9 +11,6 @@ pred apply_map[X,X':Exec_PPCL, map:E->E] {
   // no critical sections remain
   no X'.(scst+scsl)
 
-  // don't worry about failing transactions for now
-  no X.ftxn + X'.ftxn
-
   // suppose we don't have transactions in the source program
   //no X.stxn
 
