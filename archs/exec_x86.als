@@ -5,6 +5,10 @@ sig Exec_X86 extends Exec_H {
   MFENCE : set E // memory fence
 }{
   MFENCE = F
+
+  // RMWs are consecutive and do not straddle XBEGIN/XEND instructions
+  atom in imm[sb]
+  atom in stxn + ((EV - dom[stxn]) -> (EV - dom[stxn]))
 }
 
 one sig rm_MFENCE extends PTag {}

@@ -7,6 +7,7 @@ sig Exec {
   IW : set E,      // initial writes
   sb : E->E,       // sequenced before
   ad,cd,dd : E->E, // address, control, data dependencies
+  atom : E->E,     // atomicity relation
   sthd : E->E,     // same thread (partial E.R.)
   sloc : E->E,     // same location (partial E.R.)
   stxn : E -> E,   // same transaction (partial E.R.)
@@ -74,6 +75,12 @@ sig Exec {
   // "(e1,e2) in cd" only makes sense when e1 is a read and e2
   // is sequenced after e1.
   cd in (R -> EV) & sb
+
+  // the atom relation relates a read/write pair in program order
+  atom in (R->W) & sb & sloc
+    
+  // there are no single-event RMWs
+  no (R&W)
     
   // transactions are intra-thread
   stxn in sthd
@@ -121,6 +128,7 @@ one sig rm_ad extends PTag {}
 one sig rm_cd extends PTag {}
 one sig rm_dd extends PTag {}
 one sig rm_txn extends PTag {}
+one sig rm_atom extends PTag {}
 
 fun rm_EV_rel[e:PTag->E, r:E->E] : E->E {
   (univ - e[rm_EV]) <: r :> (univ - e[rm_EV])
@@ -146,3 +154,5 @@ fun cd [e:PTag->E, X:Exec] : E->E {
   rm_EV_rel[e, (univ - e[rm_cd]) <: X.cd] }
 fun stxn[e:PTag->E, X:Exec] : E->E {
   rm_EV_rel[e, (univ - e[rm_txn]) <: X.stxn :> (univ - e[rm_txn])] }
+fun atom[e:PTag->E, X:Exec] : E->E {
+  (univ - e[rm_EV] - e[rm_atom]) <: X.atom :> (univ - e[rm_EV]) }

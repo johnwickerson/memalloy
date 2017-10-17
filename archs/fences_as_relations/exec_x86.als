@@ -4,7 +4,11 @@ open exec_H[E]
 sig Exec_X86 extends Exec_H {
   mfence : E -> E, // memory fence
 }{
-  is_fence_rel[mfence, sb] 
+  is_fence_rel[mfence, sb]
+
+  // RMWs are consecutive and do not straddle XBEGIN/XEND instructions
+  atom in imm[sb]
+  atom in stxn + ((EV - dom[stxn]) -> (EV - dom[stxn]))
 }
 
 one sig rm_mfence extends PTag {}
