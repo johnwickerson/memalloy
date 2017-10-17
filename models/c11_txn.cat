@@ -1,47 +1,56 @@
+(* This is a formalisation of the C11 memory model presented in the
+   paper "Repairing Sequential Consistency in C/C++11" by Ori Lahav,
+   Viktor Vafeiadis, Jeehoon Kang, Chung-Kil Hur, and Derek Dreyer
+   (PLDI'17). The deadness predicates come from the paper 
+   "Automatically Comparing Memory Consistency Models" by John 
+   Wickerson, Mark Batty, Tyler Sorensen and George A. 
+   Constantinides (POPL'17).
+ *)
+
 "C"
 
 include "basic.cat"
 include "txn.cat"
 
-let fsb = [F]; po
-let sbf = po; [F]
+let mo = co
+let sb = po
+let fsb = [F]; sb
+let sbf = sb; [F]
+      
+let rb = [R];sloc;[W] - rf^-1;(mo^-1)*
+let eco = (rf | mo | rb)+
+let rs = [W]; poloc?; [W & A]; (rf; rmw)*
+let sw = [REL]; fsb?; rs; rf; [R & A]; sbf?; [ACQ]
+let tsw = weaklift(rf | mo | rb | mo;rf, stxn)
+let hb = (sb | sw | tsw)+
+let hbloc = hb & sloc
+let fhb = [F]; hb
+let hbf = hb; [F]
+                     
+let sbdl = sb - poloc
+let scb = sb | sbdl;hb;sbdl | hbloc | mo | rb
+let pscb = [SC]; fhb?; scb; hbf?; [SC]
+let pscf = [SC & F]; (hb | hb;eco;hb); [SC & F]
+let psc = pscb | pscf
 
-(* release sequence *)
-let rs = poloc*; rf*
+(** Consistency predicates *)
+                   
+irreflexive hb; eco? as Coherence
+empty rmw & (rb;mo) as Atomicity
+acyclic psc as SC
+acyclic sb | rf as NoThinAir
 
-(* conflict *)
-let cnf = (((W*M) | (M*W)) & loc) \ id
+(** Race-freedom predicates *)
            
-(* synchronises with *)
-let sw_ra = ([REL]; fsb?; [A & W]; rs; rf; [R & A]; sbf?; [ACQ]) \ thd
-let com = rf | fr | co | co;rf
-let tsw = weaklift(com, stxn)
-let sw = sw_ra | tsw
-  
-(* happens before *)
-let hb = (po | sw)+
+let cnf = ((W*R) | (R*W) | (W*W)) & sloc \ id
+let dr = cnf \ (A*A) \ hb \ hb^-1
 
-let hbl = hb & loc
+undefined_unless empty dr as DataRace
 
-(* non-atomic reads-from *)
-empty (rf ; [NAL]) \ imm([W] ; hbl) as NaRf
-				  
-(* data race *)
-let dr = (cnf \ (A*A)) \ thd \ (hb | hb^-1)
-undefined_unless empty dr as Dr 
-
-(* unsequenced race *)
-let ur = (cnf & thd) \ (po | po^-1)
-undefined_unless empty ur as Ur
-
-(* coherence, etc *)
-acyclic hbl | rf | co | fr as HbCom
-
+(** Deadness *)
+                                                                 
 (* no "if(r==0)" *)
 deadness_requires empty if_zero as No_If_Zero 
-
-(* no unsequenced races *)
-deadness_requires empty ur as Dead_Ur
 
 (* coherence edges are forced *)
 deadness_requires empty unforced_co as Forced_Co
@@ -62,7 +71,3 @@ let pdr = cnf \ (A*A)
 let narf = rf & (NAL*NAL)
 
 deadness_requires empty pdr \ (dhb | dhb^-1 | narf;ssc | ssc;narf^-1) as Dead_Pdr
-        
-let scb = fsb?; (po | po;hb;po | hb&sloc | co | fr); sbf?
-let scp = (scb & (SC * SC)) \ id        
-acyclic scp as Ssimp
