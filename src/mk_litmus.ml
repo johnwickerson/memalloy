@@ -38,11 +38,12 @@ let mk_instr x maps reg_map e =
   let atomic = MySet.union (Rel.dom atom) (Rel.rng atom) in
   let attrs = (if List.mem e atomic then ["X"] else []) @ attrs in
   let ev = get_set x "EV" in
+  let r_ev = get_set x "R" in
   let src r_name e' = List.mem (e',e) (get_rel x r_name) in
   let reg_of e = List.assoc e reg_map in
   let reg_rval_of e = reg_of e, List.assoc e maps.rval_map in
   let a_regs = List.map reg_of (List.filter (src "ad") ev) in
-  let c_regvals = List.map reg_rval_of (List.filter (src "cd") ev) in
+  let c_regvals = List.map reg_rval_of (List.filter (src "cd") r_ev) in
   let d_regs = List.map reg_of (List.filter (src "dd") ev) in
   let ins = 
     match List.mem e (get_set x "R"),
