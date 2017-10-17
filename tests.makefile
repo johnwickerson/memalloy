@@ -147,12 +147,12 @@ weak_vs_strong_atomicity_3ev:
 
 weak_vs_strong_atomicity_5ev:
 	@ echo "\n\n=============\nmake $@"
-	./comparator -arch HW -satisfies models/txn_weak_atomicity.cat -satisfies models/sc.cat -violates models/txn_strong_atomicity.cat -events 5 -exact -iter -expect 43 $(ARGS) # takes about 20 seconds
+	./comparator -arch HW -satisfies models/txn_weak_atomicity.cat -satisfies models/sc.cat -violates models/txn_strong_atomicity.cat -events 5 -exact -iter -expect 46 $(ARGS) # takes about 20 seconds
 
 adding_txns_arm8_3ev:
 	@ echo "\n\n=============\nmake $@"
-	./comparator -arch ARM8 -satisfies models/aarch64.cat -violates models/aarch64_txn.cat -fencerels -events 3 -iter -expect 4 $(ARGS) # takes about 6 seconds
+	./comparator -arch ARM8 -satisfies models/aarch64.cat -violates models/aarch64_txn.cat -fencerels -events 3 -iter -expect 10 $(ARGS) # takes about 6 seconds
 
 adding_txns_arm8_4ev:
 	@ echo "\n\n=============\nmake $@"
-	./comparator -arch ARM8 -satisfies models/aarch64.cat -violates models/aarch64_txn.cat -fencerels -events 4 -iter -expect 133 $(ARGS) # takes about 3 minutes
+	./comparator -arch ARM8 -satisfies models/aarch64.cat -violates models/aarch64_txn.cat -fencerels -events 4 -iter -expect 139 $(ARGS) # takes about 3 minutes

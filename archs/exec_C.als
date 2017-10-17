@@ -49,6 +49,10 @@ sig Exec_C extends Exec {
   // control dependencies only come out of reads
   cd in (R -> EV)
 
+  // RMWs are consecutive and do not straddle XBEGIN/XEND instructions
+  atom in imm[sb]
+  atom in stxn + ((EV - dom[stxn]) -> (EV - dom[stxn]))
+
 }
 
 one sig rm_A extends PTag {}

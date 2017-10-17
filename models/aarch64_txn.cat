@@ -56,4 +56,4 @@ empty atom & (fre; coe) as AtomicRMW
 let com = rf | fr | co
 acyclic stronglift(com, stxn) as StrongIsolation
 acyclic stronglift(ob, stxn) as TxnOrder
-empty atom & (into(stxn) | outof(stxn))* as TxnClearsReservation
+empty atom & (po & (into(stxn) | outof(stxn)))* as TxnClearsReservation

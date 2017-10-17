@@ -58,4 +58,4 @@ empty atom & (fre; coe) as AtomicRMW
 
 (* Also subsumes StrongIsolation *)
 acyclic tob as TxnOrder
-empty atom & (into(stxn) | outof(stxn))* as TxnClearsReservation
+empty atom & (po & (into(stxn) | outof(stxn)))* as TxnClearsReservation

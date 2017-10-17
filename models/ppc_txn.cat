@@ -93,7 +93,7 @@ acyclic co | xx as ScXX
 
 empty atom & (fre;coe) as AtomicRMW
 
-empty atom & (into(stxn) | outof(stxn))* as TxnClearsReservation
+empty atom & (po & (into(stxn) | outof(stxn)))* as TxnClearsReservation
                               
 acyclic stronglift(com, stxn) as StrongIsol
 #acyclic stronglift(hb, stxn) as TxnOrder
