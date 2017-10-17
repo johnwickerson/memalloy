@@ -72,9 +72,10 @@ sig Exec {
   // Event e2 has a "control dependency" on e1 if
   // valr[e1] is used to make a subsequent branching decision
   // and e2 follows that branch in program order. Therefore
-  // "(e1,e2) in cd" only makes sense when e1 is a read and e2
-  // is sequenced after e1.
-  cd in (R -> EV) & sb
+  // "(e1,e2) in cd" only makes sense when e1 is a read (or possibly
+  // a store-exclusive) and e2 is sequenced after e1.
+  let XW = ran[atom] |
+  cd in ((R + XW) -> EV) & sb
 
   // the atom relation relates a read/write pair in program order
   atom in (R->W) & sb & sloc

@@ -9,6 +9,9 @@ sig Exec_X86 extends Exec_H {
   // RMWs are consecutive and do not straddle XBEGIN/XEND instructions
   atom in imm[sb]
   atom in stxn + ((EV - dom[stxn]) -> (EV - dom[stxn]))
+
+  // control dependencies only come out of reads
+  cd in (R -> EV)
 }
 
 one sig rm_mfence extends PTag {}

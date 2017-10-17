@@ -7,6 +7,9 @@ sig Exec_Arm7 extends Exec_H {
   ISB + DMBST + DMBLD + DMB = F
   disj[ISB, DMBST + DMBLD]
   DMB in DMBST & DMBLD
+
+  // control dependencies only come out of reads
+  cd in (R -> EV)
 }
 
 one sig rm_ISB extends PTag {}

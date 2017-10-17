@@ -75,8 +75,9 @@ pred apply_map[X,X':Exec_PPCL, map:E->E] {
           e' not in L // e' is not a lock-related event
           (eLR -> eLW) in imm[X'.sb] & X'.atom // eLR and eLW form an RMW pair
           (eLW -> e') in imm[X'.sb] // eLW precedes e' in program order
-          eLR in L & X'.R // eLR is a lock-related acquire read
+          eLR in L & X'.R // eLR is a lock-related read
           eLW in L & X'.W // eLW is a lock-related write
+	  // TODO: add a ctrlisync.
         }
       )
       e not in dom[X.sb & X.scsl] => (

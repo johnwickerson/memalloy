@@ -46,6 +46,9 @@ sig Exec_C extends Exec {
   // transactions do not contain atomic operations
   no (A & dom[stxn])
 
+  // control dependencies only come out of reads
+  cd in (R -> EV)
+
 }
 
 one sig rm_A extends PTag {}

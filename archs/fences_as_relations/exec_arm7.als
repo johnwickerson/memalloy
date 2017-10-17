@@ -10,7 +10,10 @@ sig Exec_Arm7 extends Exec_H {
   is_fence_rel[isb, sb]
 
   dmb in dmbst
-  dmb in dmbld 
+  dmb in dmbld
+
+  // control dependencies only come out of reads
+  cd in (R -> EV)
 }
 
 one sig rm_isb extends PTag {}
