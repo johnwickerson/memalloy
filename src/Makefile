@@ -25,7 +25,7 @@ DOCDIR := ../doc
 
 .PHONY: all clean gen comparator doc
 
-BINARIES = cat2als pp_comparator gen
+BINARIES = cat2als pp_comparator gen weaken
 
 all: $(BINARIES) doc 
 
@@ -46,5 +46,6 @@ clean:
 	rm -f $(DEST)/gen
 	rm -f $(DEST)/cat2als
 	rm -f $(DEST)/pp_comparator
+	rm -f $(DEST)/weaken
 	rm -f memalloy.odocl
 	rm -rf $(DOCDIR)
