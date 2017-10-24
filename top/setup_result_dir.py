@@ -32,6 +32,16 @@ import shutil
 import sys
 import tempfile
 
+def make_directories(args, abspath):
+  for d in ["xml", "dot", "png", "litmus"]:
+    path = os.path.join(abspath, d)
+    os.mkdir(path)
+  archs = ["ARM8", "PPC", "X86"]
+  if args.arch and args.arch != "HW": archs = [args.arch]
+  for arch in archs:
+    path = os.path.join(abspath, "litmus", arch)
+    os.mkdir(path)
+
 def main(args):
   timestamp = "{:%y%m%d-%H%M%S}".format(datetime.datetime.now())
   if args.stamp:
@@ -50,15 +60,11 @@ def main(args):
     if os.path.exists(latest_symlink):
       os.remove(latest_symlink)
     os.symlink(abspath, latest_symlink)
-    for d in ["xml", "dot", "png", "litmus"]:
-      path = os.path.join(abspath, d)
-      os.mkdir(path)
-
-    archs = ["ARM8", "PPC", "X86"]
-    if args.arch and args.arch != "HW": archs = [args.arch]
-    for arch in archs:
-      path = os.path.join(abspath, "litmus", arch)
-      os.mkdir(path)
+    make_directories(args, abspath)
+    if args.allowset:
+      allowed_abspath = os.path.join(abspath, "allow")
+      os.mkdir(allowed_abspath)
+      make_directories(args, allowed_abspath)
     return abspath
   except OSError as e:
     print("ERROR: could not create dir structure")

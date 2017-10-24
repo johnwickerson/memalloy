@@ -47,6 +47,7 @@ def add_common_args(parser):
   parser.add_argument("-fencerels", action="store_true")
   parser.add_argument("-unroll", type=int, default=3,
                         help="Unroll fixpoints")
+  parser.add_argument("-allowset", action="store_true")
 
 def add_setup_result_dir_args(parser):
   add_common_args(parser)

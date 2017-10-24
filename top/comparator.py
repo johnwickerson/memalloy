@@ -80,6 +80,11 @@ def main(argv=None):
   dot_result_dir = os.path.join(result_dir, "dot")
   png_result_dir = os.path.join(result_dir, "png")
   lit_result_dir = os.path.join(result_dir, "litmus")
+  allow_result_dir = os.path.join(result_dir, "allow")
+  allow_xml_result_dir = os.path.join(result_dir, "allow", "xml")
+  allow_dot_result_dir = os.path.join(result_dir, "allow", "dot")
+  allow_png_result_dir = os.path.join(result_dir, "allow", "png")
+  allow_lit_result_dir = os.path.join(result_dir, "allow", "litmus")
 
   if args.desc:
     print "\"" + args.desc + "\""
@@ -181,60 +186,91 @@ def main(argv=None):
   print "Partitioned to %d unique solutions in %.2f sec" % (nsolutions, end-start)
   timing['rmdups'] = (end-start)
 
+  # Stage 3a: Generate allow-set
+  if args.allowset:
+    print "Generate allow-set"
+    start = timer()
+    cmd = [os.path.join(TOOL_PATH, "weaken"), \
+             "-o", allow_xml_result_dir, \
+             xml_result_dir]
+    if args.verbose: print " ".join(cmd)
+    code = call(cmd)
+    if code != 0:
+      print "ERROR: generating allowed executions was unsuccessful"
+      return 1
+    nsolutions = len([x for x in os.listdir(allow_xml_result_dir) if is_xml_file(x)])
+    print "Constructed %d allowed variants" % nsolutions 
+    print "Remove duplicates from allow-set"
+    args.xml_result_dir = allow_xml_result_dir
+    remove_dups.UNIQUE = {}
+    code = remove_dups.main(args)
+    if code != 0:
+      print "ERROR: removing duplicates from allow-set was unsuccessful"
+      return 1
+    nsolutions = len([x for x in os.listdir(allow_xml_result_dir) if x.endswith("_unique")])
+    end = timer()
+    print "Partitioned to %d unique solutions in %.2f sec" % (nsolutions, end-start)
+    timing['allowset'] = (end-start)
+  
   # Stage 4: Generate litmus test output
   start = timer()
-  hash_file = os.path.join(xml_result_dir, "hashes.txt")
-  litmus_filenames = []
-  with open(hash_file) as f:
-    for test_hash in f:
-      test_hash = test_hash.strip()
-      if not test_hash: continue
-      xml_dir = os.path.join(xml_result_dir, "%s_unique" % test_hash)
-      xml_files = [ x for x in os.listdir(xml_dir) if is_xml_file(x) ]
-      assert 0 < len(xml_files)
+  result_dir_list = [result_dir]
+  if args.allowset:
+    result_dir_list = [result_dir, allow_result_dir]
+  for my_result_dir in result_dir_list:
+    print "Converting in %s" % my_result_dir
+    hash_file = os.path.join(my_result_dir, "xml", "hashes.txt")
+    litmus_filenames = []
+    with open(hash_file) as f:
+      for test_hash in f:
+        test_hash = test_hash.strip()
+        if not test_hash: continue
+        xml_dir = os.path.join(my_result_dir, "xml", "%s_unique" % test_hash)
+        xml_files = [ x for x in os.listdir(xml_dir) if is_xml_file(x) ]
+        assert 0 < len(xml_files)
       
-      dot_file = os.path.join(dot_result_dir, "test_%s.dot" % test_hash)
-      cmd = [os.path.join(TOOL_PATH, "gen"), "-Tdot", "-o", dot_file, os.path.join(xml_dir, xml_files[0])]
-      if args.verbose: print " ".join(cmd)
-      code = call(cmd)
-      if code != 0:
-        print "ERROR: dot generation was unsuccessful"
-        return 1
-      
-      png_file = os.path.join(png_result_dir, "test_%s.png" % test_hash)
-      cmd = ["dot", "-Tpng", "-o", png_file, dot_file]
-      if args.verbose: print " ".join(cmd)
-      code = call(cmd)
-      if code != 0:
-        print "ERROR: png generation was unsuccessful"
-        return 1
-
-      litmus = "test_%s.litmus" % test_hash
-      litmus_filenames.append(litmus)
-
-      archs = [args.arch]
-      if args.arch == "HW":
-        archs = ["ARM8", "PPC", "X86"]
-      for arch in archs:
-        lit_file = os.path.join(lit_result_dir, arch, litmus)
-        cmd = [os.path.join(TOOL_PATH, "gen"), "-Tlit", \
-               "-arch", arch, \
-               "-o", lit_file, \
-               os.path.join(xml_dir, xml_files[0])]
+        dot_file = os.path.join(my_result_dir, "dot", "test_%s.dot" % test_hash)
+        cmd = [os.path.join(TOOL_PATH, "gen"), "-Tdot", "-o", dot_file, os.path.join(xml_dir, xml_files[0])]
         if args.verbose: print " ".join(cmd)
         code = call(cmd)
         if code != 0:
-          print "ERROR: litmus-test generation was unsuccessful"
+          print "ERROR: dot generation was unsuccessful"
+          return 1
+      
+        png_file = os.path.join(my_result_dir, "png", "test_%s.png" % test_hash)
+        cmd = ["dot", "-Tpng", "-o", png_file, dot_file]
+        if args.verbose: print " ".join(cmd)
+        code = call(cmd)
+        if code != 0:
+          print "ERROR: png generation was unsuccessful"
           return 1
 
-  # litmus7 @all
-  archs = [args.arch]
-  if args.arch == "HW":
-    archs = ["ARM8", "PPC", "X86"]
-  for arch in archs:
-    with open(os.path.join(lit_result_dir, arch, "@all"), "w+") as f:
-      for test in litmus_filenames:
-        print >>f, test
+        litmus = "test_%s.litmus" % test_hash
+        litmus_filenames.append(litmus)
+
+        archs = [args.arch]
+        if args.arch == "HW":
+          archs = ["ARM8", "PPC", "X86"]
+        for arch in archs:
+          lit_file = os.path.join(my_result_dir, "litmus", arch, litmus)
+          cmd = [os.path.join(TOOL_PATH, "gen"), "-Tlit", \
+                "-arch", arch, \
+                "-o", lit_file, \
+                os.path.join(xml_dir, xml_files[0])]
+          if args.verbose: print " ".join(cmd)
+          code = call(cmd)
+          if code != 0:
+            print "ERROR: litmus-test generation was unsuccessful"
+            return 1
+
+    # litmus7 @all
+    archs = [args.arch]
+    if args.arch == "HW":
+      archs = ["ARM8", "PPC", "X86"]
+    for arch in archs:
+      with open(os.path.join(my_result_dir, "litmus", arch, "@all"), "w+") as f:
+        for test in litmus_filenames:
+          print >>f, test
 
   # litmus7 forbid file
   with open(os.path.join(lit_result_dir, "forbid.txt"), "w+") as f:
