@@ -25,7 +25,7 @@
 # WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
 import argparse
-#import argparsing
+import argparsing
 import xml.etree.ElementTree as ET
 import os
 import shutil
@@ -279,9 +279,9 @@ def main(args):
   except:
     return 1
 
-#if __name__ == '__main__':
-#  parser = argparse.ArgumentParser(description="Remove duplicates from xml results dir")
-#  argparsing.add_remove_dups_args(parser, is_standalone=True)
-#  args = parser.parse_args(sys.argv[1:])
-#  args.events2 = 0
-#  sys.exit(main(args))
+if __name__ == '__main__':
+  parser = argparse.ArgumentParser(description="Remove duplicates from xml results dir")
+  argparsing.add_remove_dups_args(parser, is_standalone=True)
+  args = parser.parse_args(sys.argv[1:])
+  args.events2 = 0
+  sys.exit(main(args))
