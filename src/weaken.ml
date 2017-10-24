@@ -34,7 +34,7 @@ let get_args () =
       ("-o", Arg.String (set_list_ref out_path),
        "Output directory (mandatory)");
     ] in
-  let usage_msg = "Usage: `weaken [options] <xml_file.xml>`.\n\
+  let usage_msg = "Usage: `weaken [options] [xml_file.xml | xml_dir]`.\n\
                    Options available:"
   in
   Arg.parse speclist (set_list_ref xml_path) usage_msg;
@@ -144,8 +144,7 @@ let rm_from_set rname e ((name, attrs, children) as elt) = match name with
      (name, attrs, children)
   | _ -> elt
 
-let main () =
-  let xml_path, out_dir = get_args () in
+let run out_dir xml_path =
   let soln = Xml.parse_file xml_path in
   let set_EV = get_set "EV" [soln] in
   let stxn = get_rel "stxn" [soln] in
@@ -209,7 +208,23 @@ let main () =
     let solns = List.map (fun e -> xml_map (perturb e) soln) dom in 
     List.iter (write_xml_into_dir out_dir) solns
   in
-  List.iter apply_perturbation perturbations;
+  List.iter apply_perturbation perturbations
+       
+let main () =
+  let xml_path, out_dir = get_args () in
+  if not (Sys.file_exists xml_path) then
+    failwith "Couldn't find `%s`" xml_path;
+  if Sys.is_directory xml_path then
+    let process_soln unique_soln =
+      let unique_soln_path = xml_path ^ "/" ^ unique_soln in
+      if Sys.is_directory unique_soln_path then
+        let xml_file = (Sys.readdir unique_soln_path).(0) in
+        let xml_file_path = unique_soln_path ^ "/" ^ xml_file in
+        run out_dir xml_file_path
+    in
+    Array.iter process_soln (Sys.readdir xml_path)
+  else
+    run out_dir xml_path;
   exit 0
 
             
