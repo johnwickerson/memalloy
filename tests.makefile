@@ -136,13 +136,14 @@ compile_ocaml_ppc_v2:
 	@ echo "\n\n=============\nmake $@"
 	./comparator -arch OCaml -arch2 PPC -fencerels -violates models/ocaml.cat -satisfies models/ppc.cat -alsosatisfies models/ocaml_restrictions.cat -mapping mappings/fences_as_relations/ocaml_ppc_v2.als -events 4 -events2 4 -expect 0 $(ARGS)
 
-TXN_TESTS=adding_txns_arm8_4ev_allowset \
-	adding_txns_ppc_4ev_allowset \
-	adding_txns_x86_4ev_allowset \
-	weak_vs_strong_atomicity_3ev \
+TXN_TESTS=weak_vs_strong_atomicity_3ev \
 	weak_vs_strong_atomicity_5ev \
 	adding_txns_arm8_3ev \
 	adding_txns_arm8_4ev
+
+MORE_TXN_TESTS=adding_txns_arm8_4ev_allowset \
+	adding_txns_ppc_4ev_allowset \
+	adding_txns_x86_4ev_allowset
 
 weak_vs_strong_atomicity_3ev:
 	@ echo "\n\n=============\nmake $@"
