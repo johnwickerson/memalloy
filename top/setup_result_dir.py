@@ -33,7 +33,7 @@ import sys
 import tempfile
 
 def make_directories(args, abspath):
-  for d in ["xml", "dot", "png", "litmus"]:
+  for d in ["xml", "dot", "png", "litmus", "als"]:
     path = os.path.join(abspath, d)
     os.mkdir(path)
   archs = ["ARM8", "PPC", "X86"]

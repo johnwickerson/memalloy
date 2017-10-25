@@ -115,7 +115,7 @@ let rm_from_dom rname e ((name, attrs, children) as elt) = match name with
   | "field" when label_of (Xml.Element elt) = rname ->
      let doesnt_start_at_e tuple =
        match Xml.tag tuple, Xml.children tuple with
-       | "tuple", [_;e1;_] -> label_of e1 != e
+       | "tuple", [_;e1;_] -> label_of e1 <> e
        | _ -> true
      in 
      let children = List.filter doesnt_start_at_e children in
@@ -126,7 +126,8 @@ let rm_from_dom_and_rng rname e ((name, attrs, children) as elt) = match name wi
   | "field" when label_of (Xml.Element elt) = rname ->
      let doesnt_touch_e tuple =
        match Xml.tag tuple, Xml.children tuple with
-       | "tuple", [_;e1;e2] -> label_of e1 != e && label_of e2 != e
+       | "tuple", [_;e1;e2] ->
+          label_of e1 <> e && label_of e2 <> e
        | _ -> true
      in 
      let children = List.filter doesnt_touch_e children in
@@ -137,7 +138,7 @@ let rm_from_set rname e ((name, attrs, children) as elt) = match name with
   | "field" when label_of (Xml.Element elt) = rname ->
      let isnt_e tuple =
        match Xml.tag tuple, Xml.children tuple with
-       | "tuple", [_;e1] -> label_of e1 != e
+       | "tuple", [_;e1] -> label_of e1 <> e
        | _ -> true
      in 
      let children = List.filter isnt_e children in

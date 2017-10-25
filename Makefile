@@ -23,8 +23,10 @@ quicktest:
 	make c11_partial_not_lidbury
 
 moretests:
-	ARGS="-batch" make $(TXN_TESTS)
 	ARGS="-batch -maxtransactions 0" make $(ALL_TESTS)
+
+txn_tests:
+	ARGS="-batch" make $(TXN_TESTS)
 
 slowtests:
 

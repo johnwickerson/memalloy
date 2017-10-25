@@ -26,7 +26,7 @@
 
 import argparse
 import os
-from shutil import copyfile
+from shutil import copyfile, rmtree
 import sys
 from subprocess32 import call, Popen, TimeoutExpired
 import platform
@@ -228,7 +228,18 @@ def main(argv=None):
         xml_dir = os.path.join(my_result_dir, "xml", "%s_unique" % test_hash)
         xml_files = [ x for x in os.listdir(xml_dir) if is_xml_file(x) ]
         assert 0 < len(xml_files)
-      
+
+        als_file = os.path.join(my_result_dir, "als", "test_%s.als" % test_hash)
+        cmd = [os.path.join(TOOL_PATH, "gen"), "-Tals", \
+                 "-name", "test_%s" % test_hash, \
+                 "-o", als_file, \
+                 os.path.join(xml_dir, xml_files[0])]
+        if args.verbose: print " ".join(cmd)
+        code = call(cmd)
+        if code != 0:
+          print "ERROR: als generation was unsuccessful"
+          return 1
+        
         dot_file = os.path.join(my_result_dir, "dot", "test_%s.dot" % test_hash)
         cmd = [os.path.join(TOOL_PATH, "gen"), "-Tdot", "-o", dot_file, os.path.join(xml_dir, xml_files[0])]
         if args.verbose: print " ".join(cmd)
@@ -272,6 +283,47 @@ def main(argv=None):
         for test in litmus_filenames:
           print >>f, test
 
+
+  # Stage 5: Check the allow-set
+  if args.allowset and len(args.violates) == 1:
+      print "Checking that the allow-set executions are allowed"
+      allow_comparator_script = os.path.join(result_dir, "allow_comparator.als")
+      hash_file = os.path.join(allow_result_dir, "xml", "hashes.txt")
+      with open(hash_file) as f:
+        for test_hash in f:
+          test_hash = test_hash.strip()
+          if not test_hash: continue
+          hint_file = os.path.join(allow_result_dir, "als", "test_%s.als" % test_hash)
+          cmd = [os.path.join(TOOL_PATH, "pp_comparator"), \
+                "-arch", args.arch, \
+                "-satisfies", (args.violates)[0], \
+                "-events", str(args.events), \
+                ("-fencerels" if args.fencerels else ""), \
+                "-hint", hint_file, \
+                "-o", allow_comparator_script]
+          if args.verbose: print " ".join(cmd)
+          code = call(cmd)
+          if code != 0:
+            print "ERROR: generating a comparator to check that the allow-set executions are allowed was unsuccessful"
+            return 1
+          tmp_xml_result_dir = os.path.join(allow_result_dir, "tmp_xml")
+          if os.path.isdir(tmp_xml_result_dir):
+            rmtree(tmp_xml_result_dir)
+          os.mkdir(tmp_xml_result_dir)
+          args.comparator_script = allow_comparator_script
+          args.xml_result_dir = tmp_xml_result_dir
+          args.iter = False
+          code = run_alloy.main(args)
+          if code != 0:
+            print "ERROR: checking that the allow-set executions are allowed was unsuccessful"
+            return 1
+          num_solutions = len([x for x in os.listdir(tmp_xml_result_dir) if is_xml_file(x)])
+          if num_solutions == 1:
+            print "Execution %s in allow-set is indeed consistent." % test_hash
+          else:
+            print "ERROR: execution %s in allow-set is inconsistent!" % test_hash
+            return
+          
   # litmus7 forbid file
   with open(os.path.join(lit_result_dir, "forbid.txt"), "w+") as f:
     for test in litmus_filenames:
