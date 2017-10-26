@@ -174,6 +174,9 @@ let pp_comparator arch oc =
     fprintf oc "  // All nop events are singleton-transactions\n";
     fprintf oc "  all n : dom[X.stxn] - (X.R + X.W + X.F) |\n";
     fprintf oc "    one n.(X.stxn)\n\n"
+  ) else (
+    fprintf oc "  // Every event is a read, write, or fence\n";
+    fprintf oc "  E in X.R + X.W + X.F\n\n"
   );
   fprintf oc "  interesting[none->none, X]\n\n";
   if !minimal then (
