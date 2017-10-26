@@ -16,7 +16,7 @@ sig Exec {
   co : E->E,       // coherence order
 }{
   // EV captures all and only the events involved
-  W + R + F = EV
+  W + R + F in EV
     
   // fences are disjoint from accesses
   no ((R + W) & F)
