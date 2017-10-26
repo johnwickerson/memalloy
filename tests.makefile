@@ -141,8 +141,8 @@ TXN_TESTS=weak_vs_strong_atomicity_3ev \
 	adding_txns_arm8_3ev \
 	adding_txns_arm8_4ev
 
-MORE_TXN_TESTS=adding_txns_arm8_4ev_allowset \
-	adding_txns_ppc_4ev_allowset \
+MORE_TXN_TESTS=adding_txns_arm8_4ev_allowset
+EVEN_MORE_TXN_TESTS=adding_txns_ppc_4ev_allowset \
 	adding_txns_x86_4ev_allowset
 
 weak_vs_strong_atomicity_3ev:

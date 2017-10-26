@@ -12,6 +12,11 @@ env:
    - TARGET=more_txn_tests OCAML_VERSION=4.02.3
    - TARGET=more_txn_tests OCAML_VERSION=4.03.0
    - TARGET=more_txn_tests OCAML_VERSION=4.04.0
+   - TARGET=even_more_txn_tests OCAML_VERSION=4.01.0
+   - TARGET=even_more_txn_tests OCAML_VERSION=4.02.1
+   - TARGET=even_more_txn_tests OCAML_VERSION=4.02.3
+   - TARGET=even_more_txn_tests OCAML_VERSION=4.03.0
+   - TARGET=even_more_txn_tests OCAML_VERSION=4.04.0
    - TARGET=moretests OCAML_VERSION=4.01.0
    - TARGET=moretests OCAML_VERSION=4.02.1
    - TARGET=moretests OCAML_VERSION=4.02.3

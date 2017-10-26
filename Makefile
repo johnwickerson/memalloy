@@ -31,6 +31,9 @@ txn_tests:
 more_txn_tests:
 	ARGS="-batch" make $(MORE_TXN_TESTS)
 
+even_more_txn_tests:
+	ARGS="-batch" make $(EVEN_MORE_TXN_TESTS)
+
 slowtests:
 
 clean:
