@@ -35,7 +35,7 @@ let mk_fence attrs =
   let has_attrs = List.map (fun x -> List.mem x attrs) in
   match has_attrs ["dmb"; "dmbst"; "dmbld"; "isb"],
         has_attrs ["DMBST"; "DMBLD"; "ISB"] with
-  | [true; true; true; false], _   | _, [true; true; false]  -> DMB
+  | [true; _; _; false], _         | _, [true; true; false]  -> DMB
   | [false; true; false; false], _ | _, [true; false; false] -> DMBST
   | [false; false; true; false], _ | _, [false; true; false] -> DMBLD
   | [false; false; false; true], _ | _, [false; false; true] -> ISB
