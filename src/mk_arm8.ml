@@ -32,15 +32,14 @@ open Litmus_HW
 type fence = DMB | DMBLD | DMBST | ISB
 
 let mk_fence attrs =
-  match (List.mem "dmb" attrs || List.mem "DMB" attrs),
-        (List.mem "dmbst" attrs || List.mem "DMBST" attrs),
-        (List.mem "dmbld" attrs || List.mem "DMBLD" attrs),
-        (List.mem "isb" attrs || List.mem "ISB" attrs) with
-  | true, _, _, false -> DMB (* dmb is also dmbst and dmbld *)
-  | false, true, false, false -> DMBST
-  | false, false, true, false -> DMBLD
-  | false, false, false, true -> ISB
-  | _ -> failwith "Invalid fence attributes!"
+  let has_attrs = List.map (fun x -> List.mem x attrs) in
+  match has_attrs ["dmb"; "dmbst"; "dmbld"; "isb"],
+        has_attrs ["DMBST"; "DMBLD"; "ISB"] with
+  | [true; true; true; false], _   | _, [true; true; false]  -> DMB
+  | [false; true; false; false], _ | _, [true; false; false] -> DMBST
+  | [false; false; true; false], _ | _, [false; true; false] -> DMBLD
+  | [false; false; false; true], _ | _, [false; false; true] -> ISB
+  | _ -> failwith "Invalid fence attributes: %a!" (MyList.pp pp_str) attrs
 
 let mk_tstart reg lbl =
   [TSTART (reg, lbl); CMP reg; BNZ lbl]

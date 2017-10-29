@@ -175,8 +175,14 @@ let arch_min_sets fences_as_relations arch =
     | OpenCL -> arch_min_sets C @ ["WG"; "DV"; "SY"]
     | OCaml -> arch_min_sets Basic @ ["A"]
   in
-  let fences = if fences_as_relations then [] else fence_sets arch in
-  fences @ arch_min_sets arch
+  let fence_min_sets = function
+    | Power -> ["SYNC","SYNC"]
+    | Arm7 | Arm8 -> ["DMBLD & DMBST", "DMBST"; "DMBLD & DMBST", "DMBLD"]
+    | PTX -> ["MEMBAR_GL", "MEMBAR_GL"; "MEMBAR_SYS", "MEMBAR_SYS"]
+    | _ -> []
+  in
+  let fences = if fences_as_relations then [] else fence_min_sets arch in
+  fences @ List.map (fun x -> x,x) (arch_min_sets arch)
 
 let is_hw = function
   | Basic | C | OpenCL | OCaml -> false

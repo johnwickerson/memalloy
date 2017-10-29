@@ -9,17 +9,14 @@ sig Exec_PPC extends Exec_H {
   SYNC in LWSYNC  
 }
 
-
-one sig rm_ISYNC extends PTag {}
 one sig rm_SYNC extends PTag {}
-one sig rm_LWSYNC extends PTag {}
 
 fun ISYNC[e:PTag->E, X:Exec_PPC] : set E {
-  X.ISYNC - e[rm_EV] - e[rm_ISYNC] }
+  X.ISYNC - e[rm_EV] }
 fun SYNC[e:PTag->E, X:Exec_PPC] : set E {
-  X.SYNC - e[rm_EV] - e[rm_SYNC] - e[rm_LWSYNC] }
+  X.SYNC - e[rm_EV] - e[rm_SYNC] }
 fun LWSYNC[e:PTag->E, X:Exec_PPC] : set E {
-  X.LWSYNC - e[rm_EV] - e[rm_LWSYNC] }
+  X.LWSYNC - e[rm_EV] }
 
 fun isync[e:PTag->E, X:Exec_PPC] : E->E { addsb[e,X,ISYNC[e,X]] }
 fun sync[e:PTag->E, X:Exec_PPC] : E->E { addsb[e,X,SYNC[e,X]] }

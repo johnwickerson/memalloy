@@ -185,18 +185,12 @@ let run out_dir xml_path =
       "SC", [];
       "SCREL", [];
       "SCACQ", [];
-      "WG", get_set "DV" [soln];
+      "WG", get_set "DV" [soln]; (* remove this line too? *)
       "DV", get_set "SY" [soln];
       "SY", [];
-      "MFENCE", [];
       "SYNC", [];
-      "LWSYNC", get_set "SYNC" [soln];
-      "ISYNC", [];
-      "DMB", [];
-      "DMBST", get_set "DMB" [soln];
-      "DMBLD", get_set "DMB" [soln];
-      "ISB", [];
-      "MEMBAR_CTA", get_set "MEMBAR_GL" [soln];
+      "DMBST", MySet.diff set_EV (get_set "DMBLD" [soln]);
+      "DMBLD", MySet.diff set_EV (get_set "DMBST" [soln]);
       "MEMBAR_GL", get_set "MEMBAR_SYS" [soln];
       "MEMBAR_SYS", [];
     ] in
@@ -206,7 +200,9 @@ let run out_dir xml_path =
     @ List.map rm_evt evts_to_reduce
   in
   let apply_perturbation (dom, perturb) =
-    let solns = List.map (fun e -> xml_map (perturb e) soln) dom in 
+    let solns = List.map (fun e -> xml_map (perturb e) soln) dom in
+    let not_empty_exec soln = get_set "EV" [soln] <> [] in
+    let solns = List.filter not_empty_exec solns in
     List.iter (write_xml_into_dir out_dir) solns
   in
   List.iter apply_perturbation perturbations

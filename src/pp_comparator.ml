@@ -189,9 +189,9 @@ let pp_comparator arch oc =
         fprintf oc "  not some e : dom[X.%s%s] |\n" rel extra;
         fprintf oc "    interesting[rm_%s->e, X]\n" rel
       ) (Archs.arch_min_rels !fencerels arch);
-    List.iter (fun set ->
+    List.iter (fun (dom, set) ->
         fprintf oc
-          "  not some e : X.%s | interesting[rm_%s->e, X]\n" set set
+          "  not some e : X.(%s) | interesting[rm_%s->e, X]\n" dom set
       ) (Archs.arch_min_sets !fencerels arch);
     let tag = "rm_txn->e" in
     fprintf oc "  not some e : dom[X.stxn]  {\n";
@@ -304,9 +304,10 @@ let get_args () =
   let usage_msg =
     "Generating an Alloy file that can be run to compare two models.\nUsage: `comparator [options]`. There must be at least one -satisfies or -violates flag.\nOptions available:"
   in
-  let bad_arg _ =
-    Arg.usage speclist usage_msg;
-    raise (Arg.Bad "Missing or too many arguments.")
+  let bad_arg s =
+    failwith "Unexpected argument '%s'" s
+(*    Arg.usage speclist usage_msg;
+    raise (Arg.Bad "Missing or too many arguments.") *)
   in
   Arg.parse speclist bad_arg usage_msg;
   let arch = match !arch with

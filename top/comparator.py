@@ -298,9 +298,9 @@ def main(argv=None):
                 "-arch", args.arch, \
                 "-satisfies", (args.violates)[0], \
                 "-events", str(args.events), \
-                ("-fencerels" if args.fencerels else ""), \
                 "-hint", hint_file, \
                 "-o", allow_comparator_script]
+          if args.fencerels: cmd.extend(["-fencerels"])
           if args.verbose: print " ".join(cmd)
           code = call(cmd)
           if code != 0:
