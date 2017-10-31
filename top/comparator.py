@@ -103,7 +103,7 @@ def main(argv=None):
     # Deal with non-local models by copying them into models/_tmp_<n>.{cat,als}
     # and patching the command-line arguments
     nonlocal_model_map = {} # for temporaries
-    for model in args.satisfies + args.alsosatisfies + args.violates:
+    for model in args.satisfies + args.alsosatisfies + args.violates + [args.filter]:
       model_path = os.path.abspath(model)
       if not os.path.dirname(model_path).startswith(argparsing.MEMALLOY_ROOT_DIR):
         tmp_cat = os.path.join("models", "_tmp_%d%s" % (len(nonlocal_model_map), ext_of_file(model)))
@@ -186,7 +186,72 @@ def main(argv=None):
   print "Partitioned to %d unique solutions in %.2f sec" % (nsolutions, end-start)
   timing['rmdups'] = (end-start)
 
-  # Stage 3a: Generate allow-set
+  # Stage 3a: Filter executions to remove those that are inconsistent according to the model given in the -filter parameter
+  if args.filter:
+    print "Filter executions"
+    start = timer()
+    hash_file = os.path.join(xml_result_dir, "hashes.txt")
+    hash_file_keep = os.path.join(xml_result_dir, "hashes_keep.txt")
+    hash_file_ignore = os.path.join(xml_result_dir, "hashes_ignore.txt")
+    nfiltered = 0    
+    with open(hash_file) as f:
+      for test_hash in f:
+        test_hash = test_hash.strip()
+        if not test_hash: continue
+        xml_dir = os.path.join(xml_result_dir, "%s_unique" % test_hash)
+        xml_files = [ x for x in os.listdir(xml_dir) if is_xml_file(x) ]
+        assert 0 < len(xml_files)
+
+        hint_file = os.path.join(result_dir, "test_%s.als" % test_hash)
+        cmd = [os.path.join(TOOL_PATH, "gen"), "-Tals", \
+                 "-name", "test_%s" % test_hash, \
+                 "-o", hint_file, \
+                 os.path.join(xml_dir, xml_files[0])]
+        if args.verbose: print " ".join(cmd)
+        code = call(cmd)
+        if code != 0:
+          print "ERROR: als generation was unsuccessful"
+          return 1
+        tmp_comparator_script = os.path.join(result_dir, "tmp_comparator.als")
+        cmd = [os.path.join(TOOL_PATH, "pp_comparator"), \
+                 "-arch", args.arch, \
+                 "-satisfies", args.filter, \
+                 "-events", str(args.events), \
+                 "-hint", hint_file, \
+                 "-o", tmp_comparator_script]
+        if args.fencerels: cmd.extend(["-fencerels"])
+        if args.verbose: print " ".join(cmd)
+        code = call(cmd)
+        if code != 0:
+          print "ERROR: generating a comparator to check whether a generated execution should be filtered"
+          return 1
+        os.remove(hint_file)
+        tmp_xml_result_dir = os.path.join(result_dir, "tmp_xml")
+        if os.path.isdir(tmp_xml_result_dir):
+          rmtree(tmp_xml_result_dir)
+        os.mkdir(tmp_xml_result_dir)
+        args.comparator_script = tmp_comparator_script
+        args.xml_result_dir = tmp_xml_result_dir
+        args.iter = False
+        code = run_alloy.main(args)
+        if code != 0:
+          print "ERROR: checking whether a generated execution should be filtered was unsuccessful"
+          return 1
+        num_solutions = len([x for x in os.listdir(tmp_xml_result_dir) if is_xml_file(x)])
+        if num_solutions == 1:
+          print "Execution %s is consistent under baseline." % test_hash
+          with open(hash_file_keep, "a") as f_keep:
+            print >>f_keep, test_hash
+        else:
+          print "Execution %s is also inconsistent under baseline -- remove!" % test_hash
+          with open(hash_file_ignore, "a") as f_ignore:
+            print >>f_ignore, test_hash
+          nfiltered = nfiltered + 1
+    end = timer()
+    print "Filtered down to %d solutions in %.2f sec" % (nsolutions - nfiltered, end-start)
+    timing['filtering'] = (end-start)
+  
+  # Stage 3b: Generate allow-set
   if args.allowset:
     print "Generate allow-set"
     start = timer()
@@ -220,7 +285,7 @@ def main(argv=None):
   for my_result_dir in result_dir_list:
     print "Converting in %s" % my_result_dir
     hash_file = os.path.join(my_result_dir, "xml", "hashes.txt")
-    litmus_filenames = []
+    #litmus_filenames = []
     with open(hash_file) as f:
       for test_hash in f:
         test_hash = test_hash.strip()
@@ -257,7 +322,7 @@ def main(argv=None):
           return 1
 
         litmus = "test_%s.litmus" % test_hash
-        litmus_filenames.append(litmus)
+        #litmus_filenames.append(litmus)
 
         archs = [args.arch]
         if args.arch == "HW":
@@ -274,15 +339,34 @@ def main(argv=None):
             print "ERROR: litmus-test generation was unsuccessful"
             return 1
 
-    # litmus7 @all
-    archs = [args.arch]
-    if args.arch == "HW":
-      archs = ["ARM8", "PPC", "X86"]
-    for arch in archs:
-      with open(os.path.join(my_result_dir, "litmus", arch, "@all"), "w+") as f:
-        for test in litmus_filenames:
-          print >>f, test
-
+          
+  # litmus7 @all
+  archs = [args.arch]
+  if args.arch == "HW":
+    archs = ["ARM8", "PPC", "X86"]
+  for arch in archs:
+    
+    litmus_filenames = []
+    hash_file = os.path.join(result_dir, "xml", "hashes_keep.txt")
+    with open(hash_file) as f:
+      for test_hash in f:
+        test_hash = test_hash.strip()
+        litmus = "test_%s.litmus" % test_hash
+        litmus_filenames.append(litmus)
+    with open(os.path.join(result_dir, "litmus", arch, "@all"), "w+") as f:
+      for test in litmus_filenames:
+        print >>f, test
+        
+    litmus_filenames = []
+    hash_file = os.path.join(allow_result_dir, "xml", "hashes.txt")
+    with open(hash_file) as f:
+      for test_hash in f:
+        test_hash = test_hash.strip()
+        litmus = "test_%s.litmus" % test_hash
+        litmus_filenames.append(litmus)
+    with open(os.path.join(allow_result_dir, "litmus", arch, "@all"), "w+") as f:
+      for test in litmus_filenames:
+        print >>f, test
 
   # Stage 5: Check the allow-set
   if args.allowset and len(args.violates) == 1:

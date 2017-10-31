@@ -48,6 +48,7 @@ def add_common_args(parser):
   parser.add_argument("-unroll", type=int, default=3,
                         help="Unroll fixpoints")
   parser.add_argument("-allowset", action="store_true")
+  parser.add_argument("-filter", type=str, default=None, help='Only keep solutions that satisfy this model')
 
 def add_setup_result_dir_args(parser):
   add_common_args(parser)
