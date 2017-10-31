@@ -80,7 +80,7 @@ let com = rf | fr | co
                                 
 let txn_prop = rfe; stxn; [W]      (* for Cain+ WRC *)
              | fre; stxn; rfe; ppo (* for Cain+ IRIW *)
-           (*| stxn; rfe           (* for WRC MCA *) *)
+             | stxn; rfe           (* for WRC MCA *)
                                 
 let prop = (W * W) & propbase | (chapo? ; propbase*; (sync|implied); hb*)
            | txn_prop
@@ -98,7 +98,6 @@ empty atom & (po & (into(stxn) | outof(stxn)))* as TxnClearsReservation
                               
 acyclic stronglift(com, stxn) as StrongIsol
 acyclic stronglift(hb, stxn) as TxnOrder
+acyclic stronglift(co | prop, stxn) as TxnPropagation
 
-
-#acyclic stronglift(co | prop, stxn) as TxnPropagation
 #irreflexive stronglift(fre;prop;hb*,stxn) as TxnObservation
