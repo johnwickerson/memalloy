@@ -103,7 +103,9 @@ def main(argv=None):
     # Deal with non-local models by copying them into models/_tmp_<n>.{cat,als}
     # and patching the command-line arguments
     nonlocal_model_map = {} # for temporaries
-    for model in args.satisfies + args.alsosatisfies + args.violates + [args.filter]:
+    all_models = args.satisfies + args.alsosatisfies + args.violates
+    if args.filter: all_models = all_models + [args.filter]
+    for model in all_models:
       model_path = os.path.abspath(model)
       if not os.path.dirname(model_path).startswith(argparsing.MEMALLOY_ROOT_DIR):
         tmp_cat = os.path.join("models", "_tmp_%d%s" % (len(nonlocal_model_map), ext_of_file(model)))
@@ -347,7 +349,8 @@ def main(argv=None):
   for arch in archs:
     
     litmus_filenames = []
-    hash_file = os.path.join(result_dir, "xml", "hashes_keep.txt")
+    hashes_txt = "hashes_keep.txt" if args.filter else "hashes.txt"
+    hash_file = os.path.join(result_dir, "xml", hashes_txt)
     with open(hash_file) as f:
       for test_hash in f:
         test_hash = test_hash.strip()
@@ -356,17 +359,17 @@ def main(argv=None):
     with open(os.path.join(result_dir, "litmus", arch, "@all"), "w+") as f:
       for test in litmus_filenames:
         print >>f, test
-        
-    litmus_filenames = []
-    hash_file = os.path.join(allow_result_dir, "xml", "hashes.txt")
-    with open(hash_file) as f:
-      for test_hash in f:
-        test_hash = test_hash.strip()
-        litmus = "test_%s.litmus" % test_hash
-        litmus_filenames.append(litmus)
-    with open(os.path.join(allow_result_dir, "litmus", arch, "@all"), "w+") as f:
-      for test in litmus_filenames:
-        print >>f, test
+    if args.allowset:
+      litmus_filenames = []
+      hash_file = os.path.join(allow_result_dir, "xml", "hashes.txt")
+      with open(hash_file) as f:
+        for test_hash in f:
+          test_hash = test_hash.strip()
+          litmus = "test_%s.litmus" % test_hash
+          litmus_filenames.append(litmus)
+      with open(os.path.join(allow_result_dir, "litmus", arch, "@all"), "w+") as f:
+        for test in litmus_filenames:
+          print >>f, test
 
   # Stage 5: Check the allow-set
   if args.allowset and len(args.violates) == 1:
