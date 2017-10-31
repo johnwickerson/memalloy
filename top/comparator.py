@@ -193,6 +193,8 @@ def main(argv=None):
     hash_file = os.path.join(xml_result_dir, "hashes.txt")
     hash_file_keep = os.path.join(xml_result_dir, "hashes_keep.txt")
     hash_file_ignore = os.path.join(xml_result_dir, "hashes_ignore.txt")
+    open(hash_file_keep, 'a').close()
+    open(hash_file_ignore, 'a').close()
     nfiltered = 0    
     with open(hash_file) as f:
       for test_hash in f:
