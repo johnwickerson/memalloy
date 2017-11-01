@@ -40,7 +40,6 @@ pred apply_map[X,X':Exec_Arm8L, map:E->E] {
     X.R     = (X'.R     - L).~map
     X.W     = (X'.W     - L).~map
     X.F     = (X'.F     - L).~map
-    X.DMB   = (X'.DMB   - L).~map
     X.DMBST = (X'.DMBST - L).~map
     X.DMBLD = (X'.DMBLD - L).~map
     X.ISB   = (X'.ISB   - L).~map
@@ -98,7 +97,7 @@ pred p[X,X':Exec_Arm8L, map:E->E] {
     consistent_critical_sections[X]
   }
 
-  M/dead[none->none, X]
+  //M/dead[none->none, X]
 
   M/consistent[none->none, X']
 
@@ -129,7 +128,6 @@ pred hint_src[X:Exec_Arm8L, E0,E1,E2,E3,E4,E5,E6:E] {
     X.SCREL = none
     X.DMBLD = none
     X.DMBST = none
-    X.DMB = none
     X.co = (E1->E5)
     X.rf = none->none
     X.sloc = sq[E1+E4+E5]
@@ -161,7 +159,6 @@ pred hint_tgt[X:Exec_Arm8L, E0,E1,E2,E3,E4,E5,E6:E] {
     X.SCREL = E6
     X.DMBLD = none
     X.DMBST = none
-    X.DMB = none
     X.co = (E1->E5)+(E3->E6)
     X.rf = none->none
     X.sloc = sq[E1+E4+E5] + sq[E0+E2+E3+E6]
@@ -174,4 +171,4 @@ pred hint_tgt[X:Exec_Arm8L, E0,E1,E2,E3,E4,E5,E6:E] {
     X.stxn = sq[E0+E1]
 }
 
-run p for 2 Exec, 7 E
+run p for 2 Exec, 7 E // found in 4 mins
