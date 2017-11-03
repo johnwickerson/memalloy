@@ -171,4 +171,4 @@ pred hint_tgt[X:Exec_Arm8L, E0,E1,E2,E3,E4,E5,E6:E] {
     X.stxn = sq[E0+E1]
 }
 
-run p for 2 Exec, 7 E // found in 4 mins
+run p for 2 Exec, 7 E // found in 63550ms using Plingeling  on Benjamin
