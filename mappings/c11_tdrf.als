@@ -21,4 +21,4 @@ pred p[X:Exec_C] {
   X.EV = E
 }
 
-run p for 1 Exec, 7 E // started on benjamin 1448 on fri 3 nov
+run p for 1 Exec, 7 E // benjamin: no soln found in 4297s
