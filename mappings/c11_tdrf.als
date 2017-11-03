@@ -12,7 +12,13 @@ pred p[X:Exec_C] {
 
   not (N/consistent[none->none,X])
 
+  // all transactions are atomic
+  no (X.stxn - X.atxn)
+
+  // avoid non-SC atomic operations
+  no (X.A - X.SC)
+
   X.EV = E
 }
 
-run p for 1 Exec, 6 E
+run p for 1 Exec, 7 E // started on benjamin 1448 on fri 3 nov
