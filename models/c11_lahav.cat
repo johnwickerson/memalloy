@@ -12,7 +12,7 @@
 include "basic.cat"
 
 let mo = co
-let sb = po
+let rmw = atom
 let fsb = [F]; sb
 let sbf = sb; [F]
       

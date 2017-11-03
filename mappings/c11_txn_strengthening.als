@@ -25,6 +25,7 @@ pred apply_map[X,X':Exec_C] {
   X.ACQ = X'.ACQ
   X.REL = X'.REL
   X.SC = X'.SC
+  X.NAL = X'.NAL
     
   X.stxn in X'.stxn
 
@@ -44,4 +45,4 @@ pred p[X,X':Exec_C] {
   X.EV = E
 }
 
-run p for 2 Exec, 4 E
+run p for 2 Exec, 3 E

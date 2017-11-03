@@ -149,9 +149,9 @@ let arch_sets fences_as_relations arch =
 
 (** Pre-defined event relations for given architecture *)
 let rec arch_rels = function
-  | Basic -> ["ad"; "cd"; "co"; "dd"; "rf"; "sb"; "sloc"; "sthd"; "stxn"]
+  | Basic -> ["ad"; "atom"; "cd"; "co"; "dd"; "rf"; "sb"; "sloc"; "sthd"; "stxn"]
   | C -> arch_rels Basic
-  | Basic_HW -> arch_rels Basic @ ["atom"]
+  | Basic_HW -> arch_rels Basic
   | X86 -> arch_rels Basic_HW @ ["mfence"]
   | Power -> arch_rels Basic_HW @ ["sync"; "lwsync"; "isync"]
   | Arm7 -> arch_rels Basic_HW @ ["dmb"; "dmbst"; "dmbld"; "isb"]
@@ -191,8 +191,7 @@ let is_hw = function
 (** Relations that should be reduced *)
 let arch_min_rels fences_as_relations arch =
   let fences = if fences_as_relations then fence_rels arch else [] in
-  let atom = if is_hw arch then ["atom"] else [] in
-  fences @ ["ad"; "cd"; "dd"] @ atom
+  fences @ ["ad"; "cd"; "dd"; "atom"]
 
 (** List of all fence relations *)
 let all_fences =
