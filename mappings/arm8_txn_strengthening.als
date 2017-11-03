@@ -1,9 +1,9 @@
-open ../archs/exec_ppc[E]
-open ../models/ppc_txn[E] as M
+open ../archs/exec_arm8[E]
+open ../models/aarch64_txn[E] as M
 
-module ppc_strengthening[E]
+module arm8_txn_strengthening[E]
 
-pred apply_map[X,X':Exec_PPC] { 
+pred apply_map[X,X':Exec_Arm8] { 
 
   X.EV = X'.EV
   
@@ -21,15 +21,15 @@ pred apply_map[X,X':Exec_PPC] {
   X.sthd = X'.sthd
   X.atom = X'.atom
 
-  X.ISYNC = X'.ISYNC
-  X.LWSYNC = X'.LWSYNC
-  X.SYNC = X'.SYNC
-
+  X.DMBST = X'.DMBST
+  X.DMBLD = X'.DMBLD
+  X.ISB = X'.ISB
+    
   X.stxn in X'.stxn
 
 }
 
-pred p[X,X':Exec_PPC] {
+pred p[X,X':Exec_Arm8] {
   withoutinit[X]
   withoutinit[X']
 
@@ -43,4 +43,4 @@ pred p[X,X':Exec_PPC] {
   X.EV = E
 }
 
-run p for 2 Exec, 6 E
+run p for 2 Exec, 2 E

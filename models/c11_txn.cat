@@ -17,7 +17,7 @@ let sb = po
 let fsb = [F]; sb
 let sbf = sb; [F]
       
-let rb = [R];sloc;[W] - rf^-1;(mo^-1)*
+let rb = [R];sloc;[W] \ rf^-1;(mo^-1)*
 let eco = (rf | mo | rb)+
 let rs = [W]; poloc?; [W & A]; (rf; rmw)*
 let sw = [REL]; fsb?; rs; rf; [R & A]; sbf?; [ACQ]
@@ -27,7 +27,7 @@ let hbloc = hb & sloc
 let fhb = [F]; hb
 let hbf = hb; [F]
                      
-let sbdl = sb - poloc
+let sbdl = sb \ poloc
 let scb = sb | sbdl;hb;sbdl | hbloc | mo | rb
 let pscb = [SC]; fhb?; scb; hbf?; [SC]
 let pscf = [SC & F]; (hb | hb;eco;hb); [SC & F]
