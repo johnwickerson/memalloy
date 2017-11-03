@@ -45,4 +45,4 @@ pred p[X,X':Exec_C] {
   X.EV = E
 }
 
-run p for 2 Exec, 3 E
+run p for 2 Exec, 6 E // started on benjamin at 1228 on fri 3 nov

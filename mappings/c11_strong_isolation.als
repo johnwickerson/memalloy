@@ -3,6 +3,18 @@ open ../models/c11_txn[E] as M
 
 module c11_strong_isolation[E]
 
+pred p2[X:Exec_C] {
+  withoutinit[X]
+
+  M/consistent[none->none, X]
+  M/racefree[none->none, X]
+
+  let com = X.rf + X.co + fr[none->none,X] |
+  not (is_acyclic[weaklift[com, X.stxn, none->none, X]])
+
+  X.EV = E
+}
+
 pred p[X:Exec_C] {
   withoutinit[X]
 
@@ -10,10 +22,10 @@ pred p[X:Exec_C] {
   M/racefree[none->none, X]
 
   let com = X.rf + X.co + fr[none->none,X] |
- // not (is_acyclic[weaklift[com, X.stxn, none->none, X]])
   not (is_acyclic[stronglift[com, X.atxn, none->none, X]])
 
   X.EV = E
 }
 
-run p for 1 Exec, 6 E
+run p for 1 Exec, 6 E // 41 sec on benjamin
+run p2 for 1 Exec, 6 E // 4 sec on benjamin
