@@ -46,6 +46,7 @@ sig Exec_C extends Exec {
 
   // atomic transactions are a type of transaction
   atxn in stxn
+  atxn.stxn in atxn
 
   // atxn is a partial equivalence relation among a subset of
   // the non-initalisation events
