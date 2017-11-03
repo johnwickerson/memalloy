@@ -126,4 +126,4 @@ pred p[X,X':Exec_X86L, map:E->E] {
   apply_map[X,X',map]
 }
 
-run p for 2 Exec, 4 E
+run p for 2 Exec, 7 E // started on benjamin at 0943 on fri 3 nov
