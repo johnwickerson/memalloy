@@ -10,6 +10,7 @@ pred p[X:Exec_C] {
   M/racefree[none->none, X]
 
   let com = X.rf + X.co + fr[none->none,X] |
+ // not (is_acyclic[weaklift[com, X.stxn, none->none, X]])
   not (is_acyclic[stronglift[com, X.atxn, none->none, X]])
 
   X.EV = E
