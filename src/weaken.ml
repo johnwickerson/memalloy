@@ -50,11 +50,12 @@ let get_args () =
   in
   xml_path, out_path
   
-let write_xml_into_dir out_dir xml_root =
+let write_xml_into_dir out_dir origin xml_root =
   let file_contents = Xml.to_string_fmt xml_root in
   let () = Filename.set_temp_dir_name out_dir in
   let _, oc = Filename.open_temp_file "test_" ".xml" in
   let fmtr = formatter_of_out_channel oc in
+  fprintf fmtr "<!-- weakened from : %s -->\n" origin;
   fprintf fmtr "%s" file_contents;
   close_out oc
 
@@ -203,7 +204,7 @@ let run out_dir xml_path =
     let solns = List.map (fun e -> xml_map (perturb e) soln) dom in
     let not_empty_exec soln = get_set "EV" [soln] <> [] in
     let solns = List.filter not_empty_exec solns in
-    List.iter (write_xml_into_dir out_dir) solns
+    List.iter (write_xml_into_dir out_dir xml_path) solns
   in
   List.iter apply_perturbation perturbations
        
