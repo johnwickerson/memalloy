@@ -20,4 +20,5 @@ pred gp [X:Exec_C, Y:Exec_Arm8, map:SE->HE] {
 }
 
 //run gp for exactly 1 M1/Exec, exactly 1 N1/Exec, 5 SE, 5 HE, 3 Int // no soln on benjamin in 8 min (488s)
-run gp for exactly 1 M1/Exec, exactly 1 N1/Exec, 6 SE, 6 HE, 3 Int
+run gp for exactly 1 M1/Exec, exactly 1 N1/Exec, 6 SE, 6 HE, 3 Int // started sat 11 nov, 08:07
+run gp for exactly 1 M1/Exec, exactly 1 N1/Exec, 7 SE, 7 HE, 3 Int
