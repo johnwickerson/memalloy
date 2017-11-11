@@ -16,7 +16,7 @@ let rmw = atom
 let fsb = [F]; sb
 let sbf = sb; [F]
       
-let rb = [R];sloc;[W] \ rf^-1;(mo^-1)*
+let rb = ([R];sloc;[W]) \ (rf^-1;(mo^-1)*)
 let eco = (rf | mo | rb)+
 let rs = [W]; poloc?; [W & A]; (rf; rmw)*
 let sw = [REL]; fsb?; rs; rf; [R & A]; sbf?; [ACQ]
@@ -61,11 +61,8 @@ let drs = rs \ ([R]; !cde)
 let dsw = sw & (((fsb?; [REL]; drs?) \ (!ctrl; !cde)) ; rf)		 
 (* dependable happens-before *)
 let dhb = po?; (dsw;ctrl)*
-(* self-satisfying cycle *)	    
-let ssc = id & cde
 (* potential data race *)
 let pdr = cnf \ (A*A)
-(* reads-from on non-atomic location *)
-let narf = rf & (NAL*NAL)
 
-deadness_requires empty pdr \ (dhb | dhb^-1 | narf;ssc | ssc;narf^-1) as Dead_Pdr
+
+deadness_requires empty pdr \ (dhb | dhb^-1) as Dead_Pdr
