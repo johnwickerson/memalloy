@@ -1,5 +1,7 @@
-open ../archs/exec_C[SE] as SW
-open ../archs/exec_ppc[HE] as HW
+open ../../archs/fences_as_relations/exec_C[SE] as SW
+open ../../archs/fences_as_relations/exec_ppc[HE] as HW
+
+
 
 /*
 A C11-to-Power mapping.
@@ -19,18 +21,25 @@ pred apply_map[X:Exec_C, X':Exec_PPC, map:SE->HE] {
   all e : X'.(R+W) | one e.~map
 
   // SW reads/writes cannot be discarded by the compiler
-  all e : X.(R+W) | some e.map
+  //all e : X.(R+W) | some e.map
   
-  // a non-atomic or relaxed read compiles to a single read
-  all e : X.((R - W) - ACQ) {
+  // a non-atomic read compiles to a single read
+  all e : X.R - X.A {
     one e.map
     e.map in X'.R
   }
       
+  // a relaxed read compiles to read;ctrl
+  all e : X.R & X.A - X.ACQ - dom[X.atom] | let e1 = e.map {
+    one e1 
+    e1 in X'.R
+    e1 <: (X'.sb) in (X'.cd)
+  }
+
   // an acquire read compiles to a read followed by
   // a control fence, with control dependencies inserted between the
   // read and every event that is sequenced after it.
-  all e : X.((R - W) & ACQ - SC) | let e1 = e.map {
+  all e : X.R & X.ACQ - X.SC - dom[X.atom] | let e1 = e.map {
     one e1 
     e1 in X'.R
     e1 <: (X'.sb) in (X'.cd) & (isync[none->none,X'])
@@ -39,7 +48,7 @@ pred apply_map[X:Exec_C, X':Exec_PPC, map:SE->HE] {
   // an SC read compiles to a full fence followed by a read 
   // followed by a control fence, with control dependencies inserted 
   // between the read and every event that is sequenced after it
-  all e : X.((R - W) & SC) | let e1 = e.map {
+  all e : X.R & X.SC - dom[X.atom] | let e1 = e.map {
     one e1
     e1 in X'.R
     (X'.sb) :> e1 in (sync[none->none,X'])
@@ -47,86 +56,73 @@ pred apply_map[X:Exec_C, X':Exec_PPC, map:SE->HE] {
   }
   
   // a non-atomic or relaxed write compiles to a single write
-  all e : X.((W - R) - REL) {
+  all e : X.W - X.REL - ran[X.atom] {
     one e.map
     e.map in X'.W
   }
 
   // a release write compiles to a lightweight fence followed 
   // by a write
-  all e : X.((W - R) & REL - SC) | let e1 = e.map {
+  all e : X.W & X.REL - X.SC - ran[X.atom] | let e1 = e.map {
     one e1
     e1 in X'.W
     (X'.sb) :> e1 in (lwsync[none->none,X'])
   }
   
   // an SC write compiles to a full fence followed by a write
-  all e : X.((W - R) & SC) | let e1 = e.map {
+  all e : X.W & X.SC - ran[X.atom] | let e1 = e.map {
     one e1
     e1 in X'.W
     (X'.sb) :> e1 in (sync[none->none,X'])
   }
   
-  // a relaxed RMW compiles to a read followed by a write, with 
-  // control dependencies inserted between the read and every 
-  // event that is sequenced after it
-  all e : X.((R & W) - (ACQ + REL)) | some disj e1,e2 : X'.EV {
-    e.map = e1+e2
+  // the read part of a relaxed or acquire RMW compiles to read;ctrl
+  all e : X.R & dom[X.atom] - X.ACQ | let e1 = e.map {
+    one e1
     e1 in X'.R
-    e2 in X'.W
-    (e1 -> e2) in X'.atom & imm[X'.sb]
     e1 <: (X'.sb) in X'.cd  
   }
 
-  // an acquire RMW compiles to a read followed by a write, 
-  // followed by an isync, with control dependencies inserted 
-  // between the read and every event that is sequenced after it
-  all e : X.((R & W & ACQ) - (REL + SC)) | some disj e1,e2 : X'.EV {
-    e.map = e1+e2
-    e1 in X'.R
-    e2 in X'.W
-    (e1 -> e2) in X'.atom & imm[X'.sb]
-    e1 <: (X'.sb) in X'.cd
-    e2 <: (X'.sb) in isync[none->none,X']
+  // the write part of a relaxed RMW compiles to a write
+  all e : X.W & ran[X.atom] - X.REL | let e1 = e.map {
+    one e1
+    e1 in X'.W 
   }
 
-  // a release RMW compiles to an lwsync, followed by a read, followed by
-  // a write, with control dependencies inserted between the read and
-  // every event that is sequenced after it
-  all e : X.((R & W & REL) - (ACQ + SC)) | some disj e1,e2 : X'.EV {
-    e.map = e1+e2
+  // the read part of an acquire RMW compiles to read;ctrl
+  all e : X.R & X.ACQ & dom[X.atom] - (X.atom).(X.REL) | let e1 = e.map {
+    one e1
     e1 in X'.R
-    e2 in X'.W
-    (e1 -> e2) in X'.atom & imm[X'.sb]
+    e1 <: (X'.sb) in X'.cd  
+  }
+
+  // the write part of an acquire or acquire-release or SC RMW compiles to write;isync
+  all e : X.W & (X.ACQ).(X.atom) | let e1 = e.map {
+    one e1
+    e1 in X'.W 
+    e1 <: (X'.sb) in isync[none->none,X']
+  }
+
+  // the read part of a release or acquire-release RMW compiles to lwsync;read;ctrl
+  all e : X.R & (X.atom).(X.REL) - X.SC | let e1 = e.map {
+    one e1
+    e1 in X'.R
     (X'.sb) :> e1 in lwsync[none->none,X']
-    e1 <: (X'.sb) in X'.cd
+    e1 <: (X'.sb) in X'.cd  
   }
 
-  // an acquire/release RMW compiles to an lwsync, followed by a read,
-  // followed by a write, followed by an isync, with control
-  // dependencies inserted between the read and every event that is
-  // sequenced after it
-  all e : X.((R & W & REL & ACQ) - SC) | some disj e1,e2 : X'.EV {
-    e.map = e1+e2
-    e1 in X'.R
-    e2 in X'.W
-    (e1 -> e2) in X'.atom & imm[X'.sb]
-    (X'.sb) :> e1 in lwsync[none->none,X']
-    e1 <: (X'.sb) in X'.cd
-    e2 <: (X'.sb) in isync[none->none,X']
+  // the write part of a release RMW compiles to a write
+  all e : X.W & X.REL & ran[X.atom] - (X.ACQ).(X.atom) | let e1 = e.map {
+    one e1
+    e1 in X'.W 
   }
 
-  // an SC RMW compiles to an sync, followed by a read, followed by
-  // a write, followed by an isync, with control dependencies inserted
-  // between the read and every event that is sequenced after it
-  all e : X.(R & W & SC) | some disj e1,e2 : X'.EV {
-    e.map = e1+e2
+  // the read part of an SC RMW compiles to sync;read;ctrl
+  all e : X.R & X.SC & dom[X.atom] | let e1 = e.map {
+    one e1
     e1 in X'.R
-    e2 in X'.W
-    (e1 -> e2) in X'.atom & imm[X'.sb]
     (X'.sb) :> e1 in sync[none->none,X']
-    e1 <: (X'.sb) in X'.cd
-    e2 <: (X'.sb) in isync[none->none,X']
+    e1 <: (X'.sb) in X'.cd  
   }
 
   // release or acquire fences compile to lightweight fences
@@ -162,6 +158,9 @@ pred apply_map[X:Exec_C, X':Exec_PPC, map:SE->HE] {
 
   // the mapping preserves threads
   X.sthd = map . (X'.sthd) . ~map
+
+  // the mapping preserves rmw-edges
+  X.atom = map . (X'.atom) . ~map
 
   // the mapping preserves transactions
   X.stxn = map . (X'.stxn) . ~map

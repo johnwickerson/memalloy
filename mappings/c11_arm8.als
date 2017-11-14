@@ -1,5 +1,5 @@
-open ../archs/exec_C[SE] as SW
-open ../archs/exec_arm8[HE] as HW
+open ../../archs/fences_as_relations/exec_C[SE] as SW
+open ../../archs/fences_as_relations/exec_arm8[HE] as HW
 
 /*
 A C11-to-ARMv8 mapping.
@@ -22,26 +22,20 @@ pred apply_map[
 
 
   // a read compiles to a read (matching ACQ/SCACQ)
-  all e : X.(R - W) {
+  all e : X.R {
     one e.map
     e.map in (e in X.ACQ => X'.(R & SCACQ) else X'.(R - SCACQ))
   }
 
-  // a write compiles to a write (matching REL/SCREL)
-  all e : X.(W - R) {
-    one e.map
-    e.map in (e in X.REL => X'.(W & SCREL) else X'.(W - SCREL))
+  // a relaxed read induces a ctrl dependency (needed for Lahav et al.'s C++ mm)
+  all e : X.R & X.A - X.ACQ {
+    e.map <: (X'.sb) in (X'.cd)
   }
 
-  // an RMW compiles to a read, followed by a write, with control
-  // dependencies inserted between the read and every event that is
-  // sequenced after it
-  all e : X.(R & W) | some disj e1,e2 : X'.EV {
-    e.map = e1+e2
-    e1 in (e in X.ACQ => X'.(R & SCACQ) else X'.(R - SCACQ))
-    e2 in (e in X.REL => X'.(W & SCREL) else X'.(W - SCREL))
-    (e1 -> e2) in X'.atom & imm[X'.sb]
-    e1 <: (X'.sb) in (X'.cd)
+  // a write compiles to a write (matching REL/SCREL)
+  all e : X.W {
+    one e.map
+    e.map in (e in X.REL => X'.(W & SCREL) else X'.(W - SCREL))
   }
 
   // acquire fence compiles to dmbld
@@ -77,6 +71,9 @@ pred apply_map[
 
   // the mapping preserves threads
   (X'.sthd) = ~map . (X.sthd) . map
+
+  // the mapping preserves rmw-edges (and inserts ctrl edges)
+  X.atom = map . (X'.atom & X'.cd) . ~map
 
   // the mapping preserves transactions
   X.stxn = map . (X'.stxn) . ~map
