@@ -61,11 +61,12 @@ pred apply_map[X,X':Exec_X86L, map:E->E] {
     all e : X.UkT | no e.map
 
     // lock() to be kept as a normal lock
-    all e : X.LkN | some disj e1, e2 : X'.EV {
-      e.map = e1 + e2
-      (e1 -> e2) in imm[X'.sb] & X'.atom // e1 and e2 form an RMW pair 
-      e1 in X'.R // e1 is a lock-related read
-      e2 in X'.W // e2 is a lock-related write
+    all e : X.LkN | some disj e1, e2, e3 : X'.EV {
+      e.map = e1 + e2 + e3
+      (e1 -> e2) in imm[X'.sb] & X'.cd // e1 controls e2
+      (e2 -> e3) in imm[X'.sb] & X'.atom // e2 and e3 form an RMW pair 
+      e1+e2 in X'.R // e1 and e2 are lock-related reads
+      e3 in X'.W // e2 is a lock-related write
     }
 
     // unlock() to be kept as a normal unlock
@@ -101,4 +102,4 @@ pred p[X,X':Exec_X86L, map:E->E] {
 
 }
 
-run p for 2 Exec, 7 E // started on benjamin at 1153 on sat 4 nov
+run p for 2 Exec, 8 E
