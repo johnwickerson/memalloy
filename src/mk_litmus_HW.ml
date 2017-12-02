@@ -350,6 +350,8 @@ let rec first_unused_reg n = function
   | [] -> n
   | Basic (Load((_,r),_),_) :: cs ->
      first_unused_reg (max (r+1) n) cs
+  | If (_,_,cs') :: cs ->
+     first_unused_reg (first_unused_reg n cs') cs
   | _ :: cs -> first_unused_reg n cs
 
 (** [hw_thds_of_thds tid (locs,nl) thds] generates a list of hardware threads from a list [thds] of generic litmus test threads. The current thread identifier is [tid], the correspondence between locations and registers is in [locs], and [nl] is the next label to use. *)
