@@ -58,8 +58,11 @@ pred apply_map[X,X':Exec_Arm8L, map:E->E] {
 	all e : X.LkT | some e1 : X'.EV {
       e.map = e1
       e1 in X'.R - X'.SCACQ // e1 is a lock-related read event
-	  e1 not in ran[X'.rf] // e1 sees the lock is not taken
+	  //e1 not in ran[X'.rf] // e1 sees the lock is not taken
     }
+
+    // the transaction must not read a write that acquires the lock
+    no X.LkN <: map.(X'.rf).~map :> X.LkT
 
 	// unlock() to be transactionalised
     all e : X.UkT | no e.map
