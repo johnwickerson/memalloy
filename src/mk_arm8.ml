@@ -134,9 +134,9 @@ let pp_ins oc = function
   | BNZ lbl -> fprintf oc "BNE %s" lbl
   | J lbl -> fprintf oc "B %s" lbl
   | LBL lbl -> fprintf oc "%s:" lbl
-  | TSTART (r, _) -> fprintf oc "TXSTART %a" pp_32reg r
-  | TCOMMIT -> fprintf oc "TXCOMMIT"
-  | TABORT (_, imm) -> fprintf oc "TXABORT #%d" imm
+  | TSTART (r, _) -> fprintf oc "TSTART %a" pp_32reg r
+  | TCOMMIT -> fprintf oc "TCOMMIT"
+  | TABORT (_, imm) -> fprintf oc "TABORT #%d" imm
 
 let arm8_of_lit name lt =
   Mk_litmus_HW.hw_lit_of_lit name arm8_specific_params lt
