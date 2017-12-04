@@ -42,9 +42,10 @@ let get_fresh_reg tid state =
   let r = state.next_reg in
   {state with next_reg = r + 1}, (tid, r)
 
-let get_fresh_lbl state =
-  let lbl = state.next_lbl in
-  {state with next_lbl = lbl + 1}, lbl
+let get_fresh_lbl ?(prefix="Lbl") tid state =
+  let l = state.next_lbl in
+  let lbl = (sprintf "%s%d_%d" prefix tid l) in
+  {state with next_lbl = l + 1}, lbl
 
 let get_fresh_sentinel state =
   let sentinel = state.next_sentinel in
@@ -59,6 +60,18 @@ let update_post f state =
 let get_fresh_txid state =
   let txid = state.next_txid in
   {state with next_txid = txid + 1}, txid
+
+let get_exit_lbl tid =
+  (sprintf "Exit%d" tid)
+
+let get_excl_fail_lbl tid =
+  (sprintf "ExclFail%d" tid)
+
+let get_txn_success_lbl tid txid =
+  (sprintf "TxnSuccess%d_%d" tid txid)
+
+let get_txn_fail_lbl tid txid =
+  (sprintf "TxnFail%d_%d" tid txid)
   
 (** [remove_Ifs r cs] removes from the component list [cs] all if-statements that test the value of the register [r] *)
 let rec remove_Ifs r = function
@@ -157,13 +170,12 @@ let expected_val_of_reg post r =
 
 let mk_st_excl_prologue arch_params tid state il =
   if in_txn_block il then
-    let state, lbl = get_fresh_lbl state in
+    let state, lbl_succ = get_fresh_lbl ~prefix:"ExclSucc" tid state in
     let state, r_txn = get_fresh_reg tid state in
     let tabort_false = arch_params.Litmus_HW.mk_tabort r_txn 0xf in
-    let lbl_succ = (sprintf "ExclSucc%d" lbl) in
     state, [ Litmus_HW.BEQ lbl_succ ] @ tabort_false @ [ Litmus_HW.LBL lbl_succ ]
   else
-    state, [ Litmus_HW.BNZ (sprintf "ExclFail%d" tid) ]
+    state, [ Litmus_HW.BNZ (get_excl_fail_lbl tid) ]
                
 (** [hw_ins_of_ins tid (locs, nr) ins] builds a sequence of HW instructions from a single generic instruction [ins]. The current thread identifier is [tid], the correspondence between locations and registers is in [locs], [nr] is the next register to use, and [nl] is the next label to use. *)
 let hw_ins_of_ins arch_params tid state il = function
@@ -226,7 +238,7 @@ let hw_ins_of_ins arch_params tid state il = function
      let state, r_txn = get_fresh_reg tid state in
      let state, txid = get_fresh_txid state in
      let il_tbegin =
-       arch_params.Litmus_HW.mk_tstart r_txn (sprintf "TxnFail%d" txid)
+       arch_params.Litmus_HW.mk_tstart r_txn (get_txn_fail_lbl tid txid)
      in
      state, il @ il_tbegin
   | TxnEnd TxnCommit, _ ->
@@ -234,8 +246,8 @@ let hw_ins_of_ins arch_params tid state il = function
      let state, r_zero = get_fresh_reg tid state in
      let state, r_ok = get_fresh_reg tid state in
      let txid = state.next_txid - 1 in
-     let success_lbl = sprintf "TxnSuccess%d" txid in
-     let fail_lbl = sprintf "TxnFail%d" txid in
+     let success_lbl = get_txn_success_lbl tid txid in
+     let fail_lbl = get_txn_fail_lbl tid txid in
      let state = add_to_loc_map (-1, r_ok) state in
      let il_tcommit = [
          Litmus_HW.TCOMMIT;
@@ -243,7 +255,7 @@ let hw_ins_of_ins arch_params tid state il = function
          Litmus_HW.LBL fail_lbl;
          Litmus_HW.MOV (r_zero, 0);
          mk_ST [] (r_zero, r_ok, None, None, Some 0, Some (-1));
-         Litmus_HW.J (sprintf "Exit%d" tid);
+         Litmus_HW.J (get_exit_lbl tid);
          Litmus_HW.LBL success_lbl;
        ] in
      state, il @ il_tcommit
@@ -252,7 +264,7 @@ let hw_ins_of_ins arch_params tid state il = function
      let state, r_zero = get_fresh_reg tid state in
      let state, r_ok = get_fresh_reg tid state in
      let txid = state.next_txid - 1 in
-     let fail_lbl = sprintf "TxnFail%d" txid in
+     let fail_lbl = get_txn_fail_lbl tid txid in
      let last_tstart = get_last_tstart il in
      let tstart_reg = reg_of_tstart last_tstart in
      let txn_block = last_txn_block il in
@@ -263,8 +275,7 @@ let hw_ins_of_ins arch_params tid state il = function
        update_post
          (Assoc.remove_assocs (List.map (fun r -> Reg r) rs)) state
      in
-     let state, lbl = get_fresh_lbl state in
-     let lbl = sprintf "Else%02d" lbl in
+     let state, lbl = get_fresh_lbl ~prefix:"Else" tid state in
      let mk_eq r v =
        [ Litmus_HW.CMPIMM (r, v); Litmus_HW.BNZ lbl ]
      in
@@ -335,8 +346,7 @@ let rec hw_ins_of_components arch_params tid (state,il) =
      in
      hw_ins_of_components arch_params tid (state,il) cs
   | If (r,_,cs') :: cs ->
-     let state,lbl = get_fresh_lbl state in
-     let lbl = sprintf "Else%02d" lbl in
+     let state, lbl = get_fresh_lbl ~prefix:"Else" tid state in
      let il = il @ [
            Litmus_HW.CMP r;
 	   Litmus_HW.BNZ lbl;
