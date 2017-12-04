@@ -26,7 +26,5 @@ let coi = co & sthd
 let unforced_co =
   (imm(co); imm(co); (imm(co))^-1) \ (rf?; (po; (rf^-1)?)?)
 
-let fr = ([R];sloc;[W]) \ (rf^-1;(co^-1)*)
-
 let fre = fr \ sthd
 let fri = fr & sthd

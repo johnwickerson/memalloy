@@ -147,6 +147,12 @@ fun sloc [e:PTag->E, X:Exec] : E->E { rm_EV_rel[e, X.sloc] }
 fun rf [e:PTag->E, X:Exec] : E->E { rm_EV_rel[e, X.rf] }
 fun co [e:PTag->E, X:Exec] : E->E { rm_EV_rel[e, X.co] }
 
+fun fr [e:PTag->E, X:Exec] : E->E {
+  let fr_base = ((X.R -> X.W) & X.sloc) - (~(X.rf) . *~(X.co)) |
+  rm_EV_rel[e, fr_base]
+}
+
+
 fun ad [e:PTag->E, X:Exec] : E->E {
   rm_EV_rel[e, (univ - e[rm_ad]) <: X.ad] }
 fun dd [e:PTag->E, X:Exec] : E->E {

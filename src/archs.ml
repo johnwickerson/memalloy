@@ -149,7 +149,7 @@ let arch_sets fences_as_relations arch =
 
 (** Pre-defined event relations for given architecture *)
 let rec arch_rels = function
-  | Basic -> ["ad"; "atom"; "cd"; "co"; "dd"; "rf"; "sb"; "sloc"; "sthd"; "stxn"]
+  | Basic -> ["ad"; "atom"; "cd"; "co"; "dd"; "rf"; "sb"; "sloc"; "sthd"; "stxn"] @ ["fr"]
   | C -> arch_rels Basic
   | Basic_HW -> arch_rels Basic
   | X86 -> arch_rels Basic_HW @ ["mfence"]
