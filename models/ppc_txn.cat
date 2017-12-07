@@ -80,7 +80,7 @@ let com = rf | fr | co
                                 
 let txn_prop = rfe; stxn; [W]      (* for Cain+ WRC *)
              | fre; stxn; rfe; ppo (* for Cain+ IRIW *)
-             | stxn; rfe           (* for WRC MCA *)
+             | stxn; rfe; ppo      (* for WRC MCA *)
                                 
 let prop = (W * W) & propbase | (chapo? ; propbase*; (sync|implied); hb*)
            | txn_prop
