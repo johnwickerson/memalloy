@@ -111,7 +111,12 @@ let mk_ST attrs (src, dst, off, sta, imm, loc) =
 let mk_MOV_or_ADD (r_src, v) = function
   | None -> Litmus_HW.MOV (r_src, v)
   | Some r_off_d -> Litmus_HW.ADD (r_src, r_off_d, v)
-	    
+
+(** Builds an ADDREG instruction assuming an address-dependency *)
+let mk_ADDREG r_src = function
+  | None -> failwith "Expecting an address-dependency"
+  | Some r_off -> Litmus_HW.ADDREG (r_src, r_src, r_off)
+
 (** Builds fake dependencies using exclusive-or instructions. Currently an instruction can have an address or data dependency only on a single instruction, but there's no good reason not to generalise to any number of instructions if required. *)
 let rec hw_ins_of_exp tid state = function
   | Just n -> state, [], n, None
@@ -176,16 +181,32 @@ let mk_st_excl_prologue arch_params tid state il =
     state, [ Litmus_HW.BEQ lbl_succ ] @ tabort_false @ [ Litmus_HW.LBL lbl_succ ]
   else
     state, [ Litmus_HW.BNZ (get_excl_fail_lbl tid) ]
-               
+
+(** Whether to flatten a false address-dependence into multiple instructions. This is because not all load/store instructions support offset addressing. TODO: maybe take arch into account since PPC can handle offsets with lwarx/stwcx. *)
+let flatten_ad = function
+  | Load (_r_dst, le), attrs ->
+      is_fake_dependence_expr le &&
+      (List.mem "SCACQ" attrs || List.mem "X" attrs)
+  | Store (le, _ve), attrs ->
+      is_fake_dependence_expr le &&
+      (List.mem "SCREL" attrs || List.mem "X" attrs)
+  | _ -> false
+
 (** [hw_ins_of_ins tid (locs, nr) ins] builds a sequence of HW instructions from a single generic instruction [ins]. The current thread identifier is [tid], the correspondence between locations and registers is in [locs], [nr] is the next register to use, and [nl] is the next label to use. *)
 let hw_ins_of_ins arch_params tid state il = function
-  | Load (r_dst, le), attrs ->
+  | Load (r_dst, le), attrs as ins ->
      let state, il_exp, l, r_off = hw_ins_of_exp tid state le in
      let state, r_src = get_fresh_reg tid state in
      let state = add_to_loc_map (l, r_src) state in
-     let il_ld = [mk_LD attrs (r_dst, r_src, r_off, Some l)] in
+     let il_ld =
+       if flatten_ad ins then
+         [mk_ADDREG r_src r_off;
+          mk_LD attrs (r_dst, r_src, None, Some l)]
+       else
+         [mk_LD attrs (r_dst, r_src, r_off, Some l)]
+     in
      state, il @ il_exp @ il_ld
-  | Store (le, ve), attrs
+  | Store (le, ve), attrs as ins
        when List.mem "X" attrs && arch_params.Litmus_HW.use_status_reg ->
      let state, il_exp1, l, r_off_a = hw_ins_of_exp tid state le in
      let state, il_exp2, v, r_off_d = hw_ins_of_exp tid state ve in
@@ -193,7 +214,14 @@ let hw_ins_of_ins arch_params tid state il = function
      let state, r_dst = get_fresh_reg tid state in
      let state, r_status = get_fresh_reg tid state in
      let state = add_to_loc_map (l, r_dst) state in
-     let il_st = [
+     let il_st =
+       if flatten_ad ins then [
+         mk_MOV_or_ADD (r_src, v) r_off_d;
+         mk_ADDREG r_dst r_off_a;
+         mk_ST attrs (r_src, r_dst, None, Some r_status, Some v, Some l);
+         Litmus_HW.CMP r_status; (* Fail if r_status!=0 *)
+       ]
+       else [
          mk_MOV_or_ADD (r_src, v) r_off_d;
          mk_ST attrs (r_src, r_dst, r_off_a, Some r_status, Some v, Some l);
          Litmus_HW.CMP r_status; (* Fail if r_status!=0 *)
@@ -201,15 +229,20 @@ let hw_ins_of_ins arch_params tid state il = function
      in
      let state, il_st_prologue = mk_st_excl_prologue arch_params tid state il in
      state, il @ il_exp1 @ il_exp2 @ il_st @ il_st_prologue
-  | Store (le, ve), attrs
-       when List.mem "X" attrs
-            && not arch_params.Litmus_HW.use_status_reg ->
+  | Store (le, ve), attrs as ins
+       when List.mem "X" attrs && not arch_params.Litmus_HW.use_status_reg ->
      let state, il_exp1, l, r_off_a = hw_ins_of_exp tid state le in
      let state, il_exp2, v, r_off_d = hw_ins_of_exp tid state ve in
      let state, r_src = get_fresh_reg tid state in
      let state, r_dst = get_fresh_reg tid state in
      let state = add_to_loc_map (l, r_dst) state in
-     let il_st = [
+     let il_st =
+       if flatten_ad ins then [
+         mk_MOV_or_ADD (r_src, v) r_off_d;
+         mk_ADDREG r_dst r_off_a;
+         mk_ST attrs (r_src, r_dst, None, None, Some v, Some l)
+       ]
+       else [
          mk_MOV_or_ADD (r_src, v) r_off_d;
          mk_ST attrs (r_src, r_dst, r_off_a, None, Some v, Some l)
        ]
@@ -224,7 +257,7 @@ let hw_ins_of_ins arch_params tid state il = function
      let state = add_to_loc_map (l, r_dst) state in
      let il_st = [
          mk_MOV_or_ADD (r_src, v) r_off_d;
-	 mk_ST attrs (r_src, r_dst, r_off_a, None, Some v, Some l)
+         mk_ST attrs (r_src, r_dst, r_off_a, None, Some v, Some l)
        ]
      in
      state, il @ il_exp1 @ il_exp2 @ il_st
@@ -349,8 +382,8 @@ let rec hw_ins_of_components arch_params tid (state,il) =
      let state, lbl = get_fresh_lbl ~prefix:"Else" tid state in
      let il = il @ [
            Litmus_HW.CMP r;
-	   Litmus_HW.BNZ lbl;
-	   Litmus_HW.LBL lbl
+           Litmus_HW.BNZ lbl;
+           Litmus_HW.LBL lbl
          ]
      in
      hw_ins_of_components arch_params tid (state,il) (cs' @ cs)
