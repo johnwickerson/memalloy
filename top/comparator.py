@@ -413,11 +413,6 @@ def main(argv=None):
             print "ERROR: execution %s in allow-set is inconsistent!" % test_hash
             return
           
-  # litmus7 forbid file
-  with open(os.path.join(lit_result_dir, "forbid.txt"), "w+") as f:
-    for test in litmus_filenames:
-      testname, _ext = os.path.splitext(test)
-      print >>f, "%s Forbid" % testname
   end = timer()
   timing['dump'] = (end-start)
 
