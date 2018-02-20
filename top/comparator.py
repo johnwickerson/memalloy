@@ -378,6 +378,8 @@ def main(argv=None):
       print "Checking that the allow-set executions are allowed"
       allow_comparator_script = os.path.join(result_dir, "allow_comparator.als")
       hash_file = os.path.join(allow_result_dir, "xml", "hashes.txt")
+      # allowset generation can sometimes produce inconsistent executions
+      inconsistent = []
       with open(hash_file) as f:
         for test_hash in f:
           sys.stdout.flush()
@@ -411,9 +413,24 @@ def main(argv=None):
           if num_solutions == 1:
             print "Execution %s in allow-set is indeed consistent." % test_hash
           else:
-            print "ERROR: execution %s in allow-set is inconsistent!" % test_hash
-            return
-          
+            print "Execution %s in allow-set is inconsistent!" % test_hash
+      if inconsistent: # then cull from @all
+        inconsistent_file = os.path.join(allow_result_dir, "xml", "inconsistent.txt")
+        with open(inconsistent_file, "w+") as f:
+          for test_hash in inconsistent:
+            print >>f, test_hash
+        inconsistent_litmus_tests = [ "test_%s.litmus" % test_hash for test_hash in inconsistent ]
+        for arch in archs:
+          old = os.path.join(allow_result_dir, "litmus", arch, "@all")
+          new = os.path.join(allow_result_dir, "litmus", arch, "@all2")
+          with open(old, "r") as f, open(new, "w+") as g:
+            for test in f:
+              test = test.strip()
+              if test not in inconsistent_litmus_tests:
+                print >>g, test
+          copyfile(new, old)
+          os.remove(new)
+
   end = timer()
   timing['dump'] = (end-start)
 
