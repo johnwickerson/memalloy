@@ -380,6 +380,7 @@ def main(argv=None):
       hash_file = os.path.join(allow_result_dir, "xml", "hashes.txt")
       with open(hash_file) as f:
         for test_hash in f:
+          sys.stdout.flush()
           test_hash = test_hash.strip()
           if not test_hash: continue
           hint_file = os.path.join(allow_result_dir, "als", "test_%s.als" % test_hash)
