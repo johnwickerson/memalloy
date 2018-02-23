@@ -73,7 +73,7 @@ let com = rf | fr | co
 let ecom = com | co;rf
 let come = com \ sthd
 let ecome = ecom \ sthd
-let hb = ppoext | fenceext | ecome;stxn | stxn;ecome
+let hb = ppoext | fenceext | come;stxn | stxn;come
 acyclic hb as NoThinAir
 
 (* prop *)
