@@ -425,6 +425,7 @@ def main(argv=None):
             print "Execution %s in allow-set is indeed consistent." % test_hash
           else:
             print "Execution %s in allow-set is inconsistent!" % test_hash
+            inconsistent.add(test_hash)
       if inconsistent: # then cull from @all
         inconsistent_file = os.path.join(allow_result_dir, "xml", "inconsistent.txt")
         with open(inconsistent_file, "w+") as f:
