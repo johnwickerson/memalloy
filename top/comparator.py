@@ -2,9 +2,9 @@
 # -*- coding: utf-8 -*-
 
 # MIT License
-# 
+#
 # Copyright (c) 2017 by Nathan Chong and John Wickerson
-# 
+#
 # Permission is hereby granted, free of charge, to any person obtaining
 # a copy of this software and associated documentation files (the
 # "Software"), to deal in the Software without restriction, including
@@ -12,10 +12,10 @@
 # distribute, sublicense, and/or sell copies of the Software, and to
 # permit persons to whom the Software is furnished to do so, subject to
 # the following conditions:
-# 
+#
 # The above copyright notice and this permission notice shall be
 # included in all copies or substantial portions of the Software.
-# 
+#
 # THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND,
 # EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF
 # MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND
@@ -145,7 +145,8 @@ def main(argv=None):
       return 1
   end = timer()
   timing['setup'] = (end-start)
-    
+  sys.stdout.flush()
+
   #end if args.customscript
 
   # Stage 2: Alloy solving
@@ -168,14 +169,15 @@ def main(argv=None):
   end = timer()
   print "Alloy found %d solutions in %.2f sec" % (nsolutions, end-start)
   timing['alloy'] = (end-start)
-  
+  sys.stdout.flush()
+
   if nsolutions == 0:
     if args.expect and args.expect != 0:
       print "ERROR: Expected %d unique solutions, found 0" % args.expect
       return 1
     else:
       return 0
- 
+
   # Stage 3: Remove duplicates
   print "Remove duplicates"
   start = timer()
@@ -187,6 +189,7 @@ def main(argv=None):
   end = timer()
   print "Partitioned to %d unique solutions in %.2f sec" % (nsolutions, end-start)
   timing['rmdups'] = (end-start)
+  sys.stdout.flush()
 
   # Stage 3a: Filter executions to remove those that are inconsistent according to the model given in the -filter parameter
   if args.filter:
@@ -197,9 +200,10 @@ def main(argv=None):
     hash_file_ignore = os.path.join(xml_result_dir, "hashes_ignore.txt")
     open(hash_file_keep, 'a').close()
     open(hash_file_ignore, 'a').close()
-    nfiltered = 0    
+    nfiltered = 0
     with open(hash_file) as f:
       for test_hash in f:
+        sys.stdout.flush()
         test_hash = test_hash.strip()
         if not test_hash: continue
         xml_dir = os.path.join(xml_result_dir, "%s_unique" % test_hash)
@@ -254,7 +258,8 @@ def main(argv=None):
     end = timer()
     print "Filtered down to %d solutions in %.2f sec" % (nsolutions - nfiltered, end-start)
     timing['filtering'] = (end-start)
-  
+    sys.stdout.flush()
+
   # Stage 3b: Generate allow-set
   if args.allowset:
     print "Generate allow-set"
@@ -268,7 +273,7 @@ def main(argv=None):
       print "ERROR: generating allowed executions was unsuccessful"
       return 1
     nsolutions = len([x for x in os.listdir(allow_xml_result_dir) if is_xml_file(x)])
-    print "Constructed %d allowed variants" % nsolutions 
+    print "Constructed %d allowed variants" % nsolutions
     print "Remove duplicates from allow-set"
     args.xml_result_dir = allow_xml_result_dir
     remove_dups.UNIQUE = {}
@@ -280,7 +285,8 @@ def main(argv=None):
     end = timer()
     print "Partitioned to %d unique solutions in %.2f sec" % (nsolutions, end-start)
     timing['allowset'] = (end-start)
-  
+    sys.stdout.flush()
+
   # Stage 4: Generate litmus test output
   start = timer()
   result_dir_list = [result_dir]
@@ -292,6 +298,7 @@ def main(argv=None):
     #litmus_filenames = []
     with open(hash_file) as f:
       for test_hash in f:
+        sys.stdout.flush()
         test_hash = test_hash.strip()
         if not test_hash: continue
         xml_dir = os.path.join(my_result_dir, "xml", "%s_unique" % test_hash)
@@ -308,7 +315,7 @@ def main(argv=None):
         if code != 0:
           print "ERROR: als generation was unsuccessful"
           return 1
-        
+
         dot_file = os.path.join(my_result_dir, "dot", "test_%s.dot" % test_hash)
         cmd = [os.path.join(TOOL_PATH, "gen"), "-Tdot", "-o", dot_file, os.path.join(xml_dir, xml_files[0])]
         if args.verbose: print " ".join(cmd)
@@ -316,7 +323,7 @@ def main(argv=None):
         if code != 0:
           print "ERROR: dot generation was unsuccessful"
           return 1
-      
+
         png_file = os.path.join(my_result_dir, "png", "test_%s.png" % test_hash)
         cmd = ["dot", "-Tpng", "-o", png_file, dot_file]
         if args.verbose: print " ".join(cmd)
@@ -343,13 +350,13 @@ def main(argv=None):
             print "ERROR: litmus-test generation was unsuccessful"
             return 1
 
-          
+
   # litmus7 @all
   archs = [args.arch]
   if args.arch == "HW":
     archs = ["ARM8", "PPC", "X86"]
   for arch in archs:
-    
+
     litmus_filenames = []
     hashes_txt = "hashes_keep.txt" if args.filter else "hashes.txt"
     hash_file = os.path.join(result_dir, "xml", hashes_txt)
@@ -372,9 +379,13 @@ def main(argv=None):
       with open(os.path.join(allow_result_dir, "litmus", arch, "@all"), "w+") as f:
         for test in litmus_filenames:
           print >>f, test
+  end = timer()
+  timing['dump'] = (end-start)
+  sys.stdout.flush()
 
   # Stage 5: Check the allow-set
   if args.allowset and len(args.violates) == 1:
+      start = timer()
       print "Checking that the allow-set executions are allowed"
       allow_comparator_script = os.path.join(result_dir, "allow_comparator.als")
       hash_file = os.path.join(allow_result_dir, "xml", "hashes.txt")
@@ -430,9 +441,9 @@ def main(argv=None):
                 print >>g, test
           copyfile(new, old)
           os.remove(new)
-
-  end = timer()
-  timing['dump'] = (end-start)
+      end = timer()
+      timing['chk-allowset'] = (end-start)
+      sys.stdout.flush()
 
   if platform.system() == "Darwin" and args.batch == False:
     if nsolutions == 1:
@@ -449,9 +460,11 @@ def main(argv=None):
       print "ERROR: Expected %d unique solutions, found %d" % (args.expect, nsolutions)
       return 1
 
+  kwidth = max(len(k) for k in timing.keys())
+  dwidth = max(len("%.2f sec" % d) for d in timing.values())
   for (k,d) in timing.items():
-    print "%s\t%.2f sec" % (k,d)
-      
+    print "%s\t%s" % (k.ljust(kwidth),("%.2f sec" % d).rjust(dwidth))
+
   return 0
 
 if __name__ == '__main__':
