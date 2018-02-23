@@ -71,8 +71,8 @@ let fenceext = rfe?;fence;rfe?
 (* happens before *)
 let com = rf | fr | co
 let ecom = com | co;rf
-let come = com \ sthd
-let ecome = ecom \ sthd
+let come = rfe | fre | coe
+let ecome = rfe | fre | coe | coe;rfe
 let hb = ppoext | fenceext | come;stxn | stxn;come
 acyclic hb as NoThinAir
 
