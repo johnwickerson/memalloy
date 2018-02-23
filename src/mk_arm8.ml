@@ -78,6 +78,8 @@ let pp_ins oc = function
 		 (if a.is_exclusive then "X" else "")
 		 pp_32reg a.dst pp_64reg a.src
       | LD, Some off, None ->
+	 if a.is_acq_rel then failwith "LDAR with offset not supported";
+	 if a.is_exclusive then failwith "LDXR with offset not supported";
 	 fprintf oc "LD%s%sR %a, [%a,%a,SXTW]"
 		 (if a.is_acq_rel then "A" else "")
 		 (if a.is_exclusive then "X" else "")
@@ -93,11 +95,15 @@ let pp_ins oc = function
 		 (if a.is_exclusive then "X" else "")
 		 pp_32reg sta pp_32reg a.src pp_64reg a.dst
       | ST, Some off, None ->
+	 if a.is_acq_rel then failwith "STLR with offset not supported";
+	 if a.is_exclusive then failwith "STXR with offset not supported";
 	 fprintf oc "ST%s%sR %a, [%a,%a,SXTW]"
 		 (if a.is_acq_rel then "L" else "")
 		 (if a.is_exclusive then "X" else "")
 		 pp_32reg a.src pp_64reg a.dst pp_32reg off
       | ST, Some off, Some sta ->
+	 if a.is_acq_rel then failwith "STLR with offset not supported";
+	 if a.is_exclusive then failwith "STXR with offset not supported";
 	 fprintf oc "ST%s%sR %a, %a, [%a,%a,SXTW]"
 		 (if a.is_acq_rel then "L" else "")
 		 (if a.is_exclusive then "X" else "")

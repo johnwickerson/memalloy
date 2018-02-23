@@ -49,6 +49,10 @@ let rec pp_expr k oc = function
 let mk_expr b rs =
   List.fold_left (fun e r -> Madd(e,r)) (Just b) rs
 
+let is_fake_dependence_expr = function
+  | Just _ -> false
+  | Madd (_,_) -> true
+
 type txn_outcome =
   | TxnAbort
   | TxnCommit
