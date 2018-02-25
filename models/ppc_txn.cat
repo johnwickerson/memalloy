@@ -69,25 +69,21 @@ let ppoext = rfe?;ppo;rfe?
 let fenceext = rfe?;fence;rfe?
 
 (* happens before *)
-let com = rf | fr | co
-let ecom = com | co;rf
-let come = rfe | fre | coe
-let ecome = rfe | fre | coe | coe;rfe
-let hb = ppoext | fenceext | ecome;stxn | stxn;ecome
+let hb = ppoext | fenceext
 acyclic hb as NoThinAir
 
 (* prop *)
 let propbase = fenceext;hb*
 
 let chapo = rfe|fre|coe|(fre;rfe)|(coe;rfe)
-
+let com = rf | fr | co
                                 
-(*let txn_prop = rfe; stxn; [W]      (* for Cain+ WRC *)
+let txn_prop = rfe; stxn; [W]      (* for Cain+ WRC *)
              | fre; stxn; rfe; ppo (* for Cain+ IRIW *)
-             | stxn; rfe; ppo      (* for WRC MCA *) *)
+             | stxn; rfe; ppo      (* for WRC MCA *)
                                 
 let prop = (W * W) & propbase | (chapo? ; propbase*; (sync|implied); hb*)
-           | rfe;stxn | stxn;rfe
+           | txn_prop
 
 acyclic co|prop as Propagation
 irreflexive fre;prop;hb* as Observation
@@ -102,6 +98,6 @@ empty atom & (po & (into(stxn) | outof(stxn)))* as TxnClearsReservation
                               
 acyclic stronglift(com, stxn) as StrongIsol
 acyclic stronglift(hb, stxn) as TxnOrder
-#acyclic stronglift(co | prop, stxn) as TxnPropagation
+acyclic stronglift(co | prop, stxn) as TxnPropagation
 
 #irreflexive stronglift(fre;prop;hb*,stxn) as TxnObservation
