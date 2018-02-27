@@ -71,7 +71,7 @@ let fenceext = rfe?;fence;rfe?
 (* happens before *)
 let com = rf | fr | co
 let come = rfe | fre | coe
-let thb = (rfe | coe | fre?;(ppo|fence))+; fre?; rfe? | fre;rfe?
+let thb = (rfe | fre?; (coe | ppo\stxn | fence\stxn))+; fre?; rfe? | fre;rfe?
 let hb = ppoext | fenceext | stxn;thb;stxn
 acyclic hb as NoThinAir
 
@@ -94,4 +94,4 @@ empty atom & (fre;coe) as AtomicRMW
 
 empty atom & (po & (into(stxn) | outof(stxn)))* as TxnClearsReservation
                               
-acyclic stronglift(com, stxn) as StrongIsol
+#acyclic stronglift(com, stxn) as StrongIsol
