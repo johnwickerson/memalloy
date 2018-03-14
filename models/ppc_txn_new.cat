@@ -71,7 +71,7 @@ let fenceext = rfe?;fence;rfe?
 (* happens before *)
 let fc = fre | coe
 let hbi = ppo | fence
-let thb = (rfe | fc*; (hbi\stxn))*; fc*; rfe?
+let thb = (rfe | fc*; hbi)*; fc*; rfe?
 let hb = ppoext | fenceext | weaklift(thb,stxn)
 acyclic hb as NoThinAir
 
