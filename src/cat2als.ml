@@ -329,4 +329,5 @@ let main () =
   let _ = als_of_file interm_model unrolling_factor cat_path in
   exit 0
     
-let _ = main ()
+let _ =
+  if not !Sys.interactive then main ()

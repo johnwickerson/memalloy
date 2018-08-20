@@ -30,11 +30,11 @@ open! General_purpose
 
 type attribute = string
 
-type address = Reg of Register.t | Loc of Location.t
+type address = Reg of Register.t | Loc of MyLocation.t
 
 let pp_addr oc = function
   | Reg r -> Register.pp_full oc r
-  | Loc l -> Location.pp oc l
+  | Loc l -> MyLocation.pp oc l
 
 (** A language of expressions for creating fake dependencies *)
 type 'a expr =
@@ -63,9 +63,9 @@ let pp_txn_outcome oc = function
 
 (** Instruction in a litmus test *)
 type instruction =
-  | Load of Register.t * Location.t expr
-  | Store of Location.t expr * Value.t expr
-  | Cas of Location.t expr * Value.t * Value.t expr
+  | Load of Register.t * MyLocation.t expr
+  | Store of MyLocation.t expr * Value.t expr
+  | Cas of MyLocation.t expr * Value.t * Value.t expr
   | Fence
   | TxnBegin
   | TxnEnd of txn_outcome
@@ -74,15 +74,15 @@ type instruction =
 let pp_instr oc = function
   | Load (r,le), attrs -> 
      fprintf oc "%a := load(%a%a)"
-	     Register.pp r (pp_expr Location.pp) le
+	     Register.pp r (pp_expr MyLocation.pp) le
 	     (MyList.pp_gen "" (fun oc -> fprintf oc ",%s")) attrs
   | Store (le,ve), attrs ->
      fprintf oc "store(%a,%a%a)"
-	     (pp_expr Location.pp) le (pp_expr Value.pp) ve
+	     (pp_expr MyLocation.pp) le (pp_expr Value.pp) ve
 	     (MyList.pp_gen "" (fun oc -> fprintf oc ",%s")) attrs
   | Cas (le,v,ve), attrs ->
      fprintf oc "cas(%a,%a,%a%a)"
-	     (pp_expr Location.pp) le Value.pp v (pp_expr Value.pp) ve
+	     (pp_expr MyLocation.pp) le Value.pp v (pp_expr Value.pp) ve
 	     (MyList.pp_gen "" (fun oc -> fprintf oc ",%s")) attrs
   | Fence, attrs ->
      fprintf oc "fence(%a)"
@@ -111,7 +111,7 @@ and pp_components k = MyList.pp_gen "; " (pp_component k)
 		     
 (** A litmus test comprises a list of locations, a list of threads, and a postcondition *)		     
 type t = {
-    locs: Location.t list;
+    locs: MyLocation.t list;
     thds: (instruction * attribute list) component list list;
     post: (address, Value.t) Assoc.t;
   }
@@ -119,7 +119,7 @@ type t = {
 (** Simple pretty-printing of litmus tests *)	   
 let pp oc lt =
   fprintf oc "Locations: %a.\n\n"
-    (MyList.pp_gen ", " Location.pp) lt.locs;
+    (MyList.pp_gen ", " MyLocation.pp) lt.locs;
   let pp_thd tid cs =
     fprintf oc "Thread %d:\n" tid;
     MyList.pp_gen ";\n" (pp_component pp_instr) oc cs;

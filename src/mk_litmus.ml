@@ -102,7 +102,7 @@ let mk_instr x maps reg_map e =
   List.fold_left (fun c (r,v) -> [If(r,v,c)]) cs c_regvals
 
 (** [partition_seq sb es] orders the events in [es] into a sequence of events ordered by [sb]. *)
-let partition_seq sb es : Event.t list =
+let partition_seq sb es : Evt.t list =
   let comparator e e' =
     if List.mem (e,e') sb then -1 else
       if List.mem (e',e) sb then 1 else
@@ -141,7 +141,7 @@ let litmus_of_execution' x maps =
   let find_reg e = try
       Reg (List.assoc e reg_map)
     with Not_found ->
-      failwith "Couldn't find register written by event %a." Event.pp e
+      failwith "Couldn't find register written by event %a." Evt.pp e
   in
   let reg_post =
     List.map (fun e -> (find_reg e, find_reg_val e)) reg_evts

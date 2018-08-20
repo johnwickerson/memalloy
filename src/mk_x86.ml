@@ -101,7 +101,7 @@ let pp_reg oc (t,r) =
 let pp_reg_full oc (t,r) = fprintf oc "%d:%s" t (reg_name_of_num (physical_reg_of t r))
 
 (** Print a location *)
-let pp_loc oc = Location.pp oc
+let pp_loc oc = MyLocation.pp oc
 
 (** Print an instruction *)
 let pp_ins oc = function

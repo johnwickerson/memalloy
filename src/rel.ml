@@ -64,3 +64,10 @@ let partition invert r es =
     with Not_found -> (i+1, (e,i)::map)
   in
   snd (List.fold_left partition_helper (0, []) es)
+
+let cartesian s1 s2 =
+  List.concat (List.map (fun e -> List.map (fun e' -> (e,e')) s2) s1)
+
+let union = MySet.union
+let diff = MySet.diff
+let inter = MySet.inter

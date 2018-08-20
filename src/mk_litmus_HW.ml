@@ -30,7 +30,7 @@ open! General_purpose
 open Litmus
 
 type mk_litmus_state = {
-    loc_map : (Location.t, Register.t) Assoc.t; (** mapping locations to registers *)
+    loc_map : (MyLocation.t, Register.t) Assoc.t; (** mapping locations to registers *)
     next_reg : int; (** next register *)
     next_lbl : int; (** next label *)
     next_sentinel : int; (** next sentinel value *)

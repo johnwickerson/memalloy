@@ -54,14 +54,14 @@ let dot_of_event x maps e =
   let ignored_attrs = ["EV";"R";"W";"F";"IW"] in
   let attrs = MySet.diff (get_sets x e) ignored_attrs in
   let loc =
-    try asprintf "%a" Location.pp (List.assoc e maps.loc_map)
+    try asprintf "%a" MyLocation.pp (List.assoc e maps.loc_map)
     with Not_found -> ""
   in
   (* let thd =
     try asprintf "T%d: " (List.assoc e maps.thd_map)
     with Not_found -> ""
   in *)
-  let e = asprintf "%a" Event.pp e in
+  let e = asprintf "%a" Evt.pp e in
   let label = asprintf "%s: %s[%a]%s%s" e dir
 		       (MyList.pp_gen "," pp_str) attrs loc vals
   in
@@ -90,8 +90,8 @@ let dot_of_rel (name, tuples) =
   let gv_attrs = ("color", edge_color name) :: gv_attrs in
   let gv_attrs = ("xlabel", name) :: gv_attrs in
   let dot_of_pair (e,e') =
-    let e = asprintf "%a" Event.pp e in
-    let e' = asprintf "%a" Event.pp e' in
+    let e = asprintf "%a" Evt.pp e in
+    let e' = asprintf "%a" Evt.pp e' in
     (e,e',gv_attrs)
   in
   List.map dot_of_pair tuples

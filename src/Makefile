@@ -23,7 +23,7 @@ DEST := ..
 
 DOCDIR := ../doc
 
-.PHONY: all clean gen comparator doc
+.PHONY: all clean gen comparator doc top
 
 BINARIES = cat2als pp_comparator gen weaken
 
@@ -33,8 +33,13 @@ $(BINARIES):
 	@ ocamlbuild $(OCB_OPTS) $@.native
 	mv $@.native $(DEST)/$@
 
+# Note: put `#directory "_build";;` into your ~/.ocamlinit file
+top:
+	@ python ../etc/list_all_module_names.py > toplevel.mltop
+	@ ocamlbuild toplevel.top $(OCB_OPTS)
+
 doc:
-	@ python ../etc/mk_odocl.py > $(DOCNAME).odocl
+	@ python ../etc/list_all_module_names.py > $(DOCNAME).odocl
 	@ ocamlbuild $(OCB_OPTS) $(OCD_OPTS) $(DOCNAME).docdir/index.html
 	@ rm -rf $(DOCDIR) && mv $(DOCNAME).docdir $(DOCDIR)
 	@ cp mystyle.css $(DOCDIR)
@@ -48,4 +53,5 @@ clean:
 	rm -f $(DEST)/pp_comparator
 	rm -f $(DEST)/weaken
 	rm -f memalloy.odocl
+	rm -f toplevel.mltop
 	rm -rf $(DOCDIR)

@@ -30,19 +30,19 @@ open! General_purpose
 	  
 (** An execution is a list of named event sets and a list of named event relations *)
 type t = {
-    sets : (string * Event.t MySet.t) MySet.t;
-    rels : (string * Event.t Rel.t) MySet.t;
+    sets : (string * Evt.t MySet.t) MySet.t;
+    rels : (string * Evt.t Rel.t) MySet.t;
   }
 
 (** Basic pretty-printing of executions *)
 let pp_exec oc exec =
   let pp_set (name,tuples) =
     fprintf oc "Set: %s={%a}\n" name
-	    (MyList.pp_gen "," Event.pp) tuples
+	    (MyList.pp_gen "," Evt.pp) tuples
   in
   let pp_rel (name,tuples) =
     fprintf oc "Rel: %s={%a}\n" name
-	    (MyList.pp_gen "," (fparen (Pair.pp Event.pp "," Event.pp)))
+	    (MyList.pp_gen "," (fparen (Pair.pp Evt.pp "," Evt.pp)))
 	    tuples
   in
   List.iter pp_set exec.sets;
@@ -122,17 +122,17 @@ let tidy_exec x =
 
 (** A collection of maps that identify the thread, location, value written, and value read (where applicable) of each event *)
 type execution_maps = {
-    thd_map : (Event.t, Tid.t) Assoc.t;
-    loc_map : (Event.t, Location.t) Assoc.t;
-    wval_map : (Event.t, Value.t) Assoc.t;
-    rval_map : (Event.t, Value.t) Assoc.t;
+    thd_map : (Evt.t, Tid.t) Assoc.t;
+    loc_map : (Evt.t, MyLocation.t) Assoc.t;
+    wval_map : (Evt.t, Value.t) Assoc.t;
+    rval_map : (Evt.t, Value.t) Assoc.t;
   }
 
 let pp_maps oc maps =
   fprintf
     oc "thd_map = {%a}, loc_map = {%a}"
-    (MyList.pp_gen "," (Pair.pp Event.pp "=" Tid.pp)) maps.thd_map
-    (MyList.pp_gen "," (Pair.pp Event.pp "=" Location.pp)) maps.loc_map
+    (MyList.pp_gen "," (Pair.pp Evt.pp "=" Tid.pp)) maps.thd_map
+    (MyList.pp_gen "," (Pair.pp Evt.pp "=" MyLocation.pp)) maps.loc_map
 
 (** Build a map from each write event to the value that it writes. Initial writes, if present, write zero; all other writes write positive integers. The value written by each write event corresponds to its position in the coherence order. *)
 let mk_wval_map loc_map co ws iws =
@@ -194,3 +194,32 @@ let rectify_maps (x,xmaps) (y,ymaps) pi =
   printf "Permuting locations!\n";
   let loc_map = List.fold_left (fix xmaps.loc_map) ymaps.loc_map yev in
   { ymaps with thd_map = thd_map; loc_map = loc_map }
+
+let hash_evt (n,acc) e =
+  n+1, (e,n+1) :: acc
+  
+let hash_thd (n,acc) thd =
+  List.fold_left hash_evt (n,acc) thd
+  
+let hash_thds (n,acc) thds =
+  List.fold_left hash_thd (n,acc) thds
+  
+let hash_exec _oc x =
+  let iws = get_set x "IW" in
+  let ev = get_set x "EV" in
+  let nI = MySet.diff ev iws in
+  let sb = get_rel x "sb" in
+  let asw = Rel.cartesian iws nI in
+  let thd_map = Rel.partition true (get_rel x "sthd") nI in
+  let thd_map = Assoc.group_map thd_map in
+  let thd_size = List.map (fun (k, v) -> (k, List.length v)) thd_map in
+  let order = Rel.union sb asw in
+  let compare_order e e' =
+    if List.mem (e,e') order || List.assoc e thd_size < List.assoc e' thd_size
+    then -1 else
+      if List.mem (e',e) order || List.assoc e' thd_size < List.assoc e thd_size
+      then 1 else 0
+  in
+  let ev = List.sort compare_order ev in
+  let ev_perms = MyList.lin_extns compare_order ev in
+  ev_perms

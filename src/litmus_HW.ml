@@ -39,7 +39,7 @@ type mem_access = {
     sta : Register.t option;
     (** status register (only for ARM8/PPC exclusive stores) *)
     imm : Value.t option;    (** only for X86 *)
-    loc : Location.t option; (** only for X86 *)
+    loc : MyLocation.t option; (** only for X86 *)
     is_exclusive : bool;
     is_acq_rel : bool; (** for ARM8 *)
   }
@@ -103,7 +103,7 @@ type 'fence arch_specific_params = {
 (** Type of hardware litmus tests *)
 type 'fence t = {
     name: string;
-    locs: (Location.t, Register.t list) Assoc.t;
+    locs: (MyLocation.t, Register.t list) Assoc.t;
     thds: 'fence hw_instruction list list;
     post: (Litmus.address, Value.t) Assoc.t;
   }
@@ -113,7 +113,7 @@ let pp_locs pp_reg oc locs =
   fprintf oc "{\n";
   let pp_loc (x,rl) =
     let pp_patch r =
-      fprintf oc "%a = %a;\n" pp_reg r Location.pp x
+      fprintf oc "%a = %a;\n" pp_reg r MyLocation.pp x
     in
     List.iter pp_patch rl
   in
@@ -145,7 +145,7 @@ let add_spaces thds =
 (** Print a register or a location *)
 let pp_addr pp_reg oc = function
   | Litmus.Reg tr -> pp_reg oc tr
-  | Litmus.Loc l -> Location.pp oc l
+  | Litmus.Loc l -> MyLocation.pp oc l
   
 (** Print the postcondition *)
 let pp_post pp_reg oc post =

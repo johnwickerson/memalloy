@@ -24,7 +24,7 @@
 import os
 
 for f in os.listdir('.'):
-    if f.endswith(".ml"):
+    if f.endswith(".ml") or f.endswith(".mly") or f.endswith(".mll"):
         f = os.path.splitext(f)[0] # remove extension
         f = f[0].upper() + f[1:] # capitalise first letter
         print f
