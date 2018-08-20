@@ -2,27 +2,12 @@ language: java
 jdk: oraclejdk8
 sudo: required
 env:
-   - TARGET=txn_tests OCAML_VERSION=4.01.0
-   - TARGET=txn_tests OCAML_VERSION=4.02.1
-   - TARGET=txn_tests OCAML_VERSION=4.02.3
-   - TARGET=txn_tests OCAML_VERSION=4.03.0
-   - TARGET=txn_tests OCAML_VERSION=4.04.0
-   - TARGET=more_txn_tests OCAML_VERSION=4.01.0
-   - TARGET=more_txn_tests OCAML_VERSION=4.02.1
-   - TARGET=more_txn_tests OCAML_VERSION=4.02.3
-   - TARGET=more_txn_tests OCAML_VERSION=4.03.0
-   - TARGET=more_txn_tests OCAML_VERSION=4.04.0
-   - TARGET=even_more_txn_tests OCAML_VERSION=4.01.0
-   - TARGET=even_more_txn_tests OCAML_VERSION=4.02.1
-   - TARGET=even_more_txn_tests OCAML_VERSION=4.02.3
-   - TARGET=even_more_txn_tests OCAML_VERSION=4.03.0
-   - TARGET=even_more_txn_tests OCAML_VERSION=4.04.0
-   - TARGET=moretests OCAML_VERSION=4.01.0
-   - TARGET=moretests OCAML_VERSION=4.02.1
-   - TARGET=moretests OCAML_VERSION=4.02.3
-   - TARGET=moretests OCAML_VERSION=4.03.0
-   - TARGET=moretests OCAML_VERSION=4.04.0
+  - TARGET=txn_tests 
+  - TARGET=more_txn_tests
+  - TARGET=even_more_txn_tests
+  - TARGET=moretests
 before_install:
+  - OCAML_VERSION=4.07.0
   - sudo apt-get update
 # Installing graphviz
   - sudo apt-get install graphviz

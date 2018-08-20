@@ -100,7 +100,7 @@ let insert_all_sorted_positions cmp y xs =
   let rec insert_all_sorted_positions = function
     | [] -> [[y]]
     | x::xs when cmp y x = -1 -> [y::x::xs]
-    | x::xs -> (y::x::xs) :: map (fun xs -> x::xs) (insert_all_sorted_positions xs)
+    | x::xs -> (y::x::xs) :: map (cons x) (insert_all_sorted_positions xs)
   in insert_all_sorted_positions xs
 
 (** [lin_extns cmp xs] returns all lists obtained by permuting the sorted list [xs] while keeping it sorted (according to comparator [cmp]). Example: [lin_extns compare_by_length ["";"a";"b";"cd"]] gives [[["";"a";"b";"cd"]; [""; "b";"a";"cd"]]]. *)
