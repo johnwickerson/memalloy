@@ -1,7 +1,7 @@
 (*
 MIT License
 
-Copyright (c) 2017 by John Wickerson and Tyler Sorensen.
+Copyright (c) 2018 by John Wickerson.
 
 Permission is hereby granted, free of charge, to any person obtaining
 a copy of this software and associated documentation files (the
@@ -23,20 +23,38 @@ OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION
 WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 *)
 
-(** Datatype for representing events *)
+(** Converting a solution found by Alloy into a hash. Isomorphic solutions should have the same hash, which means that the hash can be used to quickly discard duplicate solutions. *)
 
 open! Format
 open! General_purpose
 
-type t = string
-	   
-(** Remove dollar signs from event names *)
-let pp oc e =
-  fprintf oc "%s" (Str.global_replace (Str.regexp_string "$") "" e)
+let get_args () =
+  let xml_path : string list ref = ref [] in
+  let speclist = [] in
+  let usage_msg = "Usage: `weaken [options] xml_file.xml`.\n\
+                   Options available:"
+  in
+  Arg.parse speclist (set_list_ref xml_path) usage_msg;
+  let bad_arg () =
+    Arg.usage speclist usage_msg;
+    raise (Arg.Bad "Missing or too many arguments.")
+  in
+  let xml_path =
+    try MyList.the !xml_path with Not_found -> bad_arg ()
+  in
+  xml_path
 
-let compare = String.compare
+let run xml_path oc =
+  let soln = Xml_input.parse_file xml_path in
+  Xml_input.hash_soln oc soln
+  
+let main () =
+  let xml_path = get_args () in
+  if not (Sys.file_exists xml_path) then
+    failwith "Couldn't find `%s`" xml_path;
+  let oc = formatter_of_out_channel stdout in
+  run xml_path oc;
+  exit 0
 
-let compare_pair (e1,e1') (e2,e2') =
-  match compare e1 e2 with
-  | 0 -> compare e1' e2'
-  | n -> n
+let _ =
+  if not !Sys.interactive then main ()

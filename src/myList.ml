@@ -108,4 +108,18 @@ let lin_extns cmp xs =
   let rec lin_extns = function
     | [] -> [[]]
     | hd::tl -> concat (map (insert_all_sorted_positions cmp hd) (lin_extns tl))
-in lin_extns xs
+  in lin_extns xs
+
+(** [cartesian xs ys] returns the list of all pairs [(x,y)] where [x] is in [xs] and [y] is in [ys] *)
+let cartesian xs ys =
+  List.concat (List.map (fun x -> List.map (fun y -> (x,y)) ys) xs)
+
+(** [n_cartesian [l1;...;ln]] returns the list of all lists of the form [[x1;...;xn]] where [xi] is in [li] for all [1 <= i <= n]. Example: [n_cartesian [[1;2];[3];[4;5]]] gives [[[1; 3; 4]; [1; 3; 5]; [2; 3; 4]; [2; 3; 5]]]. *)
+let rec n_cartesian = function
+  | [] -> [[]]
+  | xs::xss -> concat (map (fun x -> List.map (cons x) (n_cartesian xss)) xs)
+
+(** [remove_dupes xs] removes duplicated elements from [xs]. *)
+let rec remove_dupes = function
+| [] -> []
+| x::xs -> x :: remove_dupes (filter ((<>) x) xs)

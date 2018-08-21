@@ -165,8 +165,8 @@ let resolve_exec x =
   let ws = get_set x "W" in
   let rw = MySet.union rs ws in
   let nI = MySet.diff (get_set x "EV") iws in
-  let thd_map = Rel.partition true (get_rel x "sthd") nI in
-  let loc_map = Rel.partition true (get_rel x "sloc") rw in
+  let thd_map = Rel.partition (get_rel x "sthd") nI in
+  let loc_map = Rel.partition (get_rel x "sloc") rw in
   let wval_map = mk_wval_map loc_map (get_rel x "co") ws iws in
   let rval_map = mk_rval_map wval_map (get_rel x "rf") rs in
   { thd_map = thd_map; loc_map = loc_map;
@@ -195,31 +195,89 @@ let rectify_maps (x,xmaps) (y,ymaps) pi =
   let loc_map = List.fold_left (fix xmaps.loc_map) ymaps.loc_map yev in
   { ymaps with thd_map = thd_map; loc_map = loc_map }
 
-let hash_evt (n,acc) e =
-  n+1, (e,n+1) :: acc
-  
-let hash_thd (n,acc) thd =
-  List.fold_left hash_evt (n,acc) thd
-  
-let hash_thds (n,acc) thds =
-  List.fold_left hash_thd (n,acc) thds
-  
-let hash_exec _oc x =
+(** Partition the events [es] of execution [x] so that each partition is strongly sequenced before the next. *)
+let rec partition_seq x es =
+  if List.length es = 1 then
+    [es]
+  else
+    let sb = Rel.trancl (get_rel x "sb") in
+    let not_sb = Rel.diff (Rel.sq es) sb in
+    let not_sa = Rel.diff (Rel.sq es) (Rel.invert sb) in
+    let unseq = Rel.trancl (Rel.inter not_sb not_sa) in
+    let partitions = Assoc.val_list (Assoc.invert_map (Rel.partition unseq es)) in
+    let compare_partitions p1 p2 = Rel.compare sb (List.hd p1) (List.hd p2) in
+    let partitions = List.sort compare_partitions partitions in
+    let permuted_partitions = List.map (partition_par x) partitions in
+    List.map List.concat (MyList.n_cartesian permuted_partitions)
+
+(** Partition the events [es] of execution [x] so that there is no sequencing between different partitions. *)
+and partition_par x es =
+  if List.length es = 1 then
+    [es]
+  else
+    let sb = Rel.trancl (get_rel x "sb") in
+    let partitions = Assoc.val_list (Assoc.invert_map (Rel.partition sb es)) in
+    let compare_partitions es1 es2 = List.compare_lengths es1 es2 in
+    let partitions = List.sort compare_partitions partitions in
+    let permuted_partitions = List.map (partition_seq x) partitions in
+    List.map List.concat
+      (List.concat (List.map (MyList.lin_extns compare_partitions)
+                      (MyList.n_cartesian permuted_partitions)))
+
+(** [valid_evt_orders x] returns a list of lists of [x]'s events, where each list is a valid event order. Valid means that the order respects the sequenced-before relation, and keeps events in the same thread (and other unsequenced collections) together. *)
+let valid_evt_orders x =
   let iws = get_set x "IW" in
   let ev = get_set x "EV" in
   let nI = MySet.diff ev iws in
-  let sb = get_rel x "sb" in
-  let asw = Rel.cartesian iws nI in
-  let thd_map = Rel.partition true (get_rel x "sthd") nI in
-  let thd_map = Assoc.group_map thd_map in
-  let thd_size = List.map (fun (k, v) -> (k, List.length v)) thd_map in
-  let order = Rel.union sb asw in
-  let compare_order e e' =
-    if List.mem (e,e') order || List.assoc e thd_size < List.assoc e' thd_size
-    then -1 else
-      if List.mem (e',e) order || List.assoc e' thd_size < List.assoc e thd_size
-      then 1 else 0
+  let thd_map = Rel.partition (get_rel x "sthd") nI in
+  let thd_classes = Assoc.val_list (Assoc.invert_map thd_map) in
+  let nI_orders = List.concat (List.map (partition_seq x) thd_classes) in
+  let iw_orders = MyList.perms iws in
+    List.map (fun (iw_order, nI_order) -> iw_order @ nI_order)
+      (MyList.cartesian iw_orders nI_orders)
+
+(** [rename evt_order x] produces a new execution that is isomorphic to [x] but the events are permuted into the order given by [evt_order]. *)
+let rename evt_order x =
+  let ev = get_set x "EV" in
+  let renaming_map = List.combine evt_order ev in
+  let rename e = List.assoc e renaming_map in
+  let rename_set s = List.sort Evt.compare (List.map rename s) in
+  let rename_rel r =
+    List.sort Evt.compare_pair (List.map (fun (e,e') -> (rename e, rename e')) r)
   in
-  let ev = List.sort compare_order ev in
-  let ev_perms = MyList.lin_extns compare_order ev in
-  ev_perms
+  let sets = List.map (fun (s_name, s) -> (s_name, rename_set s)) x.sets in
+  let rels = List.map (fun (r_name, r) -> (r_name, rename_rel r)) x.rels in
+  {sets;rels;}
+
+(** [hash_exec oc x] produces, on output channel [oc], a hash representing all the isomorphic variants of the execution [x] *)
+let hash_exec oc x =
+  let mk_hash evt_order =
+      let b = Buffer.create 512 in
+      let oc_b = formatter_of_buffer b in
+      let () = fprintf oc_b "%a" pp_exec (rename evt_order x) in
+      Buffer.contents b
+  in
+  let hashes = List.map mk_hash (valid_evt_orders x) in
+  let hashes = List.sort String.compare hashes in
+  (* MyList.pp_gen "+\n" pp_str oc hashes *)
+  let hashes = List.map (fun h -> Digest.to_hex (Digest.string h)) hashes in
+  MyList.pp_gen "+" pp_str oc hashes
+    
+let hash_double_exec oc (_x,_y,_pi) =
+  fprintf oc "NOT DONE YET!"
+  
+(** {2 Useful for testing } *)
+
+let e0,e1,e2,e3,e4,e5,e6,e7,e8,e9 =
+  "E$0", "E$1", "E$2", "E$3", "E$4", "E$5", "E$6", "E$7", "E$8", "E$9"
+
+let sb = Rel.trancl [e5,e2; e2,e1; e2,e3; e1,e4; e3,e4; 
+                      e5,e7; e7,e8; e8,e6; e4,e6; ]
+let test_exec = {
+    sets = [ "EV",  [e0;e1;e2;e3;e4;e5;e6;e7;e8;e9];
+             "IW",  [e0;e9];
+             "R",   [e0;e1]; ];
+    rels = [ "sthd", Rel.sq [e1;e2;e3;e4;e5;e6;e7;e8];
+             "sb",   sb; ]
+  }
+  

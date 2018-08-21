@@ -225,6 +225,5 @@ let main () =
     run out_dir xml_path;
   exit 0
 
-            
-            
-let _ = main ()  
+let _ =
+  if not !Sys.interactive then main ()

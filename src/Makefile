@@ -2,6 +2,10 @@
 OCB_OPTS := -use-ocamlfind
 # enable C-c C-t for inspecting types
 OCB_OPTS := $(OCB_OPTS) -cflag -annot
+# turns on recursive building, in case there are modules in
+# subdirectories. The main reason is to disable an annoying
+# warning about not having it on!
+OCB_OPTS := $(OCB_OPTS) -r
 # turns on debugging (use 'export OCAMLRUNPARAM=b' for stack traces)
 OCB_OPTS := $(OCB_OPTS) -cflag -g
 # standard OCaml libraries
@@ -23,9 +27,9 @@ DEST := ..
 
 DOCDIR := ../doc
 
-.PHONY: all clean gen comparator doc top
+.PHONY: all clean doc top cat2als pp_comparator gen weaken mk_hash 
 
-BINARIES = cat2als pp_comparator gen weaken
+BINARIES = cat2als pp_comparator gen weaken mk_hash
 
 all: $(BINARIES) doc 
 
@@ -37,6 +41,7 @@ $(BINARIES):
 top:
 	@ python ../etc/list_all_module_names.py > toplevel.mltop
 	@ ocamlbuild toplevel.top $(OCB_OPTS)
+	rlwrap ./toplevel.top
 
 doc:
 	@ python ../etc/list_all_module_names.py > $(DOCNAME).odocl
@@ -52,6 +57,7 @@ clean:
 	rm -f $(DEST)/cat2als
 	rm -f $(DEST)/pp_comparator
 	rm -f $(DEST)/weaken
+	rm -f $(DEST)/mk_hash
 	rm -f memalloy.odocl
 	rm -f toplevel.mltop
 	rm -rf $(DOCDIR)

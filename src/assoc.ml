@@ -51,7 +51,7 @@ let add_assocs map (k,vs) =
   let vs' = try List.assoc k map with Not_found -> [] in
   (k, vs@vs') :: remove_assocs [k] map
 			     
-(** Example: [invert_map [(k1,v1);(k2,v2);(k3;v1)] = [(v1,[k1;k3]);(v2,[k2])]] *)
+(** Example: [invert_map [k1,v1; k2,v2; k3;v1] = [ v1,[k1;k3]; v2,[k2]]] *)
 let invert_map kvs =
   let add_entry vks (k,v) =
     let ks = try List.assoc v vks with Not_found -> [] in
@@ -59,7 +59,7 @@ let invert_map kvs =
   in
   List.fold_left add_entry [] kvs
 
-(** Example: [group_map [(k1,v1);(k1,v2);(k2,v3)] = [(k1,[v1;v2]);(k2,[v3])]] *)
+(** Example: [group_map [k1,v1; k1,v2; k2,v3] = [ k1,[v1;v2]; k2,[v3] ]] *)
 let group_map kvs =
   let add_entry kvs (k,v) =
     let vs = try List.assoc k kvs with Not_found -> [] in
@@ -69,3 +69,11 @@ let group_map kvs =
 
 let key_list kvs = List.map fst kvs
 let val_list kvs = List.map snd kvs
+
+(** Example: [compose_maps [a1,b1; a2,b2; a3,b3] [b1,c1; b2,c1] = [a1,c1; a2,c1]] *)
+let compose_maps map_ab map_bc =
+  let add_entry map_ac (a,b) =
+    try let c = List.assoc b map_bc in (a,c) :: map_ac
+    with Not_found -> map_ac
+  in                 
+  List.fold_left add_entry [] map_ab

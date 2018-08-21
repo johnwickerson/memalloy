@@ -103,12 +103,7 @@ let mk_instr x maps reg_map e =
 
 (** [partition_seq sb es] orders the events in [es] into a sequence of events ordered by [sb]. *)
 let partition_seq sb es : Evt.t list =
-  let comparator e e' =
-    if List.mem (e,e') sb then -1 else
-      if List.mem (e',e) sb then 1 else
-        failwith "Partial sb detected!"
-  in
-  List.sort comparator es
+  List.sort (Rel.compare sb) es
 
 let litmus_of_execution' x maps =
   let x = tidy_exec x in

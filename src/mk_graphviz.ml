@@ -116,27 +116,25 @@ let dot_of_execution' maps x =
   let sthd = get_rel x "sthd" in
   let stxn = get_rel x "stxn" in
   let txn_events = Rel.dom stxn in
-  let gl_map = Rel.partition true sgl niw in
+  let gl_map = Rel.partition sgl niw in
   let gls = Assoc.val_list (Assoc.invert_map gl_map) in
   let doe = dot_of_event x maps in
   let initials = List.map doe iw in
   let thds = Assoc.val_list (Assoc.invert_map maps.thd_map) in
     let dot_of_thd thd =
-      let stxn_map =
-        Rel.partition true stxn (MySet.inter thd txn_events)
-      in
+      let stxn_map = Rel.partition stxn (MySet.inter thd txn_events) in
       let stxns = Assoc.val_list (Assoc.invert_map stxn_map) in
       let non_txn = List.map doe (MySet.diff thd txn_events) in
       let dot_of_stxn txn = mk_cluster_stxn (List.map doe txn) in
       mk_thd_cluster (non_txn @ List.map dot_of_stxn stxns)
     in
   let dot_of_cta cta =
-    let thd_map = Rel.partition true sthd (MySet.inter cta niw) in
+    let thd_map = Rel.partition sthd (MySet.inter cta niw) in
     let thds = Assoc.val_list (Assoc.invert_map thd_map) in
     mk_cta_cluster (List.map dot_of_thd thds)
   in
   let dot_of_gl gl =
-    let cta_map = Rel.partition true scta (MySet.inter gl niw) in
+    let cta_map = Rel.partition scta (MySet.inter gl niw) in
     let ctas = Assoc.val_list (Assoc.invert_map cta_map) in
     mk_gl_cluster (List.map dot_of_cta ctas)
   in
