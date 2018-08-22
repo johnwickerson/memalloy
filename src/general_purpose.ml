@@ -43,6 +43,12 @@ let fparen f oc x = fprintf oc "(%a)" f x
 
 let pp_str oc s = fprintf oc "%s" s
 
+(** [fprintf_to_string printer] returns the string that [printer] would print when given an output channel. For instance, if [printer oc] writes "foo" to output channel [oc], then [fprintf_to_string printer] returns the string "foo". *)
+let fprintf_to_string printer =
+  let b = Buffer.create 512 in
+  printer (formatter_of_buffer b);
+  Buffer.contents b
+
 (** [range i j] returns [i, i+1, ..., j] *)
 let rec range i j = if i > j then [] else i :: (range (i+1) j)
 

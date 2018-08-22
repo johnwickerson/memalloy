@@ -348,6 +348,7 @@ let main () =
   close_out oc;
   exit 0
        
-let _ =
-  if not !Sys.interactive then main ()
 
+let _ =
+  if MyStr.endswith Sys.argv.(0) "pp_comparator" then
+    main ()

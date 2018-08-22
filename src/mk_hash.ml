@@ -31,7 +31,7 @@ open! General_purpose
 let get_args () =
   let xml_path : string list ref = ref [] in
   let speclist = [] in
-  let usage_msg = "Usage: `weaken [options] xml_file.xml`.\n\
+  let usage_msg = "Usage: `mk_hash [options] xml_file.xml`.\n\
                    Options available:"
   in
   Arg.parse speclist (set_list_ref xml_path) usage_msg;
@@ -57,4 +57,5 @@ let main () =
   exit 0
 
 let _ =
-  if not !Sys.interactive then main ()
+  if MyStr.endswith Sys.argv.(0) "mk_hash" then
+    main ()

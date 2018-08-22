@@ -159,4 +159,5 @@ let main () =
   exit 0
 	    
 let _ =
-  if not !Sys.interactive then main ()
+  if MyStr.endswith Sys.argv.(0) "gen" then
+    main ()

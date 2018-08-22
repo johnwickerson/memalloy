@@ -34,19 +34,21 @@ type t = {
     rels : (string * Evt.t Rel.t) MySet.t;
   }
 
-(** Basic pretty-printing of executions *)
+(** Basic pretty-printing of named event sets *)
+let pp_set oc (name,tuples) =
+  fprintf oc "Set: %s={%a}\n" name
+    (MyList.pp_gen "," Evt.pp) tuples
+
+(** Basic pretty-printing of named event relations *)
+let pp_rel oc (name,tuples) =
+  fprintf oc "Rel: %s={%a}\n" name
+    (MyList.pp_gen "," (fparen (Pair.pp Evt.pp "," Evt.pp)))
+    tuples
+       
+(** Basic pretty-printing of executions *)       
 let pp_exec oc exec =
-  let pp_set (name,tuples) =
-    fprintf oc "Set: %s={%a}\n" name
-	    (MyList.pp_gen "," Evt.pp) tuples
-  in
-  let pp_rel (name,tuples) =
-    fprintf oc "Rel: %s={%a}\n" name
-	    (MyList.pp_gen "," (fparen (Pair.pp Evt.pp "," Evt.pp)))
-	    tuples
-  in
-  List.iter pp_set exec.sets;
-  List.iter pp_rel exec.rels
+  List.iter (pp_set oc) exec.sets;
+  List.iter (pp_rel oc) exec.rels
 
 (** The empty execution *)
 let empty_exec = { sets = []; rels = [] }
@@ -249,22 +251,42 @@ let rename evt_order x =
   let rels = List.map (fun (r_name, r) -> (r_name, rename_rel r)) x.rels in
   {sets;rels;}
 
+(** [hash_strings oc ss] hashes the list [ss] of strings into a single string, which is sent to the output channel [oc]. *)
+let hash_strings oc strings =
+  let hashes = List.map (fun h -> Digest.to_hex (Digest.string h)) strings in
+  let hashes = List.sort String.compare hashes in
+  MyList.pp_gen "+" pp_str oc hashes
+  
 (** [hash_exec oc x] produces, on output channel [oc], a hash representing all the isomorphic variants of the execution [x] *)
 let hash_exec oc x =
-  let mk_hash evt_order =
-      let b = Buffer.create 512 in
-      let oc_b = formatter_of_buffer b in
-      let () = fprintf oc_b "%a" pp_exec (rename evt_order x) in
-      Buffer.contents b
+  let string_of_exec evt_order =
+    fprintf_to_string (fun oc -> pp_exec oc (rename evt_order x))
   in
-  let hashes = List.map mk_hash (valid_evt_orders x) in
-  let hashes = List.sort String.compare hashes in
-  (* MyList.pp_gen "+\n" pp_str oc hashes *)
-  let hashes = List.map (fun h -> Digest.to_hex (Digest.string h)) hashes in
-  MyList.pp_gen "+" pp_str oc hashes
+  let strings = List.map string_of_exec (valid_evt_orders x) in
+  (* MyList.pp_gen "+\n" pp_str oc strings *)
+  hash_strings oc strings
     
-let hash_double_exec oc (_x,_y,_pi) =
-  fprintf oc "NOT DONE YET!"
+let hash_double_exec oc (x,y,pi) =
+  let rename_pi evt_order1 evt_order2 r =
+    let renaming_map1 = List.combine evt_order1 (get_set x "EV") in
+    let renaming_map2 = List.combine evt_order2 (get_set y "EV") in
+    let rename1 e = List.assoc e renaming_map1 in
+    let rename2 e = List.assoc e renaming_map2 in
+    let r = List.map (fun (e,e') -> (rename1 e, rename2 e')) r in
+    List.sort Evt.compare_pair r
+  in    
+  let valid_evt_orders =
+    MyList.cartesian (valid_evt_orders x) (valid_evt_orders y)
+  in
+  let string_of_double_exec (evt_order1, evt_order2) =
+    fprintf_to_string (fun oc ->
+        pp_exec oc (rename evt_order1 x);
+        pp_exec oc (rename evt_order2 y);
+        pp_rel oc ("pi", rename_pi evt_order1 evt_order2 pi);
+      )
+  in
+  let strings = List.map string_of_double_exec valid_evt_orders in
+  hash_strings oc strings
   
 (** {2 Useful for testing } *)
 
