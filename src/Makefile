@@ -53,11 +53,7 @@ doc:
 clean:
 	ocamlbuild -clean
 	@ echo "" # because ocamlbuild doesn't end with a newline
-	rm -f $(DEST)/gen
-	rm -f $(DEST)/cat2als
-	rm -f $(DEST)/pp_comparator
-	rm -f $(DEST)/weaken
-	rm -f $(DEST)/mk_hash
+	cd $(DEST); rm -f $(BINARIES)
 	rm -f memalloy.odocl
 	rm -f toplevel.mltop
 	rm -rf $(DOCDIR)
