@@ -95,10 +95,10 @@ let main () =
        assert (Filename.check_suffix out_path ".dot");
        begin
 	 match exec with
-	 | Xml_input.Single x ->
+	 | Soln.Single x ->
 	    let g = Mk_graphviz.dot_of_execution x in
 	    fprintf fmtr "%a\n" Graphviz.pp_graph g
-	 | Xml_input.Double (x,y,pi) ->
+	 | Soln.Double (x,y,pi) ->
 	    let g = Mk_graphviz.dot_of_execution_pair x y pi in
 	    fprintf fmtr "%a\n" Graphviz.pp_graph g
        end
@@ -112,9 +112,9 @@ let main () =
            | true, true -> assert false
          in
 	 match exec with
-	 | Xml_input.Single x ->
+	 | Soln.Single x ->
 	    fprintf fmtr "%a\n" (converter !als_name) x
-	 | Xml_input.Double (x,y,pi) ->
+	 | Soln.Double (x,y,pi) ->
 	    fprintf fmtr "%a\n" (converter !als_name) x;
 	    fprintf fmtr "%a\n" (converter !als_name) y;
 	    fprintf fmtr "%a\n" Alsbackend.als_of_rel ("pi", pi)
@@ -126,7 +126,7 @@ let main () =
        in
        begin
 	 match exec with
-	 | Xml_input.Single x ->
+	 | Soln.Single x ->
 	    let lt = Mk_litmus.litmus_of_execution x in
 	    (match arch with
 	     | Archs.Arm8 ->
@@ -139,7 +139,7 @@ let main () =
 		let x86_lt = Mk_x86.x86_of_lit name lt in
 		fprintf fmtr "%a\n" Mk_x86.pp x86_lt
 	     | _ -> fprintf fmtr "%a\n" Litmus.pp lt)
-	 | Xml_input.Double (x,y,pi) ->
+	 | Soln.Double (x,y,pi) ->
 	    let lt_src,lt =
 	      Mk_litmus.litmus_of_execution_pair x y pi
 	    in
