@@ -7,17 +7,17 @@
 
 - OCaml 4.07.0 or later (tested with 4.07.0)
 
-- OPAM packages `xml-light`, `ocamlfind`, and `ocamlbuild`
+- OPAM packages `xml-light`, `ocamlfind`, and `ocamlbuild` (hint: `opam install <package name>`)
 
 - Python 2.7
 
-- Python packages `progressbar` and `subprocess32`
+- Python packages `progressbar` and `subprocess32` (hint: `sudo easy_install <package name>`)
 
 - Java runtime version 8 (Java SE 8).
 
-- Graphviz
+- Graphviz (hint: `brew install graphviz`)
 
-- Apache Ant (for building Alloy)
+- Apache Ant, for building Alloy (hint: `brew install ant`)
 
 # Quick start
 

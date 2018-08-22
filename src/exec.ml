@@ -27,6 +27,8 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
 open! Format
 open! General_purpose
+
+let debug = false
 	  
 (** An execution is a list of named event sets and a list of named event relations *)
 type t = {
@@ -197,28 +199,29 @@ let rectify_maps (x,xmaps) (y,ymaps) pi =
   let loc_map = List.fold_left (fix xmaps.loc_map) ymaps.loc_map yev in
   { ymaps with thd_map = thd_map; loc_map = loc_map }
 
-(** Partition the events [es] of execution [x] so that each partition is strongly sequenced before the next. *)
+(** [partition_seq x es] partitions the events [es] of execution [x] so that each partition is strongly related by {i sb} to the next. (NB: Two partitions are "strongly related" if every element of the first is related to every element of the second.) *)
 let rec partition_seq x es =
   if List.length es = 1 then
     [es]
   else
-    let sb = Rel.trancl (get_rel x "sb") in
-    let not_sb = Rel.diff (Rel.sq es) sb in
-    let not_sa = Rel.diff (Rel.sq es) (Rel.invert sb) in
-    let unseq = Rel.trancl (Rel.inter not_sb not_sa) in
-    let partitions = Assoc.val_list (Assoc.invert_map (Rel.partition unseq es)) in
-    let compare_partitions p1 p2 = Rel.compare sb (List.hd p1) (List.hd p2) in
+    let r = Rel.trancl (get_rel x "sb") in
+    let not_before = Rel.diff (Rel.sq es) r in
+    let not_after = Rel.diff (Rel.sq es) (Rel.invert r) in
+    let unrelated = Rel.trancl (Rel.inter not_before not_after) in
+    let partitions =
+      Assoc.val_list (Assoc.invert_map (Rel.partition unrelated es))
+    in
+    let compare_partitions p1 p2 = Rel.compare r (List.hd p1) (List.hd p2) in
     let partitions = List.sort compare_partitions partitions in
-    let permuted_partitions = List.map (partition_par x) partitions in
+    let permuted_partitions = List.map (partition_par x r) partitions in
     List.map List.concat (MyList.n_cartesian permuted_partitions)
 
-(** Partition the events [es] of execution [x] so that there is no sequencing between different partitions. *)
-and partition_par x es =
+(** [partition_par x r es] partition the events [es] of execution [x] so that there are no [r]-edges between different partitions. *)
+and partition_par x r es =
   if List.length es = 1 then
     [es]
   else
-    let sb = Rel.trancl (get_rel x "sb") in
-    let partitions = Assoc.val_list (Assoc.invert_map (Rel.partition sb es)) in
+    let partitions = Assoc.val_list (Assoc.invert_map (Rel.partition r es)) in
     let compare_partitions es1 es2 = List.compare_lengths es1 es2 in
     let partitions = List.sort compare_partitions partitions in
     let permuted_partitions = List.map (partition_seq x) partitions in
@@ -230,17 +233,19 @@ and partition_par x es =
 let valid_evt_orders x =
   let iws = get_set x "IW" in
   let ev = get_set x "EV" in
+  let sthd = get_rel x "sthd" in
   let nI = MySet.diff ev iws in
-  let thd_map = Rel.partition (get_rel x "sthd") nI in
-  let thd_classes = Assoc.val_list (Assoc.invert_map thd_map) in
-  let nI_orders = List.concat (List.map (partition_seq x) thd_classes) in
+  let nI_orders = partition_par x sthd nI in            
   let iw_orders = MyList.perms iws in
-    List.map (fun (iw_order, nI_order) -> iw_order @ nI_order)
-      (MyList.cartesian iw_orders nI_orders)
+  List.map (fun (iw_order, nI_order) -> iw_order @ nI_order)
+    (MyList.cartesian iw_orders nI_orders)
 
 (** [rename evt_order x] produces a new execution that is isomorphic to [x] but the events are permuted into the order given by [evt_order]. *)
 let rename evt_order x =
   let ev = get_set x "EV" in
+  if debug then
+    printf "evt_order = %a;\nev = %a;\n"
+      (MyList.pp Evt.pp) evt_order (MyList.pp Evt.pp) ev;
   let renaming_map = List.combine evt_order ev in
   let rename e = List.assoc e renaming_map in
   let rename_set s = List.sort Evt.compare (List.map rename s) in
@@ -253,9 +258,13 @@ let rename evt_order x =
 
 (** [hash_strings oc ss] hashes the list [ss] of strings into a single string, which is sent to the output channel [oc]. *)
 let hash_strings oc strings =
+  if debug then printf "Number of strings = %d.\n" (List.length strings);
   let hashes = List.map (fun h -> Digest.to_hex (Digest.string h)) strings in
   let hashes = List.sort String.compare hashes in
-  MyList.pp_gen "+" pp_str oc hashes
+  MyList.pp_gen "+" pp_str oc hashes;
+  if debug then fprintf oc "First hash = %s.\n" (List.hd hashes);
+  if debug then printf "Second hash = %s.\n" (List.hd (List.tl hashes));
+  flush stdout
   
 (** [hash_exec oc x] produces, on output channel [oc], a hash representing all the isomorphic variants of the execution [x] *)
 let hash_exec oc x =
@@ -263,7 +272,7 @@ let hash_exec oc x =
     fprintf_to_string (fun oc -> pp_exec oc (rename evt_order x))
   in
   let strings = List.map string_of_exec (valid_evt_orders x) in
-  (* MyList.pp_gen "+\n" pp_str oc strings *)
+  if debug then MyList.pp_gen "+\n" pp_str oc strings;
   hash_strings oc strings
     
 let hash_double_exec oc (x,y,pi) =
@@ -286,6 +295,7 @@ let hash_double_exec oc (x,y,pi) =
       )
   in
   let strings = List.map string_of_double_exec valid_evt_orders in
+  if debug then MyList.pp_gen "+\n" pp_str oc strings;
   hash_strings oc strings
   
 (** {2 Useful for testing } *)
@@ -302,4 +312,13 @@ let test_exec = {
     rels = [ "sthd", Rel.sq [e1;e2;e3;e4;e5;e6;e7;e8];
              "sb",   sb; ]
   }
+
+let pi = [e0,e0; e1,e1; e2,e2; e3,e3; e4,e4; e5,e5; e6,e6; e7,e7; e8,e8; e9,e9; ] 
   
+let test_double_exec = (test_exec, test_exec, pi)
+
+let test_exec2 = {
+    sets = [ "EV", [e0;e1;e2;e3]; ];
+    rels = [ "sb", [e1,e2; e3,e0];
+             "sthd", Rel.union (Rel.sq [e1;e2]) (Rel.sq [e3;e0]); ]
+  }
