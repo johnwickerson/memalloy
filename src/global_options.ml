@@ -1,7 +1,7 @@
 (*
 MIT License
 
-Copyright (c) 2017 by John Wickerson.
+Copyright (c) 2018 by John Wickerson.
 
 Permission is hereby granted, free of charge, to any person obtaining
 a copy of this software and associated documentation files (the
@@ -23,16 +23,12 @@ OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION
 WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 *)
 
-open! Format
+let verbose = ref false
+let fencerels = ref false
 
-(** Extension of Unix module *)
-       
-let today() =
-  let t = Unix.localtime (Unix.time ()) in
-  sprintf "%04d-%02d-%02d"
-    (t.Unix.tm_year + 1900) (t.Unix.tm_mon + 1) t.Unix.tm_mday
-
-let now() =
-  let t = Unix.localtime (Unix.time ()) in
-  sprintf "%02d:%02d:%02d"
-    t.Unix.tm_hour t.Unix.tm_min t.Unix.tm_sec
+let speclist =
+  ["-fencerels", Arg.Set fencerels,
+   "Encode fences as relations rather than events";
+   
+   "-verbose", Arg.Set verbose, sprintf "default=%b" !verbose;
+  ]

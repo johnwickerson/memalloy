@@ -48,7 +48,99 @@ let min_locs = ref 0
 let max_locs = ref (-1)
 let min_txns = ref 0
 let max_txns = ref (-1)
+             
+let arch_string = ref None
+let arch2_string = ref None
+let mapping_path = ref None
+let comparator_als = ref None
 
+let speclist =
+  ["-satisfies", Arg.String (set_list_ref succ_paths),
+   "Execution should satisfy this model (repeatable)";
+   
+   "-violates", Arg.String (set_list_ref fail_paths),
+   "Execution should violate this model (repeatable)";
+   
+   "-arch", Arg.String (set_option_ref arch_string),
+   "Type of executions being compared (required)";
+   
+   "-events", Arg.Set_int eventcount, "Max number of events";
+   
+   "-mapping", Arg.String (set_option_ref mapping_path),
+   "An .als file representing a mapping between executions";
+   
+   "-arch2", Arg.String (set_option_ref arch2_string),
+   "Type of target execution (required iff -mapping is given)";
+   
+   "-events2", Arg.Set_int eventcount2,
+   "Max number of target events (required iff -mapping is given)";
+   
+   "-alsosatisfies", Arg.String (set_list_ref also_succ_paths),
+   "Execution should also satisfy this model (repeatable; always refers to the 'source' model when checking compilers)";
+   
+   "-desc", Arg.Set_string description,
+   "Textual description (optional)";
+   
+   "-o", Arg.String (set_option_ref comparator_als),
+   "Output .als file (optional, default stdout)";
+   
+   "-hint", Arg.String (set_list_ref hints),
+   "An .als file containing a 'hint_*[X]' predicate (optional, repeatable)";
+   
+   "-minthreads", Arg.Set_int min_thds,
+   "Find executions with at least N threads (default 0)";
+   
+   "-maxthreads", Arg.Set_int max_thds,
+   "Find executions with at most N threads";
+   
+   "-threads",
+   Arg.Int (fun i -> min_thds := i; max_thds := i),
+   "Find executions with exactly N threads";
+   
+   "-minlocations", Arg.Set_int min_locs,
+   "Find executions with at least N locations (default 0)";
+   
+   "-maxlocations", Arg.Set_int max_locs,
+   "Find executions with at most N locations";
+   
+   "-locations",
+   Arg.Int (fun i -> min_locs := i; max_locs := i),
+   "Find executions with exactly N locations";
+   
+   "-mintransactions", Arg.Set_int min_txns,
+   "Find executions with at least N transactions (default 0)";
+   
+   "-maxtransactions", Arg.Set_int max_txns,
+   "Find executions with at most N transactions";
+   
+   "-transactions",
+   Arg.Int (fun i -> min_txns := i; max_txns := i),
+   "Find executions with exactly N transactions";
+   
+   "-emptytxns", Arg.Set emptytxns, "Option: allow empty transactions";
+   
+   "-withinit", Arg.Set withinit,
+   "Option: explicit initial writes";
+   
+   "-fencerels", Arg.Set fencerels,
+   "Option: fences as relations";
+   
+   "-minimal", Arg.Set minimal,
+   "Option: only generate minimal executions";
+   
+   "-exact", Arg.Set exact,
+   "Option: solutions must use all events";
+  ]
+  
+let get_args () =
+  let usage_msg =
+    "Generating an Alloy file that can be run to compare two models.\nUsage: `pp_comparator [options]`. There must be at least one -satisfies or -violates flag.\nOptions available:"
+  in
+  let bad_arg s =
+    failwith "Unexpected argument '%s'" s
+  in
+  Arg.parse speclist bad_arg usage_msg
+    
 let read_file filename = 
   let lines = ref [] in
   let chan = open_in filename in
@@ -243,87 +335,6 @@ let pp_comparator2 arch mapping_path arch2 oc =
   pp_hint_predicates oc;
   fprintf oc "run gp for exactly 1 M1/Exec, exactly 1 N1/Exec, %d SE, %d HE, 3 Int\n" !eventcount !eventcount2
 
-let get_args () =
-  let arch = ref None in
-  let arch2 = ref None in
-  let mapping_path = ref None in
-  let comparator_als = ref None in
-  let speclist = [
-      ("-satisfies", Arg.String (set_list_ref succ_paths),
-       "Execution should satisfy this model (repeatable)");
-      ("-violates", Arg.String (set_list_ref fail_paths),
-       "Execution should violate this model (repeatable)");
-      ("-arch", Arg.String (set_option_ref arch),
-       "Type of executions being compared (required)");
-      ("-events", Arg.Set_int eventcount, "Max number of events");
-      ("-mapping", Arg.String (set_option_ref mapping_path),
-       "An .als file representing a mapping between executions");
-      ("-arch2", Arg.String (set_option_ref arch2),
-       "Type of target execution (required iff -mapping is given)");
-      ("-events2", Arg.Set_int eventcount2,
-       "Max number of target events (required iff -mapping is given)");
-      ("-alsosatisfies", Arg.String (set_list_ref also_succ_paths),
-       "Execution should also satisfy this model (repeatable; always refers to the 'source' model when checking compilers)");
-      ("-desc", Arg.Set_string description,
-       "Textual description (optional)");
-      ("-o", Arg.String (set_option_ref comparator_als),
-       "Output .als file (optional, default stdout)");
-      ("-hint", Arg.String (set_list_ref hints),
-       "An .als file containing a 'hint_*[X]' predicate (optional, repeatable)");
-      ("-minthreads", Arg.Set_int min_thds,
-       "Find executions with at least N threads (default 0)");
-      ("-maxthreads", Arg.Set_int max_thds,
-       "Find executions with at most N threads");
-      ("-threads",
-       Arg.Int (fun i -> min_thds := i; max_thds := i),
-       "Find executions with exactly N threads");
-      ("-minlocations", Arg.Set_int min_locs,
-       "Find executions with at least N locations (default 0)");
-      ("-maxlocations", Arg.Set_int max_locs,
-       "Find executions with at most N locations");
-      ("-locations",
-       Arg.Int (fun i -> min_locs := i; max_locs := i),
-       "Find executions with exactly N locations");
-      ("-mintransactions", Arg.Set_int min_txns,
-       "Find executions with at least N transactions (default 0)");
-      ("-maxtransactions", Arg.Set_int max_txns,
-       "Find executions with at most N transactions");
-      ("-transactions",
-       Arg.Int (fun i -> min_txns := i; max_txns := i),
-       "Find executions with exactly N transactions");
-      ("-emptytxns", Arg.Set emptytxns, "Option: allow empty transactions");
-      ("-withinit", Arg.Set withinit,
-       "Option: explicit initial writes");
-      ("-fencerels", Arg.Set fencerels,
-       "Option: fences as relations");
-      ("-minimal", Arg.Set minimal,
-       "Option: only generate minimal executions");
-      ("-exact", Arg.Set exact,
-       "Option: solutions must use all events");
-    ] in
-  let usage_msg =
-    "Generating an Alloy file that can be run to compare two models.\nUsage: `comparator [options]`. There must be at least one -satisfies or -violates flag.\nOptions available:"
-  in
-  let bad_arg s =
-    failwith "Unexpected argument '%s'" s
-(*    Arg.usage speclist usage_msg;
-    raise (Arg.Bad "Missing or too many arguments.") *)
-  in
-  Arg.parse speclist bad_arg usage_msg;
-  let arch = match !arch with
-    | Some arch -> Archs.parse_arch arch
-    | None -> failwith "Expected one -arch"
-  in
-  let arch2 = match !arch2 with
-    | Some arch -> Some (Archs.parse_arch arch)
-    | None -> None
-  in
-  let oc = match !comparator_als with
-    | Some f -> open_out f
-    | None -> stdout
-  in
-  arch, !mapping_path, arch2, oc
-
 (** Print a description of the comparison being undertaken *)
 let pp_description () =
   printf "\n";
@@ -333,7 +344,18 @@ let pp_description () =
   printf "------------------------------\n"      
 
 let main () =
-  let arch, mapping_path, arch2, oc = get_args () in
+  let arch = match !arch_string with
+    | Some a -> Archs.parse_arch a
+    | None -> failwith "Expected one -arch"
+  in
+  let arch2 = match !arch2_string with
+    | Some a -> Some (Archs.parse_arch a)
+    | None -> None
+  in
+  let oc = match !comparator_als with
+    | Some f -> open_out f
+    | None -> stdout
+  in  
   if !succ_paths @ !fail_paths = [] then
     failwith "Expected at least one -satisfies or -violates flag";
   let pp =
@@ -350,5 +372,7 @@ let main () =
        
 
 let _ =
-  if MyStr.endswith Sys.argv.(0) "pp_comparator" then
-    main ()
+  if MyStr.endswith Sys.argv.(0) "pp_comparator" then begin
+      get_args ();
+      main ()
+    end

@@ -29,10 +29,39 @@ open! Format
 open! General_purpose
 open Cat_syntax
 
-let verbose = ref false
-let fencerels = ref false
 let cat_dir : string ref = ref "models"
 let out_dir : string ref = ref "."
+let unrolling_factor : int ref = ref 3
+
+let speclist =
+  ["-u", Arg.Set_int unrolling_factor,
+   sprintf "Number of times to unroll recursive definitions (optional, default=%d)" !unrolling_factor;
+      
+   "-o", Arg.Set_string out_dir,
+   sprintf "Output directory (default=%s)" !out_dir;
+  ]
+
+let get_args () =
+  let cat_path : string ref = ref "" in
+  let intermediate_model : bool ref = ref false in
+  let usage_msg =
+    "A translator from the .cat format into the .als (Alloy) format.\nUsage: `cat2als [options] <cat_file.cat>`.\nOptions available:"
+  in
+  let speclist =
+    Global_options.speclist @ speclist @ [
+        "-i", Arg.Set intermediate_model,
+        sprintf "Intermediate model; do not generate `consistent` predicate (optional, default=%b)" !intermediate_model;
+      ]
+  in
+  Arg.parse speclist (fun filename -> cat_path := filename) usage_msg;
+  begin match Sys.file_exists !cat_path with
+  | false -> failwith "Could not find cat file %s" !cat_path
+  | _ -> ()
+  end;
+  let dir = Filename.dirname !cat_path in
+  let cat_file = Filename.basename !cat_path in
+  let _ = cat_dir := dir in
+  cat_file, !intermediate_model
 
 (** Parse the given .cat file into an abstract syntax tree *)
 let parse_file cat_path =
@@ -54,8 +83,8 @@ let rec sub_subscript xs d = function
   | Op1 (o, e) -> Op1 (o, sub_subscript xs d e)
   | Op (o, es) -> Op (o, List.map (sub_subscript xs d) es)
 				    
-(** If [xes] comprises the recursive definitions {i x=e(x,y)} and {i y=f(x,y)}, then [unfold_defs xes u] produces a sequence of non-recursive definitions corresponding to [u] unrollings of [xes]. For instance, [unfold_defs xes 2] produces the sequence {i x0=0}, {i y0=0}, {i x1=e(x0,y0)}, {i y1=f(x0,y0)}, {i x=e(x1,y1)}, {i y=f(x1,y1)}. *)
-let unfold_defs xes u =
+(** If [xes] comprises the recursive definitions {i x=e(x,y)} and {i y=f(x,y)}, then [unfold_defs xes] produces a sequence of non-recursive definitions obtained by unrolling [xes]. The number of unrollings is given by [!unrolling_factor]. For instance, [unfold_defs xes] with [!unrolling_factor = 2] produces the sequence {i x0=0}, {i y0=0}, {i x1=e(x0,y0)}, {i y1=f(x0,y0)}, {i x=e(x1,y1)}, {i y=f(x1,y1)}. *)
+let unfold_defs xes =
   let xs = List.map fst xes in
   let rec unfold_defs' d =
     if d = 0 then
@@ -64,21 +93,19 @@ let unfold_defs xes u =
     else
       let iter_d =
 	let upd_bind (x,e) =
-	  let x' = if d=u then x else add_subscript x d in
+	  let x' = if d=!unrolling_factor then x else add_subscript x d in
 	  Let (x', [], sub_subscript xs (d-1) e) in
 	List.map upd_bind xes
       in
       unfold_defs' (d - 1) @ iter_d
   in
-  unfold_defs' u
+  unfold_defs'
 
-(** [unfold_instrs u instrs] unrolls each recursive definition in [instrs] by factor [u]. *)
-let rec unfold_instrs u = function
+(** [unfold_instrs instrs] unrolls each recursive definition in [instrs] by factor [!unrolling_factor]. *)
+let rec unfold_instrs = function
   | [] -> []
-  | LetRec xes :: instrs ->
-     unfold_defs xes u @ unfold_instrs u instrs
-  | other_instr :: instrs ->
-     other_instr :: unfold_instrs u instrs
+  | LetRec xes :: instrs -> unfold_defs xes @ unfold_instrs instrs
+  | other_instr :: instrs -> other_instr :: unfold_instrs instrs
 				  
 (** {2 Generating Alloy code} *)
 
@@ -104,7 +131,7 @@ type ax_info = {
 let build_env withsc arch =
   let rels = Archs.arch_rels arch in
   let rels = if withsc then "s" :: rels else rels in
-  let sets = Archs.arch_sets !fencerels arch in
+  let sets = Archs.arch_sets !Global_options.fencerels arch in
   let mk_info x = (x, {args=[]; withsc=false}) in
   List.map mk_info (rels @ sets)
     
@@ -209,9 +236,9 @@ let als_of_axiom env oc (s, e) =
 (** Generates the first part of the Alloy file *)
 let preamble cat_path model_name arch oc =
   fprintf oc "/* Automatically generated from %s on %s at %s */\n\n"
-	  cat_path (MyUnix.today ()) (MyUnix.now ());
+	  cat_path (MyTime.today ()) (MyTime.now ());
   fprintf oc "module %s[E]\n" model_name;
-  fprintf oc "open %a[E]\n\n" (Archs.pp_arch !fencerels) arch
+  fprintf oc "open %a[E]\n\n" (Archs.pp_arch !Global_options.fencerels) arch
 	  
 (** Generates the final part of the Alloy file *)
 let postamble withsc arch axs oc c =
@@ -229,8 +256,8 @@ let postamble withsc arch axs oc c =
   if withsc then fprintf oc "  }\n";
   fprintf oc "}\n"
 	  
-(** [als_of_instr withsc arch u oc (env, axs) ins] converts the Cat instruction [ins] into Alloy code (sent to out channel [oc]), assuming architecture [arch], unrolling factor [u], typing environment [env], axiom list [axs], and [withsc] controlling whether the {i S} order is included. Returns an updated typing environment and axiom list. *)
-let rec als_of_instr withsc arch unrolling oc (env, axs) = function
+(** [als_of_instr withsc arch oc (env, axs) ins] converts the Cat instruction [ins] into Alloy code (sent to out channel [oc]), assuming architecture [arch], typing environment [env], axiom list [axs], and [withsc] controlling whether the {i S} order is included. Returns an updated typing environment and axiom list. *)
+let rec als_of_instr withsc arch oc (env, axs) = function
   | Let (x,args,e) ->
      let e = replace_vars_with_args args e in
      let e = if withsc then replace_vars_with_args ["s"] e else e in
@@ -260,29 +287,29 @@ let rec als_of_instr withsc arch unrolling oc (env, axs) = function
      let ax_info = {cnstrnt; withsc_ax=withsc} in
      (env, (n, ax_info) :: axs)
   | Include cat_path ->
-     let env',axs' = als_of_file true unrolling cat_path in
+     let env',axs' = als_of_file true cat_path in
      fprintf oc "open %s[E]\n\n" (Filename.chop_extension cat_path);
      (env' @ env, axs @ axs')
 
-(** [als_of_file interm_model u path] converts the Cat file [path] into a complete Alloy file, which is saved with the same name as the Cat file but with the .als extension instead of .cat. The conversion uses unrolling factor [u], and includes the top-level predicates unless [interm_model] is set. It returns the typing environment and axiom list obtained at the end of processing the file. *)
-and als_of_file interm_model unrolling cat_path =
+(** [als_of_file interm_model u path] converts the Cat file [path] into a complete Alloy file, which is saved with the same name as the Cat file but with the .als extension instead of .cat. The conversion includes the top-level predicates unless [interm_model] is set. It returns the typing environment and axiom list obtained at the end of processing the file. *)
+and als_of_file interm_model cat_path =
   let model_name =
     Filename.chop_extension (Filename.basename cat_path)
   in
   let als_path = sprintf "%s.als" model_name in
-  if !verbose then
+  if !Global_options.verbose then
     printf "Converting %s to %s.\n" cat_path als_path;
   let als_path = Filename.concat "models" als_path in
   let oc = open_out als_path in
   let ppf = formatter_of_out_channel oc in
   let model_type, withsc, cat_model = parse_file cat_path in
   let arch = Archs.parse_arch model_type in
-  let cat_model = unfold_instrs unrolling cat_model in
+  let cat_model = unfold_instrs cat_model in
   preamble cat_path model_name arch ppf;
   let env = build_env withsc arch in
   let env,axs =
     List.fold_left
-      (als_of_instr withsc arch unrolling ppf) (env, []) cat_model
+      (als_of_instr withsc arch ppf) (env, []) cat_model
   in
   if (not interm_model) then begin
       postamble withsc arch axs ppf Provision;
@@ -291,42 +318,11 @@ and als_of_file interm_model unrolling cat_path =
     end;
   close_out oc;
   env,axs
-  
-(** {2 Processing command-line input} *)
-	       
-let get_args () =
-  let cat_path : string ref = ref "" in
-  let unrolling_factor : int ref = ref 3 in
-  let intermediate_model : bool ref = ref false in
-  let speclist = [
-      ("-fencerels", Arg.Set fencerels,
-       "Encode fences as relations rather than events");
-      ("-u", Arg.Set_int unrolling_factor,
-       sprintf "Number of times to unroll recursive definitions (optional, default=%d)" !unrolling_factor);
-      ("-i", Arg.Set intermediate_model,
-       sprintf "Intermediate model; do not generate `consistent` predicate (optional, default=%b)" !intermediate_model);
-      ("-o", Arg.Set_string out_dir,
-       sprintf "Output directory (default=%s)" !out_dir);
-      ("-verbose", Arg.Set verbose, sprintf "default=%b" !verbose);
-    ]
-  in
-  let usage_msg =
-    "A translator from the .cat format into the .als (Alloy) format.\nUsage: `cat2als [options] <cat_file.cat>`.\nOptions available:"
-  in
-  Arg.parse speclist (fun filename -> cat_path := filename) usage_msg;
-  begin match Sys.file_exists !cat_path with
-  | false -> failwith "Could not find cat file %s" !cat_path
-  | _ -> ()
-  end;
-  let dir = Filename.dirname !cat_path in
-  let cat_file = Filename.basename !cat_path in
-  let _ = cat_dir := dir in
-  cat_file, !unrolling_factor, !intermediate_model
 		   
 let main () =
-  let cat_path, unrolling_factor, interm_model = get_args () in
-  assert (unrolling_factor >= 0);
-  let _ = als_of_file interm_model unrolling_factor cat_path in
+  let cat_path, interm_model = get_args () in
+  assert (!unrolling_factor >= 0);
+  let _ = als_of_file interm_model cat_path in
   exit 0
     
 
