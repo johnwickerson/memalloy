@@ -37,6 +37,7 @@ let get_args () =
   let usage_msg = "Usage: `weaken [options] [xml_file.xml | xml_dir]`.\n\
                    Options available:"
   in
+  let speclist = Global_options.speclist @ speclist in
   Arg.parse speclist (set_list_ref xml_path) usage_msg;
   let bad_arg () =
     Arg.usage speclist usage_msg;

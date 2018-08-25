@@ -34,6 +34,7 @@ let get_args () =
   let usage_msg = "Usage: `mk_hash [options] xml_file.xml`.\n\
                    Options available:"
   in
+  let speclist = Global_options.speclist @ speclist in
   Arg.parse speclist (set_list_ref xml_path) usage_msg;
   let bad_arg () =
     Arg.usage speclist usage_msg;
@@ -45,13 +46,15 @@ let get_args () =
   xml_path
 
 let run xml_path oc =
-  let soln = Xml_input.parse_file xml_path in
+  let soln =
+    try Xml_input.parse_file xml_path
+    with Xml.File_not_found _ ->
+      failwith "ERROR: Couldn't make hash from %s; file not found." xml_path
+  in
   Soln.hash_soln oc soln
   
 let main () =
   let xml_path = get_args () in
-  if not (Sys.file_exists xml_path) then
-    failwith "Couldn't find `%s`" xml_path;
   let oc = formatter_of_out_channel stdout in
   run xml_path oc;
   exit 0

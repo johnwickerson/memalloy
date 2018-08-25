@@ -71,6 +71,9 @@ let filteri p xs =
   let _, xs' = (List.fold_left helper (0,[]) xs) in
   xs'
 
+(** [foreach xs f] executes [f] on each element of [xs] *)
+let foreach xs f = List.iter f xs
+
 (** [max xs] returns the largest element of [xs]. Assumes [xs] is non-empty. *)
 let max xs =
   hd (rev (sort compare xs))

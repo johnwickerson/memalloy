@@ -29,7 +29,7 @@ open! Format
 open! General_purpose
 open Cat_syntax
 
-let cat_dir : string ref = ref "models"
+let cat_dir : string ref = ref "."
 let out_dir : string ref = ref "."
 let unrolling_factor : int ref = ref 3
 
@@ -93,13 +93,13 @@ let unfold_defs xes =
     else
       let iter_d =
 	let upd_bind (x,e) =
-	  let x' = if d=!unrolling_factor then x else add_subscript x d in
+	  let x' = if d = !unrolling_factor then x else add_subscript x d in
 	  Let (x', [], sub_subscript xs (d-1) e) in
 	List.map upd_bind xes
       in
       unfold_defs' (d - 1) @ iter_d
   in
-  unfold_defs'
+  unfold_defs' !unrolling_factor
 
 (** [unfold_instrs instrs] unrolls each recursive definition in [instrs] by factor [!unrolling_factor]. *)
 let rec unfold_instrs = function
@@ -287,7 +287,7 @@ let rec als_of_instr withsc arch oc (env, axs) = function
      let ax_info = {cnstrnt; withsc_ax=withsc} in
      (env, (n, ax_info) :: axs)
   | Include cat_path ->
-     let env',axs' = als_of_file true cat_path in
+     let env',axs' = als_of_file true (Filename.concat "models" cat_path) in
      fprintf oc "open %s[E]\n\n" (Filename.chop_extension cat_path);
      (env' @ env, axs @ axs')
 

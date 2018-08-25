@@ -1,7 +1,7 @@
 (*
 MIT License
 
-Copyright (c) 2017 by John Wickerson.
+Copyright (c) 2018 by John Wickerson.
 
 Permission is hereby granted, free of charge, to any person obtaining
 a copy of this software and associated documentation files (the
@@ -23,26 +23,12 @@ OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION
 WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 *)
 
+(** Extensions to the Filename module. *)
+
 open! Format
+open! General_purpose
 
-(** For timing and generating timestamps *)
-       
-let today () =
-  let t = Unix.localtime (Unix.time ()) in
-  sprintf "%04d-%02d-%02d"
-    (t.Unix.tm_year + 1900) (t.Unix.tm_mon + 1) t.Unix.tm_mday
+open Filename
 
-let now () =
-  let t = Unix.localtime (Unix.time ()) in
-  sprintf "%02d:%02d:%02d"
-    t.Unix.tm_hour t.Unix.tm_min t.Unix.tm_sec
-
-(** Return the number of milliseconds since the Unix epoch *)
-let now_ms () =
-  int_of_float (Unix.gettimeofday() *. 1000.0)
-
-let timestamp () =
-  let t = Unix.localtime (Unix.time ()) in
-  sprintf "%02d%02d%02d-%02d%02d%02d"
-    (t.Unix.tm_year mod 100) (t.Unix.tm_mon + 1) t.Unix.tm_mday
-    t.Unix.tm_hour t.Unix.tm_min t.Unix.tm_sec
+(** Concatenate a list of directories to build a single path. E.g. [concat ["/usr/local"; "bin"; "ocaml"]] produces "/usr/local/bin/ocaml". *)
+let concat xs = List.fold_left concat "" xs

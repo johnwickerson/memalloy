@@ -23,6 +23,11 @@ OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION
 WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 *)
 
+(** Command-line options that are shared among various program entry-points. *)
+
+open! Format
+open! General_purpose
+
 let verbose = ref false
 let fencerels = ref false
 

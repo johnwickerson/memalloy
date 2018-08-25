@@ -29,7 +29,7 @@ DOCDIR := ../doc
 
 .PHONY: all clean doc top cat2als pp_comparator gen weaken mk_hash 
 
-BINARIES = cat2als pp_comparator gen weaken mk_hash
+BINARIES = cat2als pp_comparator gen weaken mk_hash comparator
 
 all: $(BINARIES) doc 
 

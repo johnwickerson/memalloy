@@ -36,7 +36,6 @@ let hints = ref []
 let eventcount = ref 0
 let eventcount2 = ref 0
 let description = ref ""
-let fencerels = ref false
 let minimal = ref false
 let exact = ref false
 
@@ -49,7 +48,7 @@ let max_locs = ref (-1)
 let min_txns = ref 0
 let max_txns = ref (-1)
              
-let arch_string = ref None
+let arch_string = ref ""
 let arch2_string = ref None
 let mapping_path = ref None
 let comparator_als = ref None
@@ -61,7 +60,7 @@ let speclist =
    "-violates", Arg.String (set_list_ref fail_paths),
    "Execution should violate this model (repeatable)";
    
-   "-arch", Arg.String (set_option_ref arch_string),
+   "-arch", Arg.Set_string arch_string,
    "Type of executions being compared (required)";
    
    "-events", Arg.Set_int eventcount, "Max number of events";
@@ -122,7 +121,7 @@ let speclist =
    "-withinit", Arg.Set withinit,
    "Option: explicit initial writes";
    
-   "-fencerels", Arg.Set fencerels,
+   "-fencerels", Arg.Set Global_options.fencerels,
    "Option: fences as relations";
    
    "-minimal", Arg.Set minimal,
@@ -139,6 +138,7 @@ let get_args () =
   let bad_arg s =
     failwith "Unexpected argument '%s'" s
   in
+  let speclist = Global_options.speclist @ speclist in
   Arg.parse speclist bad_arg usage_msg
     
 let read_file filename = 
@@ -279,12 +279,12 @@ let pp_comparator arch oc =
           else " & imm[X.sb]"
         in
         fprintf oc "  not some e : dom[X.%s%s] |\n" rel extra;
-        fprintf oc "    interesting[rm_%s->e, X]\n" rel
-      ) (Archs.arch_min_rels !fencerels arch);
+        fprintf oc "    interesting[rm_%s->e, X]\n" rel)
+      (Archs.arch_min_rels !Global_options.fencerels arch);
     List.iter (fun (dom, set) ->
         fprintf oc
-          "  not some e : X.(%s) | interesting[rm_%s->e, X]\n" dom set
-      ) (Archs.arch_min_sets !fencerels arch);
+          "  not some e : X.(%s) | interesting[rm_%s->e, X]\n" dom set)
+      (Archs.arch_min_sets !Global_options.fencerels arch);
     let tag = "rm_txn->e" in
     fprintf oc "  not some e : dom[X.stxn]  {\n";
     fprintf oc "    let tpo = X.sb & X.stxn |\n";
@@ -344,10 +344,8 @@ let pp_description () =
   printf "------------------------------\n"      
 
 let main () =
-  let arch = match !arch_string with
-    | Some a -> Archs.parse_arch a
-    | None -> failwith "Expected one -arch"
-  in
+  if !arch_string = "" then failwith "Expected one -arch";
+  let arch = Archs.parse_arch !arch_string in
   let arch2 = match !arch2_string with
     | Some a -> Some (Archs.parse_arch a)
     | None -> None
@@ -359,7 +357,7 @@ let main () =
   if !succ_paths @ !fail_paths = [] then
     failwith "Expected at least one -satisfies or -violates flag";
   let pp =
-    match mapping_path, arch2, !eventcount2 with
+    match !mapping_path, arch2, !eventcount2 with
     | None, None, 0 -> pp_comparator arch
     | Some mapping_path, Some arch2, n when n>0 ->
        pp_comparator2 arch mapping_path arch2
@@ -367,12 +365,12 @@ let main () =
        failwith "Expected all or none of: -mapping, -arch2, -events2"
   in
   pp (formatter_of_out_channel oc);
-  close_out oc;
-  exit 0
+  close_out oc
        
 
 let _ =
   if MyStr.endswith Sys.argv.(0) "pp_comparator" then begin
       get_args ();
-      main ()
+      main ();
+      exit 0
     end

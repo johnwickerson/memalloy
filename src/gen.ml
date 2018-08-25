@@ -33,30 +33,6 @@ type output_type = Dot | Als | Lit
 let als_sub = ref false
 let als_super = ref false
 let als_name = ref "hint"
-
-let speclist =
-  ["-Tdot", Arg.Set output_dot, "Produce .dot output";
-   
-   "-Tals", Arg.Set output_als, "Produce .als constraints";
-   
-   "-Tlit", Arg.Set output_lit, "Produce litmus test";
-   
-   "-arch", Arg.String (set_option_ref arch),
-   "Optional: execution type";
-   
-   "-o", Arg.String (set_list_ref out_path),
-   "Output file (mandatory)";
-   
-   "-sub", Arg.Set als_sub,
-   "Constrain as sub-execution (-Tals mode only)";
-   
-   "-super", Arg.Set als_super,
-   "Constrain as super-execution (-Tals mode only)";
-   
-   "-name", Arg.Set_string als_name,
-   "Name of als predicate (-Tals mode only)";
-   
-  ]
              
 let get_args () =
   let xml_path : string list ref = ref [] in
@@ -65,10 +41,35 @@ let get_args () =
   let output_als = ref false in
   let output_lit = ref false in
   let arch = ref None in
+  let speclist =
+    ["-Tdot", Arg.Set output_dot, "Produce .dot output";
+     
+     "-Tals", Arg.Set output_als, "Produce .als constraints";
+     
+     "-Tlit", Arg.Set output_lit, "Produce litmus test";
+     
+     "-arch", Arg.String (set_option_ref arch),
+     "Optional: execution type";
+     
+     "-o", Arg.String (set_list_ref out_path),
+     "Output file (mandatory)";
+     
+     "-sub", Arg.Set als_sub,
+     "Constrain as sub-execution (-Tals mode only)";
+     
+     "-super", Arg.Set als_super,
+     "Constrain as super-execution (-Tals mode only)";
+     
+     "-name", Arg.Set_string als_name,
+     "Name of als predicate (-Tals mode only)";
+     
+    ]
+  in
   let usage_msg = "Processing executions and generating litmus \
                    tests.\nUsage: `gen [options] <xml_file.xml>`.\n\
                    Options available:"
   in
+  let speclist = Global_options.speclist @ speclist in
   Arg.parse speclist (set_list_ref xml_path) usage_msg;
   let bad_arg () =
     Arg.usage speclist usage_msg;
@@ -86,14 +87,11 @@ let get_args () =
     | false, false, true -> Lit
     | _ -> bad_arg ()
   in
-  let arch = match !arch with
-    | Some arch -> Archs.parse_arch arch
-    | None -> Archs.Basic
-  in
-  xml_path, out_path, out_type, arch
+  xml_path, out_path, out_type, !arch
 
 let run xml_path out_path out_type arch =
   assert (Filename.check_suffix xml_path ".xml");
+  let arch = opt Archs.Basic Archs.parse_arch arch in
   let exec = Xml_input.parse_file xml_path in
   let oc = open_out out_path in
   let fmtr = formatter_of_out_channel oc in
@@ -163,7 +161,7 @@ let run xml_path out_path out_type arch =
 	     | _ -> fprintf fmtr "%a\n" Litmus.pp lt)
        end
   end;
-  close_out oc;
+  close_out oc
   
 let main () =
   let xml_path, out_path, out_type, arch = get_args () in
