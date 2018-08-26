@@ -69,7 +69,8 @@ let get_args () =
   Arg.parse speclist bad_arg usage_msg;
   if not (List.mem !solver (legal_solvers @ [""])) then
     failwith "The -solver flag must be set to one of [%s] (currently \"%s\")"
-      (String.concat "|" legal_solvers) !solver
+      (String.concat "|" legal_solvers) !solver;
+  if !iter then Pp_comparator.minimal := true
 
 let running_osx () =
   let ic = Unix.open_process_in "uname -s" in
@@ -244,13 +245,14 @@ let main () =
       end
     end;
 
+  if !expect >= 0 && !expect != nsolutions then
+    failwith "ERROR: Expected %d solutions, found %d." !expect nsolutions;
+  
   printf "setup time: %d ms\n" time_setup;
   printf "alloy time: %d ms\n" time_alloy;
   printf "dump time:  %d ms\n" time_dump;
 
   exit 0
-
-  
 
 let _ =
   if MyStr.endswith Sys.argv.(0) "comparator" then begin
