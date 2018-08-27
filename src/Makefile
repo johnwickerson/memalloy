@@ -27,15 +27,15 @@ DEST := ..
 
 DOCDIR := ../doc
 
-.PHONY: all clean doc top cat2als pp_comparator gen weaken mk_hash 
+.PHONY: all clean doc top cat2als pp_comparator gen weaken mk_hash comparator 
 
 BINARIES = cat2als pp_comparator gen weaken mk_hash comparator
 
 all: $(BINARIES) doc 
 
 $(BINARIES): 
-	@ ocamlbuild $(OCB_OPTS) $@.native
-	mv $@.native $(DEST)/$@
+	ocamlbuild $(OCB_OPTS) $@.native
+	mv _build/$@.native $(DEST)/$@
 
 # Note: put `#directory "_build";;` into your ~/.ocamlinit file
 top:
