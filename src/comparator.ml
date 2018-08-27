@@ -34,6 +34,7 @@ let batch = ref false
 let default_solver = "glucose"
 let solver = ref default_solver
 let iter = ref false
+let allowset = ref false
 
 let legal_solvers =
   ["sat4j"; "cryptominisat"; "plingeling"; "lingeling";
@@ -55,6 +56,9 @@ let speclist =
 
    "-iter", Arg.Set iter,
    "Find all solutions (optional)";
+
+   "-allowset", Arg.Set allowset,
+   "Generate the allow set too (optional)";
   ]
                  
 let get_args () =
@@ -124,8 +128,6 @@ let main () =
   let timer_start = MyTime.now_ms () in
   
   let memalloy_root = Filename.dirname Sys.executable_name in
-  printf "Executable name is %s.\n" Sys.executable_name;
-  printf "Executable's directory is %s.\n" memalloy_root;
   let top_results_dir = MyFilename.concat [memalloy_root; "results"] in
   if not (Sys.file_exists top_results_dir) then
     Unix.mkdir top_results_dir 0o755;
@@ -142,6 +144,18 @@ let main () =
   List.iter (fun p -> Unix.mkdir p 0o755)
     [results_dir; xml_dir; png_dir; dot_dir; lit_dir; als_dir];
 
+  let allow_dir = MyFilename.concat [results_dir; "allow"] in
+  let allow_xml_dir = MyFilename.concat [allow_dir; "xml"] in
+  let allow_png_dir = MyFilename.concat [allow_dir; "png"] in
+  let allow_dot_dir = MyFilename.concat [allow_dir; "dot"] in
+  let allow_als_dir = MyFilename.concat [allow_dir; "als"] in
+  let allow_lit_dir = MyFilename.concat [allow_dir; "litmus"] in
+
+  if !allowset then
+    List.iter (fun p -> Unix.mkdir p 0o755)
+      [allow_dir; allow_xml_dir; allow_png_dir;
+       allow_dot_dir; allow_lit_dir; allow_als_dir];
+  
   let latest_symlink = MyFilename.concat [memalloy_root; "results"; "_latest"] in
   if Sys.file_exists latest_symlink then
     Sys.remove latest_symlink;
@@ -179,7 +193,7 @@ let main () =
   end;
   
   let timer_end = MyTime.now_ms () in
-  let time_setup = timer_end - timer_start in
+  let timing = ref ["setup", timer_end - timer_start] in
   
   (* Stage 2: Alloy solving *)
   let timer_start = MyTime.now_ms () in
@@ -194,9 +208,10 @@ let main () =
   in
   let nsolutions = List.length xml_files in
   let timer_end = MyTime.now_ms () in
-  let time_alloy = timer_end - timer_start in
+  let elapsed = timer_end - timer_start in
+  timing := !timing @ ["alloy", elapsed];
   printf "Alloy found %d solutions in %.2f sec.\n"
-    nsolutions (float_of_int time_alloy /. 1000.0);
+    nsolutions (float_of_int elapsed /. 1000.0);
 
   if nsolutions = 0 then
     if !expect > 0 then
@@ -206,7 +221,23 @@ let main () =
   
   
   (* TODO: implement -filter flag here. *)
-  (* TODO: implement allow-set here. *)
+
+  (* Stage 3b: Generate allow-set *)
+  if !allowset then begin
+      let timer_start = MyTime.now_ms () in
+      Weaken.hashes_seen := [];
+      Weaken.run allow_xml_dir xml_dir;
+      let timer_end = MyTime.now_ms () in
+      let elapsed = timer_end - timer_start in
+      let xml_files =
+        let result_files = Array.to_list (Sys.readdir allow_xml_dir) in
+        List.filter (fun f -> Filename.check_suffix f ".xml") result_files
+      in
+      let nsolutions = List.length xml_files in
+      printf "Generated %d allowed solutions in %.2f sec.\n"
+        nsolutions (float_of_int elapsed /. 1000.0);
+      timing := !timing @ ["allowset", elapsed]
+    end;
 
   (* Stage 4: Generate litmus test output *)
   let timer_start = MyTime.now_ms () in
@@ -231,7 +262,7 @@ let main () =
       Gen.run xml_file lit_file Gen.Lit (Some arch));
   
   let timer_end = MyTime.now_ms () in
-  let time_dump = timer_end - timer_start in
+  timing := !timing @ ["dump", timer_end - timer_start];
 
   if not !batch then begin
     if nsolutions = 1 then begin
@@ -252,9 +283,7 @@ let main () =
   if !expect >= 0 && !expect != nsolutions then
     failwith "ERROR: Expected %d solutions, found %d." !expect nsolutions;
   
-  printf "setup time: %d ms\n" time_setup;
-  printf "alloy time: %d ms\n" time_alloy;
-  printf "dump time:  %d ms\n" time_dump;
+  List.iter (fun (l,t) -> printf "%s time: %d ms\n" l t) !timing;
 
   exit 0
 

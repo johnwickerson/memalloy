@@ -32,9 +32,8 @@ open! General_purpose
 type field =
   | Set of Evt.t list
   | Rel of (Evt.t * Evt.t) list				   
-    
-let parse_file xml_path =
-  let alloy_soln = Xml.parse_file xml_path in
+         
+let parse_soln alloy_soln =
   assert (Xml.tag alloy_soln = "alloy");
   let instance = List.hd (Xml.children alloy_soln) in
   assert (Xml.tag instance = "instance");
@@ -131,3 +130,6 @@ let parse_file xml_path =
      match mk_field None pi_node with
      | Rel pi -> Soln.Double (exec1, exec2, pi)
      | _ -> failwith "Ill-formed 'map' relation"
+
+let parse_file xml_path =
+  parse_soln (Xml.parse_file xml_path)

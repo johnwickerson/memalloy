@@ -50,10 +50,12 @@ let get_args () =
     try MyList.the !out_path with Not_found -> bad_arg ()
   in
   xml_path, out_path
+
+let hashes_seen = ref []
   
 let write_xml_into_dir out_dir origin xml_root =
   let file_contents = Xml.to_string_fmt xml_root in
-  let () = Filename.set_temp_dir_name out_dir in
+  Filename.set_temp_dir_name out_dir;
   let _, oc = Filename.open_temp_file "test_" ".xml" in
   let fmtr = formatter_of_out_channel oc in
   fprintf fmtr "<!-- weakened from : %s -->\n" origin;
@@ -147,7 +149,12 @@ let rm_from_set rname e ((name, attrs, children) as elt) = match name with
      (name, attrs, children)
   | _ -> elt
 
-let run out_dir xml_path =
+let not_already_seen soln =
+  let hash = fprintf_to_string (Mk_hash.hash_xml soln) in
+  if List.mem hash !hashes_seen then false
+  else (hashes_seen := hash :: !hashes_seen; true)
+       
+let run_single out_dir xml_path =
   let soln = Xml.parse_file xml_path in
   let set_EV = get_set "EV" [soln] in
   let stxn = get_rel "stxn" [soln] in
@@ -205,25 +212,26 @@ let run out_dir xml_path =
     let solns = List.map (fun e -> xml_map (perturb e) soln) dom in
     let not_empty_exec soln = get_set "EV" [soln] <> [] in
     let solns = List.filter not_empty_exec solns in
+    let solns = List.filter not_already_seen solns in
     List.iter (write_xml_into_dir out_dir xml_path) solns
   in
   List.iter apply_perturbation perturbations
-       
+
+let run out_dir xml_path =
+  if Sys.is_directory xml_path then
+    Array.iter (fun f ->
+        let xml_path = MyFilename.concat [xml_path; f] in
+        run_single out_dir xml_path)
+      (Sys.readdir xml_path)
+  else
+    run_single out_dir xml_path
+  
 let main () =
   let xml_path, out_dir = get_args () in
   if not (Sys.file_exists xml_path) then
     failwith "Couldn't find `%s`" xml_path;
-  if Sys.is_directory xml_path then
-    let process_soln unique_soln =
-      let unique_soln_path = xml_path ^ "/" ^ unique_soln in
-      if Sys.is_directory unique_soln_path then
-        let xml_file = (Sys.readdir unique_soln_path).(0) in
-        let xml_file_path = unique_soln_path ^ "/" ^ xml_file in
-        run out_dir xml_file_path
-    in
-    Array.iter process_soln (Sys.readdir xml_path)
-  else
-    run out_dir xml_path;
+  hashes_seen := [];
+  run out_dir xml_path;
   exit 0
 
 let _ =

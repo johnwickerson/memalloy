@@ -45,18 +45,21 @@ let get_args () =
   in
   xml_path
 
-let run xml_path oc =
-  let soln =
-    try Xml_input.parse_file xml_path
+let hash_xml xml oc =
+  Soln.hash_soln oc (Xml_input.parse_soln xml)
+  
+let run oc xml_path =
+  let xml =
+    try Xml.parse_file xml_path
     with Xml.File_not_found _ ->
       failwith "ERROR: Couldn't make hash from %s; file not found." xml_path
   in
-  Soln.hash_soln oc soln
+  hash_xml xml oc
   
 let main () =
   let xml_path = get_args () in
   let oc = formatter_of_out_channel stdout in
-  run xml_path oc;
+  run oc xml_path;
   exit 0
 
 let _ =
