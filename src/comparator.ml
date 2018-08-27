@@ -107,11 +107,13 @@ let run_alloy alloystar_dir xml_dir comparator_script =
   in
   Unix.chdir alloystar_dir;
   Sys.catch_break true;
-  try
+  begin try
     let status = Unix.system cmd in
     if status <> Unix.WEXITED 0 then failwith "Alloy was unsuccessful."
   with Sys.Break ->
     printf "\nWARNING: Alloy was interrupted.\n"
+  end;
+  Sys.catch_break false
             
 let run_dot dot_file png_file =
   ignore (Sys.command (sprintf "dot -Tpng -o %s %s" png_file dot_file))
@@ -122,6 +124,8 @@ let main () =
   let timer_start = MyTime.now_ms () in
   
   let memalloy_root = Filename.dirname Sys.executable_name in
+  printf "Executable name is %s.\n" Sys.executable_name;
+  printf "Executable's directory is %s.\n" memalloy_root;
   let top_results_dir = MyFilename.concat [memalloy_root; "results"] in
   if not (Sys.file_exists top_results_dir) then
     Unix.mkdir top_results_dir 0o755;
