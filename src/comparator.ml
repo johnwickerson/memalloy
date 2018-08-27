@@ -193,7 +193,7 @@ let main () =
   end;
   
   let timer_end = MyTime.now_ms () in
-  let timing = ref ["setup", timer_end - timer_start] in
+  let timing = ["setup", timer_end - timer_start] in
   
   (* Stage 2: Alloy solving *)
   let timer_start = MyTime.now_ms () in
@@ -209,7 +209,7 @@ let main () =
   let nsolutions = List.length xml_files in
   let timer_end = MyTime.now_ms () in
   let elapsed = timer_end - timer_start in
-  timing := !timing @ ["alloy", elapsed];
+  let timing = timing @ ["alloy", elapsed] in
   printf "Alloy found %d solutions in %.2f sec.\n"
     nsolutions (float_of_int elapsed /. 1000.0);
 
@@ -223,46 +223,56 @@ let main () =
   (* TODO: implement -filter flag here. *)
 
   (* Stage 3b: Generate allow-set *)
-  if !allowset then begin
-      let timer_start = MyTime.now_ms () in
-      Weaken.hashes_seen := [];
-      Weaken.run allow_xml_dir xml_dir;
-      let timer_end = MyTime.now_ms () in
-      let elapsed = timer_end - timer_start in
-      let xml_files =
-        let result_files = Array.to_list (Sys.readdir allow_xml_dir) in
-        List.filter (fun f -> Filename.check_suffix f ".xml") result_files
-      in
-      let nsolutions = List.length xml_files in
-      printf "Generated %d allowed solutions in %.2f sec.\n"
-        nsolutions (float_of_int elapsed /. 1000.0);
-      timing := !timing @ ["allowset", elapsed]
-    end;
+  let allow_xml_files, timing =
+    if not !allowset then [], timing else begin
+        let timer_start = MyTime.now_ms () in
+        Weaken.hashes_seen := [];
+        Weaken.run allow_xml_dir xml_dir;
+        let timer_end = MyTime.now_ms () in
+        let elapsed = timer_end - timer_start in
+        let allow_xml_files =
+          let result_files = Array.to_list (Sys.readdir allow_xml_dir) in
+          let xml_filenames =
+            List.filter (fun f -> Filename.check_suffix f ".xml") result_files
+          in
+          List.map (fun f -> MyFilename.concat [allow_xml_dir; f]) xml_filenames
+        in
+        let nsolutions = List.length allow_xml_files in
+        printf "Generated %d allowed solutions in %.2f sec.\n"
+          nsolutions (float_of_int elapsed /. 1000.0);
+        let timing = timing @ ["allowset", elapsed] in
+        allow_xml_files, timing
+      end
+  in
 
   (* Stage 4: Generate litmus test output *)
   let timer_start = MyTime.now_ms () in
 
   let arch = !Pp_comparator.arch_string in
 
-  MyList.foreach xml_files (fun xml_file ->
-      let test_name = Filename.chop_extension (Filename.basename xml_file) in
-      let als_file = MyFilename.concat [als_dir; test_name ^ ".als"] in
-      Gen.run xml_file als_file Gen.Als (Some arch));
-  
-  MyList.foreach xml_files (fun xml_file ->
-      let test_name = Filename.chop_extension (Filename.basename xml_file) in
-      let dot_file = MyFilename.concat [dot_dir; test_name ^ ".dot"] in
-      Gen.run xml_file dot_file Gen.Dot (Some arch);
-      let png_file = MyFilename.concat [png_dir; test_name ^ ".png"] in
-      run_dot dot_file png_file);
-  
-  MyList.foreach xml_files (fun xml_file ->
-      let test_name = Filename.chop_extension (Filename.basename xml_file) in
-      let lit_file = MyFilename.concat [lit_dir; test_name ^ ".litmus"] in
-      Gen.run xml_file lit_file Gen.Lit (Some arch));
+  let process_dir xml_files dir =
+    MyList.foreach xml_files (fun xml_file ->
+        let test_name = Filename.chop_extension (Filename.basename xml_file) in
+        let als_file = MyFilename.concat [dir; "als"; test_name ^ ".als"] in
+        Gen.run xml_file als_file Gen.Als (Some arch));
+    
+    MyList.foreach xml_files (fun xml_file ->
+        let test_name = Filename.chop_extension (Filename.basename xml_file) in
+        let dot_file = MyFilename.concat [dir; "dot"; test_name ^ ".dot"] in
+        Gen.run xml_file dot_file Gen.Dot (Some arch);
+        let png_file = MyFilename.concat [dir; "png"; test_name ^ ".png"] in
+        run_dot dot_file png_file);
+    
+    MyList.foreach xml_files (fun xml_file ->
+        let test_name = Filename.chop_extension (Filename.basename xml_file) in
+        let lit_file = MyFilename.concat [dir; "litmus"; test_name ^ ".litmus"] in
+        Gen.run xml_file lit_file Gen.Lit (Some arch))
+  in
+  process_dir xml_files results_dir;
+  if !allowset then process_dir allow_xml_files allow_dir;
   
   let timer_end = MyTime.now_ms () in
-  timing := !timing @ ["dump", timer_end - timer_start];
+  let timing = timing @ ["dump", timer_end - timer_start] in
 
   if not !batch then begin
     if nsolutions = 1 then begin
@@ -283,7 +293,7 @@ let main () =
   if !expect >= 0 && !expect != nsolutions then
     failwith "ERROR: Expected %d solutions, found %d." !expect nsolutions;
   
-  List.iter (fun (l,t) -> printf "%s time: %d ms\n" l t) !timing;
+  List.iter (fun (l,t) -> printf "%s time: %d ms\n" l t) timing;
 
   exit 0
 
