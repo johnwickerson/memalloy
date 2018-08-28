@@ -91,7 +91,6 @@ let get_args () =
 
 let run xml_path out_path out_type arch =
   assert (Filename.check_suffix xml_path ".xml");
-  let arch = opt Archs.Basic Archs.parse_arch arch in
   let exec = Xml_input.parse_file xml_path in
   let oc = open_out out_path in
   let fmtr = formatter_of_out_channel oc in
@@ -165,6 +164,7 @@ let run xml_path out_path out_type arch =
   
 let main () =
   let xml_path, out_path, out_type, arch = get_args () in
+  let arch = opt Archs.Basic Archs.parse_arch arch in
   run xml_path out_path out_type arch;
   exit 0
 	    

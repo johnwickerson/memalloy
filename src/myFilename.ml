@@ -32,3 +32,9 @@ open Filename
 
 (** Concatenate a list of directories to build a single path. E.g. [concat ["/usr/local"; "bin"; "ocaml"]] produces "/usr/local/bin/ocaml". *)
 let concat xs = List.fold_left concat "" xs
+
+(** [iter f dir] applies [f] to each filename in directory [dir]. Each filename provided to [f] is prefixed with [dir]. For instance, if the directory ["foo/bar"] contains files ["a"], ["b"], and ["c"], then [iter f "foo/bar"] will call [f "foo/bar/a"], [f "foo/bar/b"], and [f "foo/bar/c"]. *) 
+let iter f dir =
+  let files_arr = Sys.readdir dir in
+  let paths_arr = Array.map (fun file -> concat [dir; file]) files_arr in
+  Array.iter f paths_arr

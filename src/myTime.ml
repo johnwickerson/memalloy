@@ -24,6 +24,7 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 *)
 
 open! Format
+open! General_purpose
 
 (** For timing and generating timestamps *)
        
@@ -46,3 +47,23 @@ let timestamp () =
   sprintf "%02d%02d%02d-%02d%02d%02d"
     (t.Unix.tm_year mod 100) (t.Unix.tm_mon + 1) t.Unix.tm_mday
     t.Unix.tm_hour t.Unix.tm_min t.Unix.tm_sec
+
+let timing_report = ref []
+
+let timer_started = ref None                       
+
+let start_timer name =
+  match !timer_started with
+  | None -> timer_started := Some (name, now_ms())
+  | Some (name,_) -> failwith "ERROR: Timer '%s' already started!" name
+
+let stop_timer () =
+  match !timer_started with
+  | None -> failwith "ERROR: Timer not started!"
+  | Some (name, start_time) ->
+     timing_report := !timing_report @ [name, now_ms() - start_time];
+     timer_started := None
+
+let report_timings () =
+  List.iter (fun (l,t) -> printf "%13s time: %d ms\n" l t) !timing_report;
+  

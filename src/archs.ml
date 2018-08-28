@@ -28,7 +28,7 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 open! Format
 open! General_purpose
        
-type architecture =
+type t =
   | Basic
   | C
   | Basic_HW
