@@ -11,8 +11,6 @@
 
 - Python 2.7
 
-- Python packages `progressbar` and `subprocess32` (hint: `sudo easy_install <package name>`)
-
 - Java runtime version 8 (Java SE 8).
 
 - Graphviz (hint: `brew install graphviz`)
