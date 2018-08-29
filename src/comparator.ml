@@ -28,12 +28,14 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 open! Format
 open! General_purpose
 
+(** Check if we're on a Mac *)
 let running_osx () =
   let ic = Unix.open_process_in "uname -s" in
   let os_name = input_line ic in
   ignore (Unix.close_process_in ic);
   if os_name = "Darwin" then true else false
-  
+
+(** Interface to the Alloy Java application *)
 let run_alloy alloystar_dir xml_dir comparator_script iter solver quiet =
   let java_heap_size = opt "3g" iden (Sys.getenv_opt "JAVA_HEAP_SIZE") in
   let os =
@@ -130,13 +132,28 @@ let append_line_to_file filename str =
   let oc = open_out_gen [Open_append; Open_creat] 0o755 filename in
   output_string oc (str ^ "\n");
   close_out oc
-            
+
+(** Interface to graphviz *)
 let run_dot dot_file png_file =
   ignore (Sys.command (sprintf "dot -Tpng -o %s %s" png_file dot_file))
+
+(** Put a handy "_latest" symlink in the memalloy/results directory *)
+let create_latest_symlink results_dir =
+  let top_results_dir = Filename.dirname results_dir in
+  let latest_symlink =
+    MyFilename.concat [top_results_dir; "_latest"]
+  in
+  if Sys.file_exists latest_symlink then
+    Sys.remove latest_symlink;
+  Unix.symlink results_dir latest_symlink
+
+(** [copy_file src tgt] copies the file at [src] to the new path [tgt] *)
+let copy_file src tgt =
+  ignore (Sys.command (sprintf "cp %s %s" src tgt))
   
 let main () =
   
-  (* Stage 1: setup directory structure and generate comparator script *)
+  (* 1. Setup directory structure *)
   MyTime.start_timer ("setup");
 
   let ppc_config = Pp_comparator.build_config () in
@@ -169,31 +186,20 @@ let main () =
     List.iter (fun p -> Unix.mkdir p 0o755)
       [allow_dir; allow_xml_dir; allow_png_dir;
        allow_dot_dir; allow_lit_dir; allow_als_dir];
-  
-  let latest_symlink =
-    MyFilename.concat [memalloy_root; "results"; "_latest"]
-  in
-  if Sys.file_exists latest_symlink then
-    Sys.remove latest_symlink;
-  Unix.symlink results_dir latest_symlink;
-  
+
+  create_latest_symlink results_dir;
+
+  (* 2. Print a friendly description *)
   if ppc_config.description <> "" then
     printf "\"%s\"\n" ppc_config.description;
-  
-  let comparator_als = MyFilename.concat [results_dir; "comparator.als"] in
 
+  (* 3. Generate comparator script *)
+  let comparator_als = MyFilename.concat [results_dir; "comparator.als"] in  
   begin match !customscript with
   | Some s ->
-     if not (Sys.file_exists s) then
-       failwith "ERROR: Custom comparator script '%s' not found.\n" s;
-     ignore (Sys.command (sprintf "cp %s %s" s comparator_als))
-
+     if Sys.file_exists s then copy_file s comparator_als
+     else failwith "ERROR: Custom comparator script '%s' not found.\n" s
   | None ->
-     let all_models =
-       ppc_config.satisfies_paths @
-         ppc_config.also_satisfies_paths @
-           ppc_config.violates_paths
-     in
      let convert_to_als model =
        if Filename.check_suffix model ".cat" then
          ignore (Cat2als.als_of_file false model)
@@ -202,14 +208,15 @@ let main () =
        else
          failwith "ERROR: Unrecognised model type '%s'.\n" model
      in
-     List.iter convert_to_als all_models;
+     List.iter convert_to_als ppc_config.satisfies_paths;
+     List.iter convert_to_als ppc_config.also_satisfies_paths;
+     List.iter convert_to_als ppc_config.violates_paths;
 
      Pp_comparator.main ppc_config (Some comparator_als);
   end;
-  
   MyTime.stop_timer();
   
-  (* Stage 2: Alloy solving *)
+  (* 4. Alloy solving *)
   MyTime.start_timer("alloy");
   run_alloy alloystar_dir xml_dir comparator_als !iter !solver false;
   let nsolutions = Array.length (Sys.readdir xml_dir) in
@@ -217,14 +224,11 @@ let main () =
   printf "Alloy found %d solutions.\n" nsolutions;
 
   if nsolutions = 0 then
-    if !expect > 0 then
-      failwith "ERROR: Expected %d solutions, found 0.\n" !expect
-    else
-      exit 0;
+    if !expect <= 0 then exit 0
+    else failwith "ERROR: Expected %d solutions, found 0.\n" !expect;
 
-  (* Stage 4: Generate als output *)
+  (* 5. Generate als output *)
   MyTime.start_timer("dump als");
-
   printf "Generating als files.\n%!";
   let generate_als dir xml_file =
     let test_name = Filename.chop_extension (Filename.basename xml_file) in
@@ -235,47 +239,47 @@ let main () =
   MyFilename.iter (generate_als results_dir) xml_dir;
   MyTime.stop_timer();
 
-  (* Stage 3a: Filter executions to remove those that satisfy the model given in the -filter parameter *)
+  let filter model_to_satisfy als_dir xml_path =
+    let test_name =
+      Filename.chop_extension (Filename.basename xml_path)
+    in
+    let hint_file = MyFilename.concat [als_dir; test_name ^ ".als"] in
+    let comparator_als =
+      MyFilename.concat [results_dir; "tmp_comparator.als"]
+    in
+    let new_config = {
+        Pp_comparator.default_config with
+        satisfies_paths = [model_to_satisfy];
+        hints = [hint_file];
+        withinit = ppc_config.withinit;
+        eventcount = ppc_config.eventcount;
+        arch = ppc_config.arch;
+      }
+    in
+    Pp_comparator.main new_config (Some comparator_als);
+    let tmp_xml_file = MyFilename.concat [results_dir; "test_0.xml"] in
+    if Sys.file_exists tmp_xml_file then
+      Sys.remove tmp_xml_file;
+    run_alloy alloystar_dir results_dir comparator_als false "sat4j" true;
+    if Sys.file_exists tmp_xml_file then
+      printf ".%!"
+    else (
+      printf "!%!";
+      Sys.remove hint_file;
+      Sys.remove xml_path
+    )
+  in
+
+  (* 6. Filter executions to keep only those that satisfy the -filter model *)
   if !filter_path <> "" then (
     MyTime.start_timer("filtering");
-    printf "Removing executions that satisfy the -filter model";
-    MyFilename.iter (fun xml_path ->
-        let test_name =
-          Filename.chop_extension (Filename.basename xml_path)
-        in
-        let hint_file =
-          MyFilename.concat [als_dir; test_name ^ ".als"]
-        in
-        let comparator_als =
-          MyFilename.concat [results_dir; "tmp_comparator.als"]
-        in
-        let new_config = {
-            Pp_comparator.default_config with
-            satisfies_paths = [!filter_path];
-            hints = [hint_file];
-            withinit = ppc_config.withinit;
-            eventcount = ppc_config.eventcount;
-            arch = ppc_config.arch;
-          }
-        in
-        Pp_comparator.main new_config (Some comparator_als);
-        let tmp_xml_file = MyFilename.concat [results_dir; "test_0.xml"] in
-        if Sys.file_exists tmp_xml_file then
-          Sys.remove tmp_xml_file;
-        run_alloy alloystar_dir results_dir comparator_als false "sat4j" true;
-        if Sys.file_exists tmp_xml_file then
-          printf ".%!"
-        else (
-          printf "!%!";
-          Sys.remove hint_file;
-          Sys.remove xml_path
-        )
-      ) xml_dir;
+    printf "Removing executions that violate the -filter model";
+    MyFilename.iter (filter !filter_path als_dir) xml_dir;
     printf "\n";
     MyTime.stop_timer();
   );  
   
-  (* Stage 3b: Generate allow-set *)
+  (* 7. Generate allow-set by 'weakening' each forbidding execution. *)
   if !allowset then (
     MyTime.start_timer("allowset");
     Weaken.hashes_seen := [];
@@ -286,44 +290,17 @@ let main () =
     MyFilename.iter (generate_als allow_dir) allow_xml_dir
   );
 
-  (* Stage 5: Check the allow-set *)
+  (* 8. Validate that every execution in the allow-set is indeed allowed. *)
   if !allowset && List.length ppc_config.violates_paths = 1 then (
     MyTime.start_timer("check allow");
     printf "Checking validity of allow-tests";
-    MyFilename.iter (fun allow_xml_path ->
-        let test_name =
-          Filename.chop_extension (Filename.basename allow_xml_path)
-        in
-        let violates_path = List.hd ppc_config.violates_paths in
-        let hint_file = MyFilename.concat [allow_als_dir; test_name ^ ".als"] in
-        let comparator_als =
-          MyFilename.concat [results_dir; "allow_comparator.als"]
-        in
-        let new_config = {
-            Pp_comparator.default_config with
-            satisfies_paths = [violates_path];
-            hints = [hint_file];
-            withinit = ppc_config.withinit;
-            eventcount = ppc_config.eventcount;
-            arch = ppc_config.arch;
-          }
-        in
-        Pp_comparator.main new_config (Some comparator_als);
-        let tmp_xml_file = MyFilename.concat [allow_dir; "test_0.xml"] in
-        if Sys.file_exists tmp_xml_file then
-          Sys.remove tmp_xml_file;
-        run_alloy alloystar_dir allow_dir comparator_als false "sat4j" true;
-        if Sys.file_exists tmp_xml_file then
-          printf ".%!"
-        else (
-          printf "!%!";
-          Sys.remove hint_file;
-          Sys.remove allow_xml_path
-        )
-      ) allow_xml_dir;
+    let violates_path = List.hd ppc_config.violates_paths in
+    MyFilename.iter (filter violates_path allow_als_dir) allow_xml_dir;
+    printf "\n";
     MyTime.stop_timer()
   );
 
+  (* 9. Generate dot and png files from each execution. *)
   MyTime.start_timer("dump png");
   printf "Generating dot and png files.\n%!";
   let generate_dot_png dir xml_file =
@@ -340,6 +317,7 @@ let main () =
     end;
   MyTime.stop_timer();
 
+  (* 10. Generate litmus files from each execution. *)
   MyTime.start_timer("dump litmus");
   printf "Generating litmus files.\n%!";
   let generate_lit dir xml_file =
@@ -356,7 +334,8 @@ let main () =
       MyFilename.iter (generate_lit allow_dir) allow_xml_dir 
     end;
   MyTime.stop_timer();
-  
+
+  (* 11. Show outcome graphically *)
   if not !batch then
     if nsolutions = 1 then begin
         let first_litmus_test = Array.get (Sys.readdir lit_dir) 0 in
@@ -370,7 +349,8 @@ let main () =
     else
       if running_osx () then
         ignore (Sys.command (sprintf "open %s" png_dir));
-  
+
+  (* 12. Compare against expected number of solutions. *)
   if !expect >= 0 && !expect != nsolutions then
     failwith "ERROR: Expected %d solutions, found %d." !expect nsolutions;
   

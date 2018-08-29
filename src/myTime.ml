@@ -50,20 +50,23 @@ let timestamp () =
 
 let timing_report = ref []
 
-let timer_started = ref None                       
+let timer_started = ref None
+
+let report_timings () =
+  List.iter (fun (l,t) -> printf "%13s time: %d ms\n%!" l t) !timing_report
 
 let start_timer name =
   match !timer_started with
   | None -> timer_started := Some (name, now_ms())
-  | Some (name,_) -> failwith "ERROR: Timer '%s' already started!" name
+  | Some (name,_) ->
+     report_timings ();
+     failwith "ERROR: Timer '%s' already started!" name
 
 let stop_timer () =
   match !timer_started with
-  | None -> failwith "ERROR: Timer not started!"
+  | None ->
+     report_timings ();
+     failwith "ERROR: Timer not started!"
   | Some (name, start_time) ->
      timing_report := !timing_report @ [name, now_ms() - start_time];
      timer_started := None
-
-let report_timings () =
-  List.iter (fun (l,t) -> printf "%13s time: %d ms\n" l t) !timing_report;
-  
