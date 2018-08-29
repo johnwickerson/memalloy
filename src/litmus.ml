@@ -123,10 +123,9 @@ let pp oc lt =
   let pp_thd tid cs =
     fprintf oc "Thread %d:\n" tid;
     MyList.pp_gen ";\n" (pp_component pp_instr) oc cs;
-    fprintf oc ";\n\n";
-    tid+1
+    fprintf oc ";\n\n"
   in
-  let _ = List.fold_left pp_thd 0 lt.thds in
+  MyList.iteri pp_thd lt.thds;
   fprintf oc "Final: ";
   let pp_cnstrnt oc (a,v) = fprintf oc "%a==%d" pp_addr a v in
   MyList.pp_gen " && " pp_cnstrnt oc lt.post

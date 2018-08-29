@@ -49,20 +49,6 @@ let pp f oc xs =
   in
   fprintf oc "["; pp xs; fprintf oc "]"
 						 
-let mapi f xs =
-  let rec mapi n f = function
-    | [] -> []
-    | x::xs -> f n x :: mapi (n+1) f xs
-  in
-  mapi 0 f xs
-
-let iteri f xs =
-  let rec iteri n f = function
-    | [] -> ()
-    | x::xs -> f n x; iteri (n+1) f xs
-  in
-  iteri 0 f xs
-
 let filteri p xs =
   let helper (n,acc) x =
     let n' = n + 1 in

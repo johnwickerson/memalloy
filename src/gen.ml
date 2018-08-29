@@ -143,6 +143,8 @@ let run xml_path out_path out_type arch =
              | Archs.X86 ->
 		let x86_lt = Mk_x86.x86_of_lit name lt in
 		fprintf fmtr "%a\n" Mk_x86.pp x86_lt
+             | Archs.C ->
+                fprintf fmtr "%a\n" Litmus_C.pp lt
 	     | _ -> fprintf fmtr "%a\n" Litmus.pp lt)
 	 | Soln.Double (x,y,pi) ->
 	    let lt_src,lt =
