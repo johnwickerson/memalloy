@@ -27,7 +27,6 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
 open! Format
 open! General_purpose
-open Litmus_HW
 
 type fence = MFENCE | LFENCE | SFENCE
 
@@ -36,11 +35,12 @@ let mk_fence attrs =
   | true -> MFENCE
   | _ -> failwith "Invalid fence attributes!"
 
-let mk_tstart reg lbl = [TSTART (reg, lbl)]
+let mk_tstart reg lbl = [Litmus_HW.TSTART (reg, lbl)]
 
-let mk_tabort reg imm = [TABORT (reg, imm)]
+let mk_tabort reg imm = [Litmus_HW.TABORT (reg, imm)]
 
-let mk_tabort_handler reg _tstart_reg = let eax = (fst reg, -1) in [MOVREG (reg, eax)]
+let mk_tabort_handler reg _tstart_reg =
+  let eax = (fst reg, -1) in [Litmus_HW.MOVREG (reg, eax)]
 
 let encode_sentinel imm8 =
   assert (0 <= imm8 && imm8 < 256);
@@ -48,7 +48,7 @@ let encode_sentinel imm8 =
   (imm8 lsl 24) lor abt_caused_by_xabort
                                                                  
 let x86_specific_params = {
-    use_status_reg=false;
+    Litmus_HW.use_status_reg=false;
     mk_fence; mk_tstart; mk_tabort; mk_tabort_handler;
     encode_sentinel;
 }
@@ -98,14 +98,15 @@ let pp_reg oc (t,r) =
   fprintf oc "%s" (reg_name_of_num (physical_reg_of t r))
 
 (** Print a register qualified with thread identifier *)
-let pp_reg_full oc (t,r) = fprintf oc "%d:%s" t (reg_name_of_num (physical_reg_of t r))
+let pp_reg_full oc (t,r) =
+  fprintf oc "%d:%s" t (reg_name_of_num (physical_reg_of t r))
 
 (** Print a location *)
 let pp_loc oc = MyLocation.pp oc
 
 (** Print an instruction *)
 let pp_ins oc = function
-  | Access a ->
+  | Litmus_HW.Access a ->
      if a.is_exclusive then
        (match a.dir, a.imm, a.loc with
         | LD, Some v, Some _ ->
@@ -166,19 +167,21 @@ let pp_ins oc = function
  * [pp_ins] as MOV/XCHG *)
 let map_excls thd =
   let peephole n = function
-    | Access a when a.is_exclusive && a.dir = LD ->
+    | Litmus_HW.Access a when a.is_exclusive && a.dir = LD ->
       let is_matching_excl = function
-        | Access b when b.is_exclusive && b.dir = ST && b.loc = a.loc -> true
+        | Litmus_HW.Access b
+             when b.is_exclusive && b.dir = ST && b.loc = a.loc ->
+           true
         | _ -> false
       in
       let imm_of = function
-        | Access b -> b.imm
+        | Litmus_HW.Access b -> b.imm
         | _ -> failwith ""
       in
       let instr = List.find is_matching_excl (MyList.drop n thd) in
       let expected_val = imm_of instr in
       let a' = {a with imm = expected_val} in
-      Access a'
+      Litmus_HW.Access a'
     | x -> x
   in
   let thd' = List.mapi peephole thd in
@@ -187,7 +190,7 @@ let map_excls thd =
     | _ -> false
   in
   let is_bnz_after_st_excl n = function
-    | BNZ _ -> is_st_excl (List.nth thd' (n-1))
+    | Litmus_HW.BNZ _ -> is_st_excl (List.nth thd' (n-1))
     | _ -> false
   in
   MyList.filteri (fun n i -> not (is_bnz_after_st_excl n i)) thd'
@@ -196,15 +199,16 @@ let map_excls thd =
   * - removing unnecessary RISC MOV instructions and register assignments
   * - mapping exclusives *)
 let patch_litmus lt =
-  let locs' = if List.mem_assoc (-1) lt.locs then [(-1,[])] else [] in
+  let locs' =
+    if List.mem_assoc (-1) lt.Litmus_HW.locs then [(-1,[])] else [] in
   let remove_movs thd =
     let is_not_mov = function
-      | MOV (_,_) -> false
+      | Litmus_HW.MOV (_,_) -> false
       | _ -> true
     in
     List.filter is_not_mov thd
   in
-  let thds' = List.map remove_movs lt.thds in
+  let thds' = List.map remove_movs lt.Litmus_HW.thds in
   let thds'' = List.map map_excls thds' in
   {Litmus_HW.name = lt.name; locs = locs'; thds = thds''; post = lt.post}
 

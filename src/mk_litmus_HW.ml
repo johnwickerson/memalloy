@@ -27,14 +27,13 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
 open! Format
 open! General_purpose
-open Litmus
 
 type mk_litmus_state = {
     loc_map : (MyLocation.t, Register.t) Assoc.t; (** mapping locations to registers *)
     next_reg : int; (** next register *)
     next_lbl : int; (** next label *)
     next_sentinel : int; (** next sentinel value *)
-    current_post: (address, Value.t) Assoc.t; (** postcondition *)
+    current_post: (Litmus.address, Value.t) Assoc.t; (** postcondition *)
     next_txid : int; (** next transaction id *)
   }
 
@@ -76,7 +75,7 @@ let get_txn_fail_lbl tid txid =
 (** [remove_Ifs r cs] removes from the component list [cs] all if-statements that test the value of the register [r] *)
 let rec remove_Ifs r = function
   | [] -> []
-  | Basic b :: cs -> Basic b :: remove_Ifs r cs
+  | Litmus.Basic b :: cs -> Litmus.Basic b :: remove_Ifs r cs
   | If (r',v,cs') :: cs ->
      let cs' = remove_Ifs r cs' in
      (if r=r' then cs' else [If(r',v,cs')]) @ remove_Ifs r cs
@@ -84,10 +83,10 @@ let rec remove_Ifs r = function
 (** [reduce_Ifs c] replaces [(if b then c1);c2] with [if b then (c1;c2)], which is fine when it is assumed that "cd;sb \subseteq cd" holds. *) 
 let rec reduce_Ifs = function
   | [] -> []
-  | Basic b :: cs ->
-     Basic b :: reduce_Ifs cs
-  | If (r,v,cs') :: cs ->
-     If (r,v,cs') :: reduce_Ifs (remove_Ifs r cs)
+  | Litmus.Basic b :: cs ->
+     Litmus.Basic b :: reduce_Ifs cs
+  | Litmus.If (r,v,cs') :: cs ->
+     Litmus.If (r,v,cs') :: reduce_Ifs (remove_Ifs r cs)
 
 (** Builds various flavours of load/store instructions *)
 let mk_Access dir attrs (dst, src, off, sta, imm, loc) = 
@@ -119,8 +118,8 @@ let mk_ADDREG r_src = function
 
 (** Builds fake dependencies using exclusive-or instructions. Currently an instruction can have an address or data dependency only on a single instruction, but there's no good reason not to generalise to any number of instructions if required. *)
 let rec hw_ins_of_exp tid state = function
-  | Just n -> state, [], n, None
-  | Madd (exp, r_dep) ->
+  | Litmus.Just n -> state, [], n, None
+  | Litmus.Madd (exp, r_dep) ->
      match hw_ins_of_exp tid state exp with
      | state, _, n, None ->
         let state, r_off = get_fresh_reg tid state in
@@ -170,7 +169,7 @@ let dst_of_ld = function
   | _ -> failwith "Not a LD access!"
 
 let expected_val_of_reg post r =
-  try List.assoc (Reg r) post with
+  try List.assoc (Litmus.Reg r) post with
     Not_found -> failwith "Couldn't find register %a!" Register.pp r
 
 let mk_st_excl_prologue arch_params tid state il =
@@ -184,17 +183,17 @@ let mk_st_excl_prologue arch_params tid state il =
 
 (** Whether to flatten a false address-dependence into multiple instructions. This is because not all load/store instructions support offset addressing. TODO: maybe take arch into account since PPC can handle offsets with lwarx/stwcx. *)
 let flatten_ad = function
-  | Load (_r_dst, le), attrs ->
-      is_fake_dependence_expr le &&
+  | Litmus.Load (_r_dst, le), attrs ->
+      Litmus.is_fake_dependence_expr le &&
       (List.mem "SCACQ" attrs || List.mem "X" attrs)
-  | Store (le, _ve), attrs ->
-      is_fake_dependence_expr le &&
+  | Litmus.Store (le, _ve), attrs ->
+      Litmus.is_fake_dependence_expr le &&
       (List.mem "SCREL" attrs || List.mem "X" attrs)
   | _ -> false
 
 (** [hw_ins_of_ins tid (locs, nr) ins] builds a sequence of HW instructions from a single generic instruction [ins]. The current thread identifier is [tid], the correspondence between locations and registers is in [locs], [nr] is the next register to use, and [nl] is the next label to use. *)
 let hw_ins_of_ins arch_params tid state il = function
-  | Load (r_dst, le), attrs as ins ->
+  | Litmus.Load (r_dst, le), attrs as ins ->
      let state, il_exp, l, r_off = hw_ins_of_exp tid state le in
      let state, r_src = get_fresh_reg tid state in
      let state = add_to_loc_map (l, r_src) state in
@@ -206,7 +205,7 @@ let hw_ins_of_ins arch_params tid state il = function
          [mk_LD attrs (r_dst, r_src, r_off, Some l)]
      in
      state, il @ il_exp @ il_ld
-  | Store (le, ve), attrs as ins
+  | Litmus.Store (le, ve), attrs as ins
        when List.mem "X" attrs && arch_params.Litmus_HW.use_status_reg ->
      let state, il_exp1, l, r_off_a = hw_ins_of_exp tid state le in
      let state, il_exp2, v, r_off_d = hw_ins_of_exp tid state ve in
@@ -229,7 +228,7 @@ let hw_ins_of_ins arch_params tid state il = function
      in
      let state, il_st_prologue = mk_st_excl_prologue arch_params tid state il in
      state, il @ il_exp1 @ il_exp2 @ il_st @ il_st_prologue
-  | Store (le, ve), attrs as ins
+  | Litmus.Store (le, ve), attrs as ins
        when List.mem "X" attrs && not arch_params.Litmus_HW.use_status_reg ->
      let state, il_exp1, l, r_off_a = hw_ins_of_exp tid state le in
      let state, il_exp2, v, r_off_d = hw_ins_of_exp tid state ve in
@@ -249,7 +248,7 @@ let hw_ins_of_ins arch_params tid state il = function
      in
      let state, il_st_prologue = mk_st_excl_prologue arch_params tid state il in
      state, il @ il_exp1 @ il_exp2 @ il_st @ il_st_prologue
-  | Store (le, ve), attrs when not (List.mem "X" attrs) ->
+  | Litmus.Store (le, ve), attrs when not (List.mem "X" attrs) ->
      let state, il_exp1, l, r_off_a = hw_ins_of_exp tid state le in
      let state, il_exp2, v, r_off_d = hw_ins_of_exp tid state ve in
      let state, r_src = get_fresh_reg tid state in
@@ -261,20 +260,20 @@ let hw_ins_of_ins arch_params tid state il = function
        ]
      in
      state, il @ il_exp1 @ il_exp2 @ il_st
-  | Cas _, _ -> failwith "No single-event RMWs in assembly!"
-  | Fence, attrs ->
+  | Litmus.Cas _, _ -> failwith "No single-event RMWs in assembly!"
+  | Litmus.Fence, attrs ->
      let il_f =
        [Litmus_HW.HW_fence (arch_params.Litmus_HW.mk_fence attrs)]
      in
      state, il @ il_f
-  | TxnBegin, _ ->
+  | Litmus.TxnBegin, _ ->
      let state, r_txn = get_fresh_reg tid state in
      let state, txid = get_fresh_txid state in
      let il_tbegin =
        arch_params.Litmus_HW.mk_tstart r_txn (get_txn_fail_lbl tid txid)
      in
      state, il @ il_tbegin
-  | TxnEnd TxnCommit, _ ->
+  | Litmus.TxnEnd TxnCommit, _ ->
      let _ = assert (in_txn_block il) in
      let state, r_zero = get_fresh_reg tid state in
      let state, r_ok = get_fresh_reg tid state in
@@ -292,7 +291,7 @@ let hw_ins_of_ins arch_params tid state il = function
          Litmus_HW.LBL success_lbl;
        ] in
      state, il @ il_tcommit
-  | TxnEnd TxnAbort, _ ->
+  | Litmus.TxnEnd TxnAbort, _ ->
      let _ = assert (in_txn_block il) in
      let state, r_zero = get_fresh_reg tid state in
      let state, r_ok = get_fresh_reg tid state in
@@ -306,7 +305,7 @@ let hw_ins_of_ins arch_params tid state il = function
      let vs = List.map (expected_val_of_reg state.current_post) rs in
      let state =
        update_post
-         (Assoc.remove_assocs (List.map (fun r -> Reg r) rs)) state
+         (Assoc.remove_assocs (List.map (fun r -> Litmus.Reg r) rs)) state
      in
      let state, lbl = get_fresh_lbl ~prefix:"Else" tid state in
      let mk_eq r v =
@@ -320,7 +319,7 @@ let hw_ins_of_ins arch_params tid state il = function
      let state, sentinel = get_fresh_sentinel state in
      let encoded = arch_params.Litmus_HW.encode_sentinel sentinel in
      let state, r_txn_status = get_fresh_reg tid state in
-     let state = update_post ((@) [(Reg r_txn_status, encoded)]) state in
+     let state = update_post ((@) [Litmus.Reg r_txn_status, encoded]) state in
      let tabort_true = arch_params.Litmus_HW.mk_tabort r_txn sentinel in 
      let tabort_false = arch_params.Litmus_HW.mk_tabort r_txn 0xf in
      let state = add_to_loc_map (-1, r_ok) state in
@@ -335,7 +334,7 @@ let hw_ins_of_ins arch_params tid state il = function
        @ arch_params.Litmus_HW.mk_tabort_handler r_txn_status tstart_reg
      in
      state, il @ il_tabort
-  | ins, attr -> failwith "Not yet implemented! %a" pp_instr (ins, attr)
+  | ins, attr -> failwith "Not yet implemented! %a" Litmus.pp_instr (ins, attr)
 
 let is_st_excl = function
   | Litmus_HW.Access a ->
@@ -373,12 +372,12 @@ let rec hw_ins_of_components arch_params tid (state,il) =
   | [] ->
      let il = il @ [Litmus_HW.LBL (sprintf "Exit%d" tid)] in
      state,il
-  | Basic (ins,attrs) :: cs ->
+  | Litmus.Basic (ins,attrs) :: cs ->
      let state,il =
        hw_ins_of_ins arch_params tid state il (ins,attrs)
      in
      hw_ins_of_components arch_params tid (state,il) cs
-  | If (r,_,cs') :: cs ->
+  | Litmus.If (r,_,cs') :: cs ->
      let state, lbl = get_fresh_lbl ~prefix:"Else" tid state in
      let il = il @ [
            Litmus_HW.CMP r;
@@ -391,9 +390,9 @@ let rec hw_ins_of_components arch_params tid (state,il) =
 (** Calculate the first unused register in a thread *)
 let rec first_unused_reg n = function
   | [] -> n
-  | Basic (Load((_,r),_),_) :: cs ->
+  | Litmus.Basic (Litmus.Load((_,r),_),_) :: cs ->
      first_unused_reg (max (r+1) n) cs
-  | If (_,_,cs') :: cs ->
+  | Litmus.If (_,_,cs') :: cs ->
      first_unused_reg (first_unused_reg n cs') cs
   | _ :: cs -> first_unused_reg n cs
 
@@ -423,11 +422,11 @@ let rec hw_thds_of_thds
 (** [hw_lit_of_lit name arch_params lt] converts the generic litmus test [lt] into a hardware litmus test, named [name], using the [arch_params.mk_fence] function to build architecture-specific fences, and using explicit status registers for store-conditionals iff the [arch_params.use_status_reg] flag is set *)
 let hw_lit_of_lit name arch_params lt =
   let loc_map, _, post, thds =
-    hw_thds_of_thds arch_params 0 ([], 0, lt.post) lt.thds
+    hw_thds_of_thds arch_params 0 ([], 0, lt.Litmus.post) lt.thds
   in
   let locs = Assoc.group_map loc_map in
   let post = if List.exists can_fail thds then
-      (Loc (-1), 1) :: post
+      (Litmus.Loc (-1), 1) :: post
     else
       lt.post
   in

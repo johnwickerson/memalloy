@@ -1,7 +1,7 @@
 (*
 MIT License
 
-Copyright (c) 2017 by John Wickerson.
+Copyright (c) 2017 by John Wickerson and Nathan Chong
 
 Permission is hereby granted, free of charge, to any person obtaining
 a copy of this software and associated documentation files (the
@@ -27,7 +27,6 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
 open! Format
 open! General_purpose
-open Litmus_HW
 
 type fence = SYNC | LWSYNC | ISYNC
 
@@ -40,14 +39,19 @@ let mk_fence attrs =
   | false, false, true -> ISYNC
   | _ -> failwith "Invalid fence attributes!"
 
-let mk_tstart reg lbl = [TSTART (reg, lbl); BEQ lbl]
+let mk_tstart reg lbl =
+  [ Litmus_HW.TSTART (reg, lbl);
+    Litmus_HW.BEQ lbl]
 
-let mk_tabort reg imm = [MOV (reg, imm); TABORT (reg, imm)]
+let mk_tabort reg imm =
+  [ Litmus_HW.MOV (reg, imm);
+    Litmus_HW.TABORT (reg, imm)]
 
 let mk_tabort_handler reg _tstart_reg =
   let texasr = (fst reg, -1) in
   (* we shift to get the bottom word of the 64-bit texasr *)
-  [ MOVREG (reg, texasr); SHIFT (Litmus_HW.LSR, reg, reg, 32) ]
+  [ Litmus_HW.MOVREG (reg, texasr);
+    Litmus_HW.SHIFT (Litmus_HW.LSR, reg, reg, 32) ]
 
 let encode_sentinel imm8 =
   assert (0 <= imm8 && imm8 < 256);
@@ -55,7 +59,7 @@ let encode_sentinel imm8 =
   (imm8 lsl 24) lor abt_caused_by_tabort
                                                                     
 let ppc_specific_params = {
-    use_status_reg=false;
+    Litmus_HW.use_status_reg=false;
     mk_fence; mk_tstart; mk_tabort; mk_tabort_handler;
     encode_sentinel;
 }
@@ -68,7 +72,7 @@ let pp_reg_full oc (t,r) = fprintf oc "%d:r%d" t r
 
 (** Print an instruction *)
 let pp_ins oc = function
-  | Access a ->
+  | Litmus_HW.Access a ->
      (match a.dir, a.off, a.sta with
       | LD, None, None when not a.is_exclusive ->
 	 fprintf oc "lwz %a, 0(%a)"
@@ -94,16 +98,16 @@ let pp_ins oc = function
            (if a.is_exclusive then "." else "")
            pp_reg a.src pp_reg off pp_reg a.dst
       | _, _, _ -> assert false)
-  | ADD (dst, src, v) ->
+  | Litmus_HW.ADD (dst, src, v) ->
      fprintf oc "addi %a, %a, %d"
        pp_reg dst pp_reg src v
-  | ADDREG (dst, src1, src2) ->
+  | Litmus_HW.ADDREG (dst, src1, src2) ->
      fprintf oc "add %a, %a, %a"
        pp_reg dst pp_reg src1 pp_reg src2
-  | EOR (dst, src1, src2) ->
+  | Litmus_HW.EOR (dst, src1, src2) ->
      fprintf oc "xor %a, %a, %a"
        pp_reg dst pp_reg src1 pp_reg src2
-  | SHIFT (kind, dst, src, v) ->
+  | Litmus_HW.SHIFT (kind, dst, src, v) ->
      (match kind with
      | Litmus_HW.LSL ->
        fprintf oc "sldi %a, %a, %d"
@@ -111,25 +115,25 @@ let pp_ins oc = function
      | Litmus_HW.LSR ->
        fprintf oc "srdi %a, %a, %d"
          pp_reg dst pp_reg src v)
-  | MOV (dst, v) ->
+  | Litmus_HW.MOV (dst, v) ->
      fprintf oc "li %a, %d" pp_reg dst v
-  | MOVREG (dst, src) ->
+  | Litmus_HW.MOVREG (dst, src) ->
      (match src with
      | (_,-1) ->
        fprintf oc "mftexasr %a" pp_reg dst
      | _ -> failwith "MOVREG only expected from TABORT sequence")
-  | HW_fence SYNC -> fprintf oc "sync"
-  | HW_fence LWSYNC -> fprintf oc "lwsync"
-  | HW_fence ISYNC -> fprintf oc "isync"         
-  | CMPIMM (src, imm) -> fprintf oc "cmpwi %a, %d" pp_reg src imm
-  | CMP src -> fprintf oc "cmpwi %a, 0" pp_reg src
-  | BEQ lbl -> fprintf oc "beq %s" lbl
-  | BNZ lbl -> fprintf oc "bne %s" lbl
-  | J lbl -> fprintf oc "b %s" lbl
-  | LBL lbl -> fprintf oc "%s:" lbl
-  | TSTART (_, _) -> fprintf oc "tbegin." (* ignore reg parameter *)
-  | TCOMMIT -> fprintf oc "tend."
-  | TABORT (src, _) -> fprintf oc "tabort. %a" pp_reg src
+  | Litmus_HW.HW_fence SYNC -> fprintf oc "sync"
+  | Litmus_HW.HW_fence LWSYNC -> fprintf oc "lwsync"
+  | Litmus_HW.HW_fence ISYNC -> fprintf oc "isync"         
+  | Litmus_HW.CMPIMM (src, imm) -> fprintf oc "cmpwi %a, %d" pp_reg src imm
+  | Litmus_HW.CMP src -> fprintf oc "cmpwi %a, 0" pp_reg src
+  | Litmus_HW.BEQ lbl -> fprintf oc "beq %s" lbl
+  | Litmus_HW.BNZ lbl -> fprintf oc "bne %s" lbl
+  | Litmus_HW.J lbl -> fprintf oc "b %s" lbl
+  | Litmus_HW.LBL lbl -> fprintf oc "%s:" lbl
+  | Litmus_HW.TSTART (_, _) -> fprintf oc "tbegin." (* ignore reg parameter *)
+  | Litmus_HW.TCOMMIT -> fprintf oc "tend."
+  | Litmus_HW.TABORT (src, _) -> fprintf oc "tabort. %a" pp_reg src
 
 let ppc_of_lit name lt =
   Mk_litmus_HW.hw_lit_of_lit name ppc_specific_params lt

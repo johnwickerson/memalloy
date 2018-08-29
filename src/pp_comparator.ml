@@ -392,11 +392,15 @@ let get_args () =
       [ "-o", Arg.String (set_option_ref comparator_als),
         "Output .als file (optional, default stdout)" ]
   in
-  Arg.parse speclist bad_arg usage_msg;
+  Arg.parse speclist bad_arg usage_msg
+
+let check_args () =
   if !arch_string = "" then
     failwith "Expected one -arch";
   if !satisfies_paths @ !violates_paths = [] then
-    failwith "Expected at least one -satisfies or -violates flag"
+    failwith "Expected at least one -satisfies or -violates flag";
+  if !eventcount <= 0 then
+    failwith "Expected -events <n> with n>0"
 
   (* DOESN'T SEEM TO BE USED ANYWHERE 
 let read_file filename = 
@@ -440,6 +444,7 @@ let build_config () =
 let _ =
   if MyStr.endswith Sys.argv.(0) "pp_comparator" then begin
       get_args ();
+      check_args ();
       let config = build_config () in
       main config !comparator_als;
       exit 0

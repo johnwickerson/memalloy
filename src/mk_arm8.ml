@@ -1,7 +1,7 @@
 (*
 MIT License
 
-Copyright (c) 2017 by John Wickerson.
+Copyright (c) 2017 by John Wickerson and Nathan Chong.
 
 Permission is hereby granted, free of charge, to any person obtaining
 a copy of this software and associated documentation files (the
@@ -27,7 +27,6 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
 open! Format
 open! General_purpose
-open Litmus_HW
 
 type fence = DMB | DMBLD | DMBST | ISB
 
@@ -42,11 +41,11 @@ let mk_fence attrs =
   | _ -> failwith "Invalid fence attributes: %a!" (MyList.pp pp_str) attrs
 
 let mk_tstart reg lbl =
-  [TSTART (reg, lbl); CMP reg; BNZ lbl]
+  [Litmus_HW.TSTART (reg, lbl); Litmus_HW.CMP reg; BNZ lbl]
 
-let mk_tabort reg imm = [TABORT (reg, imm)]
+let mk_tabort reg imm = [Litmus_HW.TABORT (reg, imm)]
 
-let mk_tabort_handler reg tstart_reg = [MOVREG (reg, tstart_reg)]
+let mk_tabort_handler reg tstart_reg = [Litmus_HW.MOVREG (reg, tstart_reg)]
 
 let encode_sentinel imm8 =
   assert (0 <= imm8 && imm8 < 256);
@@ -54,7 +53,7 @@ let encode_sentinel imm8 =
   (imm8 lsl 24) lor abt_caused_by_tabort
 
 let arm8_specific_params = {
-    use_status_reg=true;
+    Litmus_HW.use_status_reg=true;
     mk_fence; mk_tstart; mk_tabort; mk_tabort_handler;
     encode_sentinel;
 }
@@ -70,38 +69,38 @@ let pp_reg_full oc (t,r) = fprintf oc "%d:X%d" t r
 
 (** Print an instruction *)
 let pp_ins oc = function
-  | Access a ->
+  | Litmus_HW.Access a ->
      (match a.dir, a.off, a.sta with
-      | LD, None, None ->
+      | Litmus_HW.LD, None, None ->
 	 fprintf oc "LD%s%sR %a, [%a]"
 		 (if a.is_acq_rel then "A" else "")
 		 (if a.is_exclusive then "X" else "")
 		 pp_32reg a.dst pp_64reg a.src
-      | LD, Some off, None ->
+      | Litmus_HW.LD, Some off, None ->
 	 if a.is_acq_rel then failwith "LDAR with offset not supported";
 	 if a.is_exclusive then failwith "LDXR with offset not supported";
 	 fprintf oc "LD%s%sR %a, [%a,%a,SXTW]"
 		 (if a.is_acq_rel then "A" else "")
 		 (if a.is_exclusive then "X" else "")
 		 pp_32reg a.dst pp_64reg a.src pp_32reg off
-      | ST, None, None ->
+      | Litmus_HW.ST, None, None ->
 	 fprintf oc "ST%s%sR %a, [%a]"
 		 (if a.is_acq_rel then "L" else "")
 		 (if a.is_exclusive then "X" else "")
 		 pp_32reg a.src pp_64reg a.dst
-      | ST, None, Some sta ->
+      | Litmus_HW.ST, None, Some sta ->
 	 fprintf oc "ST%s%sR %a, %a, [%a]"
 		 (if a.is_acq_rel then "L" else "")
 		 (if a.is_exclusive then "X" else "")
 		 pp_32reg sta pp_32reg a.src pp_64reg a.dst
-      | ST, Some off, None ->
+      | Litmus_HW.ST, Some off, None ->
 	 if a.is_acq_rel then failwith "STLR with offset not supported";
 	 if a.is_exclusive then failwith "STXR with offset not supported";
 	 fprintf oc "ST%s%sR %a, [%a,%a,SXTW]"
 		 (if a.is_acq_rel then "L" else "")
 		 (if a.is_exclusive then "X" else "")
 		 pp_32reg a.src pp_64reg a.dst pp_32reg off
-      | ST, Some off, Some sta ->
+      | Litmus_HW.ST, Some off, Some sta ->
 	 if a.is_acq_rel then failwith "STLR with offset not supported";
 	 if a.is_exclusive then failwith "STXR with offset not supported";
 	 fprintf oc "ST%s%sR %a, %a, [%a,%a,SXTW]"
@@ -109,16 +108,16 @@ let pp_ins oc = function
 		 (if a.is_exclusive then "X" else "")
 		 pp_32reg sta pp_32reg a.src pp_64reg a.dst pp_32reg off
       | _, _, _ -> assert false)
-  | ADD (dst, src, v) ->
+  | Litmus_HW.ADD (dst, src, v) ->
      fprintf oc "ADD %a, %a, #%d"
        pp_32reg dst pp_32reg src v
-  | ADDREG (dst, src1, src2) ->
+  | Litmus_HW.ADDREG (dst, src1, src2) ->
      fprintf oc "ADD %a, %a, %a"
 	     pp_32reg dst pp_32reg src1 pp_32reg src2
-  | EOR (dst, src1, src2) ->
+  | Litmus_HW.EOR (dst, src1, src2) ->
      fprintf oc "EOR %a, %a, %a"
 	     pp_32reg dst pp_32reg src1 pp_32reg src2
-  | SHIFT (kind, dst, src, v) ->
+  | Litmus_HW.SHIFT (kind, dst, src, v) ->
      (match kind with
      | Litmus_HW.LSL ->
        fprintf oc "LSL %a, %a, #%d"
@@ -126,23 +125,23 @@ let pp_ins oc = function
      | Litmus_HW.LSR ->
        fprintf oc "LSR %a, %a, #%d"
          pp_32reg dst pp_32reg src v)
-  | MOV (dst, v) ->
+  | Litmus_HW.MOV (dst, v) ->
      fprintf oc "MOV %a, #%d" pp_32reg dst v
-  | MOVREG (dst, src) ->
+  | Litmus_HW.MOVREG (dst, src) ->
      fprintf oc "MOV %a, %a" pp_32reg dst pp_32reg src
-  | HW_fence DMB -> fprintf oc "DMB SY"
-  | HW_fence DMBLD -> fprintf oc "DMB LD"
-  | HW_fence DMBST -> fprintf oc "DMB ST"
-  | HW_fence ISB -> fprintf oc "ISB"
-  | CMPIMM (src, imm) -> fprintf oc "CMP %a, #%d" pp_32reg src imm
-  | CMP src -> fprintf oc "CMP %a, #0" pp_32reg src
-  | BEQ lbl -> fprintf oc "BEQ %s" lbl
-  | BNZ lbl -> fprintf oc "BNE %s" lbl
-  | J lbl -> fprintf oc "B %s" lbl
-  | LBL lbl -> fprintf oc "%s:" lbl
-  | TSTART (r, _) -> fprintf oc "TSTART %a" pp_32reg r
-  | TCOMMIT -> fprintf oc "TCOMMIT"
-  | TABORT (_, imm) -> fprintf oc "TABORT #%d" imm
+  | Litmus_HW.HW_fence DMB -> fprintf oc "DMB SY"
+  | Litmus_HW.HW_fence DMBLD -> fprintf oc "DMB LD"
+  | Litmus_HW.HW_fence DMBST -> fprintf oc "DMB ST"
+  | Litmus_HW.HW_fence ISB -> fprintf oc "ISB"
+  | Litmus_HW.CMPIMM (src, imm) -> fprintf oc "CMP %a, #%d" pp_32reg src imm
+  | Litmus_HW.CMP src -> fprintf oc "CMP %a, #0" pp_32reg src
+  | Litmus_HW.BEQ lbl -> fprintf oc "BEQ %s" lbl
+  | Litmus_HW.BNZ lbl -> fprintf oc "BNE %s" lbl
+  | Litmus_HW.J lbl -> fprintf oc "B %s" lbl
+  | Litmus_HW.LBL lbl -> fprintf oc "%s:" lbl
+  | Litmus_HW.TSTART (r, _) -> fprintf oc "TSTART %a" pp_32reg r
+  | Litmus_HW.TCOMMIT -> fprintf oc "TCOMMIT"
+  | Litmus_HW.TABORT (_, imm) -> fprintf oc "TABORT #%d" imm
 
 let arm8_of_lit name lt =
   Mk_litmus_HW.hw_lit_of_lit name arm8_specific_params lt

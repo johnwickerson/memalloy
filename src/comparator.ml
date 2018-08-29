@@ -112,7 +112,7 @@ let speclist =
    "-filter", Arg.Set_string filter_path,
    "Only keep solutions that satisfy this model (optional)";
   ]
-                 
+
 let get_args () =
   let usage_msg =
     "Top-level memalloy comparator.\nUsage: `comparator [options]`.\nOptions available:"
@@ -123,10 +123,13 @@ let get_args () =
   in
   let speclist = Global_options.speclist @ Pp_comparator.speclist @ speclist in
   Arg.parse speclist bad_arg usage_msg;
+  if !iter then Pp_comparator.minimal := true
+
+let check_args () =
+  Pp_comparator.check_args ();
   if not (List.mem !solver (legal_solvers @ [""])) then
     failwith "The -solver flag must be set to one of [%s] (currently \"%s\")"
-      (String.concat "|" legal_solvers) !solver;
-  if !iter then Pp_comparator.minimal := true
+      (String.concat "|" legal_solvers) !solver
 
 let append_line_to_file filename str =
   let oc = open_out_gen [Open_append; Open_creat] 0o755 filename in
@@ -361,5 +364,6 @@ let main () =
 let _ =
   if MyStr.endswith Sys.argv.(0) "comparator" then begin
       get_args ();
+      check_args ();
       main ()
     end

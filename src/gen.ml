@@ -140,7 +140,7 @@ let run xml_path out_path out_type arch =
              | Archs.Power ->
 		let ppc_lt = Mk_ppc.ppc_of_lit name lt in
 		fprintf fmtr "%a\n" Mk_ppc.pp ppc_lt
-       | Archs.X86 ->
+             | Archs.X86 ->
 		let x86_lt = Mk_x86.x86_of_lit name lt in
 		fprintf fmtr "%a\n" Mk_x86.pp x86_lt
 	     | _ -> fprintf fmtr "%a\n" Litmus.pp lt)
