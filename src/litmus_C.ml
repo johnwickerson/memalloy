@@ -28,9 +28,12 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 open! Format
 open! General_purpose
 
+let pp_reg oc (tid,reg) =
+  fprintf oc "t%dr%d" tid reg
+  
 let rec pp_expr k oc = function
   | Litmus.Just x -> k oc x
-  | Litmus.Madd (e,r) -> fprintf oc "%a + 0*%a" (pp_expr k) e Register.pp r
+  | Litmus.Madd (e,r) -> fprintf oc "%a + 0*%a" (pp_expr k) e pp_reg r
 
 let pp_instr oc = function
   | Litmus.Load (r,le), attrs ->
@@ -41,10 +44,10 @@ let pp_instr oc = function
          | false, false -> "memory_order_relaxed"
        in
        fprintf oc "%a = atomic_load_explicit(&%a, %s)"
-         Register.pp r (pp_expr MyLocation.pp) le mo
+         pp_reg r (pp_expr MyLocation.pp) le mo
      else
        fprintf oc "%a = %a"
-         Register.pp r (pp_expr MyLocation.pp) le
+         pp_reg r (pp_expr MyLocation.pp) le
 
   | Litmus.Store (le,ve), attrs ->
      if List.mem "A" attrs then
@@ -85,13 +88,20 @@ let pp_instr oc = function
      
   | Litmus.TxnBegin, _ -> failwith "TxnBegin not supported."
   | Litmus.TxnEnd _, _ -> failwith "TxnEnd not supported."
-  
+
+let no_braces_needed = function
+  | Litmus.Basic (Litmus.Cas _, _) -> false
+  | _ -> true
+                        
 (** Pretty-printing of components *)     
 let rec pp_component i oc = function
   | Litmus.Basic b ->
      fprintf oc "%a%a;\n" mk_indent i pp_instr b
+  | Litmus.If (r,v,[c]) when no_braces_needed c ->
+     fprintf oc "%aif (%a == %a)\n" mk_indent i pp_reg r Value.pp v;
+     pp_component (i+1) oc c
   | Litmus.If (r,v,cs) ->
-     fprintf oc "%aif (%a == %a) {\n" mk_indent i Register.pp r Value.pp v;
+     fprintf oc "%aif (%a == %a) {\n" mk_indent i pp_reg r Value.pp v;
      List.iter (pp_component (i+1) oc) cs;
      fprintf oc "%a}\n" mk_indent i
 
@@ -137,8 +147,11 @@ let pp oc lt =
   assert (MySet.equal (atomic_locs @ nonatomic_locs) lt.Litmus.locs);
 
   (* Include standard headers. *)
+  fprintf oc "// Hint: try compiling with gcc -std=c11 <name_of_file.c>\n";
+  fprintf oc "\n";
   fprintf oc "#include <stdio.h>\n";
   fprintf oc "#include <pthread.h>\n";
+  fprintf oc "#include <stdatomic.h>\n";
   fprintf oc "\n";
 
   (* Declare global variables. *)
@@ -153,7 +166,7 @@ let pp oc lt =
   fprintf oc "// Declaring thread-local variables at global scope\n";
   fprintf oc "// so they can be checked in the postcondition.\n";
   let regs = List.fold_left (List.fold_left extract_regs) [] lt.Litmus.thds in
-  List.iter (fprintf oc "int %a = 0;\n" Register.pp) regs;
+  List.iter (fprintf oc "int %a = 0;\n" pp_reg) regs;
   fprintf oc "\n";
 
   (* Print a function for each thread. *)
@@ -163,6 +176,7 @@ let pp oc lt =
     if List.exists contains_cas cs then
       fprintf oc "  int *expected;\n";
     List.iter (pp_component 1 oc) cs;
+    fprintf oc "  pthread_exit(0);\n";
     fprintf oc "}\n";
     fprintf oc "\n";
   in
@@ -193,11 +207,12 @@ let pp oc lt =
 
   (* Check postcondition. *)
   let pp_cnstrnt oc (a,v) = match a with
-    | Litmus.Reg r -> fprintf oc "%a == %d" Register.pp r v
+    | Litmus.Reg r -> fprintf oc "%a == %d" pp_reg r v
     | Litmus.Loc l -> fprintf oc "%a == %d" MyLocation.pp l v
   in
-  fprintf oc "  return (%a);\n"
+  fprintf oc "  int result = %a;\n"
     (MyList.pp_gen " && " pp_cnstrnt) lt.Litmus.post;
-
+  fprintf oc "  printf(\"Result: %%d\\n\", result);\n";
+  fprintf oc "  return (result);\n";
   fprintf oc "\n";
   fprintf oc "}\n"  
