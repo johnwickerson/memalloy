@@ -174,9 +174,13 @@ let main () =
   let dot_dir = MyFilename.concat [results_dir; "dot"] in
   let als_dir = MyFilename.concat [results_dir; "als"] in
   let lit_dir = MyFilename.concat [results_dir; "litmus"] in
+  let c_dir = MyFilename.concat [results_dir; "C"] in
 
   List.iter (fun p -> Unix.mkdir p 0o755)
     [results_dir; xml_dir; png_dir; dot_dir; lit_dir; als_dir];
+
+  if ppc_config.arch = Archs.C then
+    Unix.mkdir c_dir 0o755;
 
   let allow_dir = MyFilename.concat [results_dir; "allow"] in
   let allow_xml_dir = MyFilename.concat [allow_dir; "xml"] in
@@ -338,7 +342,20 @@ let main () =
     end;
   MyTime.stop_timer();
 
-  (* 11. Show outcome graphically *)
+  (* 11. Copy to C directory if arch=C. *)
+  if ppc_config.arch = Archs.C then begin
+      MyFilename.iter (fun lit_path ->
+          if Filename.check_suffix lit_path ".litmus" then begin
+              let test_name =
+                Filename.chop_extension (Filename.basename lit_path)
+              in
+              let c_path = MyFilename.concat [c_dir; test_name ^ ".c"] in
+              ignore (Sys.command (sprintf "cp %s %s" lit_path c_path))
+            end
+        ) lit_dir
+    end;
+ 
+  (* 12. Show outcome graphically. *)
   if not !batch then
     if nsolutions = 1 then begin
         let first_litmus_test = Array.get (Sys.readdir lit_dir) 0 in
@@ -353,7 +370,7 @@ let main () =
       if running_osx () then
         ignore (Sys.command (sprintf "open %s" png_dir));
 
-  (* 12. Compare against expected number of solutions. *)
+  (* 13. Compare against expected number of solutions. *)
   if !expect >= 0 && !expect != nsolutions then
     failwith "ERROR: Expected %d solutions, found %d." !expect nsolutions;
   
