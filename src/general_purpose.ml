@@ -41,6 +41,10 @@ let set_option_ref r v = r := Some v
 
 let fparen f oc x = fprintf oc "(%a)" f x
 
+let indent_amount = 2
+
+let mk_indent oc i = fprintf oc "%s" (String.make (i * indent_amount) ' ')
+
 let pp_str oc s = fprintf oc "%s" s
 
 (** [fprintf_to_string printer] returns the string that [printer] would print when given an output channel. For instance, if [printer oc] writes "foo" to output channel [oc], then [fprintf_to_string printer] returns the string "foo". *)

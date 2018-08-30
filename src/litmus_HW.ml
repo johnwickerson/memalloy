@@ -126,7 +126,7 @@ let pp_locs pp_reg oc locs =
 (** Add thread identifier to top of each thread *)
 let add_heads thds =
   let add_head n thd = sprintf "P%d" n :: thd in
-  MyList.mapi add_head thds
+  List.mapi add_head thds
 
 (** Make all threads have the same length by appending no-ops *)
 let add_nops longest_thd thds =

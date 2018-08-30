@@ -39,3 +39,7 @@ let inter xs ys =
 
 let diff xs ys =
   List.filter (fun x -> not (List.mem x ys)) xs
+
+let equal xs ys =
+  (List.for_all (fun x -> List.mem x ys) xs) &&
+    (List.for_all (fun y -> List.mem y xs) ys)

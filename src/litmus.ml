@@ -41,6 +41,10 @@ type 'a expr =
   | Just of 'a
   | Madd of 'a expr * Register.t
 
+let rec expr_base_of = function
+  | Just x -> x
+  | Madd (e,_) -> expr_base_of e
+
 let rec pp_expr k oc = function
   | Just x -> k oc x
   | Madd (e,r) -> fprintf oc "%a + 0*%a" (pp_expr k) e Register.pp r
@@ -125,7 +129,7 @@ let pp oc lt =
     MyList.pp_gen ";\n" (pp_component pp_instr) oc cs;
     fprintf oc ";\n\n"
   in
-  MyList.iteri pp_thd lt.thds;
+  List.iteri pp_thd lt.thds;
   fprintf oc "Final: ";
   let pp_cnstrnt oc (a,v) = fprintf oc "%a==%d" pp_addr a v in
   MyList.pp_gen " && " pp_cnstrnt oc lt.post

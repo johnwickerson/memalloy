@@ -106,7 +106,7 @@ let pp_open_modules satisfy_sig violate_sig config oc =
 let rec mk_indent n = if n=0 then "" else " " ^ mk_indent (n-1)
                     
 let pp_violated_models indent e exec_sig config oc =
-  MyList.iteri (
+  List.iteri (
       fun i _ ->
       fprintf oc "%snot(N%d/consistent[%s,%s])\n"
         (mk_indent indent) (i+1) e exec_sig;
@@ -115,14 +115,14 @@ let pp_violated_models indent e exec_sig config oc =
     ) config.violates_paths
 
 let pp_satisfied_models indent e exec_sig config oc =
-  MyList.iteri (
+  List.iteri (
       fun i _ ->
       fprintf oc "%sM%d/consistent[%s,%s]\n\n"
         (mk_indent indent) (i+1) e exec_sig
     ) config.satisfies_paths
 	       
 let pp_also_satisfied_models indent e exec_sig config oc =
-  MyList.iteri (fun i _ ->
+  List.iteri (fun i _ ->
       let i = i + List.length config.satisfies_paths in
       fprintf oc "%sM%d/consistent[%s,%s]\n\n"
         (mk_indent indent) (i+1) e exec_sig
