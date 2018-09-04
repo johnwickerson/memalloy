@@ -69,25 +69,34 @@ let pp_txn_outcome oc = function
 type instruction =
   | Load of Register.t * MyLocation.t expr
   | Store of MyLocation.t expr * Value.t expr
-  | Cas of MyLocation.t expr * Value.t * Value.t expr
+  | Cas of Register.t option (* Two-event CASes use a register; others don't *)
+           * MyLocation.t expr * Value.t * Value.t expr
   | Fence
   | TxnBegin
   | TxnEnd of txn_outcome
 
+(** Simple pretty-printing of attributes (for debugging) *)
+let pp_attrs = MyList.pp_gen "" (fun oc -> fprintf oc ",%s")
+
 (** Simple pretty-printing of instructions (for debugging *)
 let pp_instr oc = function
-  | Load (r,le), attrs -> 
+  | Load (r,le), attrs ->
      fprintf oc "%a := load(%a%a)"
 	     Register.pp r (pp_expr MyLocation.pp) le
-	     (MyList.pp_gen "" (fun oc -> fprintf oc ",%s")) attrs
+	     pp_attrs attrs
   | Store (le,ve), attrs ->
      fprintf oc "store(%a,%a%a)"
 	     (pp_expr MyLocation.pp) le (pp_expr Value.pp) ve
-	     (MyList.pp_gen "" (fun oc -> fprintf oc ",%s")) attrs
-  | Cas (le,v,ve), attrs ->
+             pp_attrs attrs
+  | Cas (Some r,le,v,ve), attrs ->
+     fprintf oc "%a := cas(%a,%a,%a%a)"
+             Register.pp r
+             (pp_expr MyLocation.pp) le Value.pp v (pp_expr Value.pp) ve
+             pp_attrs attrs
+  | Cas (None,le,v,ve), attrs ->
      fprintf oc "cas(%a,%a,%a%a)"
-	     (pp_expr MyLocation.pp) le Value.pp v (pp_expr Value.pp) ve
-	     (MyList.pp_gen "" (fun oc -> fprintf oc ",%s")) attrs
+             (pp_expr MyLocation.pp) le Value.pp v (pp_expr Value.pp) ve
+             pp_attrs attrs
   | Fence, attrs ->
      fprintf oc "fence(%a)"
 	     (MyList.pp_gen "" (fun oc -> fprintf oc ",%s")) attrs
