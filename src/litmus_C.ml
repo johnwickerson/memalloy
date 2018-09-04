@@ -86,8 +86,8 @@ let pp_instr oc = function
      in
      fprintf oc "atomic_thread_fence(%s)" mo
      
-  | Litmus.TxnBegin, _ -> fprintf oc "atomic {\n"
-  | Litmus.TxnEnd _, _ -> fprintf oc "}\n"
+  | Litmus.TxnBegin, _ -> fprintf oc "atomic {\n" (* FIXME: currently gets an erroneous semicolon afterwards *)
+  | Litmus.TxnEnd _, _ -> fprintf oc "}\n" (* FIXME: currently gets an erroneous semicolon afterwards *)
 
 let no_braces_needed = function
   | Litmus.Basic (Litmus.Cas _, _) -> false
