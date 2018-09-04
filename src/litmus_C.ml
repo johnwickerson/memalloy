@@ -86,8 +86,8 @@ let pp_instr oc = function
      in
      fprintf oc "atomic_thread_fence(%s)" mo
      
-  | Litmus.TxnBegin, _ -> failwith "TxnBegin not supported."
-  | Litmus.TxnEnd _, _ -> failwith "TxnEnd not supported."
+  | Litmus.TxnBegin, _ -> fprintf oc "atomic {\n"
+  | Litmus.TxnEnd _, _ -> fprintf oc "}\n"
 
 let no_braces_needed = function
   | Litmus.Basic (Litmus.Cas _, _) -> false
