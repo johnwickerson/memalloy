@@ -30,7 +30,14 @@ open! General_purpose
 
 let pp_reg oc (tid,reg) =
   fprintf oc "t%dr%d" tid reg
-  
+
+(** [pp_cas_reg] takes an optional register from a CAS instruction.
+    If it exists, [pp_cas_reg] returns the result of [pp_reg]; else,
+    it emits a reference to 'expected'. *)
+let pp_cas_reg oc = function
+  | Some rr -> pp_reg oc rr
+  | None    -> fprintf oc "expected"
+
 let rec pp_expr k oc = function
   | Litmus.Just x -> k oc x
   | Litmus.Madd (e,r) -> fprintf oc "%a + 0*%a" (pp_expr k) e pp_reg r
@@ -62,7 +69,7 @@ let pp_instr oc = function
        fprintf oc "%a = %a"
          (pp_expr MyLocation.pp) le (pp_expr Value.pp) ve
 
-  | Litmus.Cas (le,v,ve), attrs ->
+  | Litmus.Cas (r,le,v,ve), attrs ->
      let mo =
        match List.mem "SC" attrs, List.mem "ACQ" attrs, List.mem "REL" attrs with
        | true, _, _ -> "memory_order_seq_cst"
@@ -71,9 +78,12 @@ let pp_instr oc = function
        | false, false, true -> "memory_order_release"
        | false, false, false -> "memory_order_relaxed"
      in
-     fprintf oc "*expected = %a; " Value.pp v;
-     fprintf oc "/* returns bool */ atomic_compare_exchange_strong_explicit(&%a, expected, %a, %s, memory_order_relaxed)"
-       (pp_expr MyLocation.pp) le (pp_expr Value.pp) ve mo
+
+     fprintf oc "%a = %a; " pp_cas_reg r Value.pp v;
+     fprintf oc "/* returns bool */ atomic_compare_exchange_strong_explicit(&%a, &%a, %a, %s, memory_order_relaxed)"
+       (pp_expr MyLocation.pp) le
+       pp_cas_reg r
+       (pp_expr Value.pp) ve mo
     
   | Litmus.Fence, attrs ->
      let mo =
@@ -108,7 +118,7 @@ let rec pp_component i oc = function
 let partition_locs_in_instr (a_locs, na_locs) = function
   | Litmus.Load (_,le), attrs
   | Litmus.Store (le,_), attrs
-  | Litmus.Cas (le,_,_), attrs ->
+  | Litmus.Cas (_,le,_,_), attrs ->
      let l = Litmus.expr_base_of le in
      begin match List.mem "NAL" attrs with
      | true ->
@@ -130,13 +140,17 @@ and partition_locs_in_cmp locs = function
 let partition_locs lt =
   List.fold_left partition_locs_in_cmps ([],[]) lt.Litmus.thds
 
-let rec contains_cas = function
-  | Litmus.Basic (Litmus.Cas _, _) -> true
+(** [contains_regless_cas i] checks to see if [i] has at least one
+    CAS without a destination register.  (If one exists, we need to
+    create a temporary variable to store it.) *)
+let rec contains_regless_cas = function
+  | Litmus.Basic (Litmus.Cas (None, _, _, _), _) -> true
   | Litmus.Basic _ -> false
-  | Litmus.If (_,_,cs) -> List.exists contains_cas cs
+  | Litmus.If (_,_,cs) -> List.exists contains_regless_cas cs
 
 let rec extract_regs regs = function
-  | Litmus.Basic (Litmus.Load (r,_), _) -> MySet.union [r] regs
+  | Litmus.Basic (Litmus.Load (r,_), _)
+    | Litmus.Basic (Litmus.Cas (Some r,_,_,_), _) -> MySet.union [r] regs
   | Litmus.Basic _ -> regs
   | Litmus.If (r,_,cs) -> MySet.union [r] (List.fold_left extract_regs regs cs)
                               
@@ -173,8 +187,8 @@ let pp oc lt =
   let pp_thd tid cs =
     fprintf oc "// Thread %d\n" tid;
     fprintf oc "void *thread%d (void *unused) {\n" tid;
-    if List.exists contains_cas cs then
-      fprintf oc "  int *expected;\n";
+    if List.exists contains_regless_cas cs then
+      fprintf oc "  int expected;\n";
     List.iter (pp_component 1 oc) cs;
     fprintf oc "  pthread_exit(0);\n";
     fprintf oc "}\n";

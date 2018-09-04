@@ -27,7 +27,7 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
 open! Format
 open! General_purpose
-  
+
 (** [mk_instr x maps reg_map e] returns a component corresponding to the event [e] in the execution [x], by looking up values, registers, and so on, in [maps] and [reg_map]. *)
 let mk_instr x maps reg_map e =
   let ignored_attrs = ["EV";"R";"W";"F";"IW"] in
@@ -43,34 +43,57 @@ let mk_instr x maps reg_map e =
   let a_regs = List.map reg_of (List.filter (src "ad") ev) in
   let c_regvals = List.map reg_rval_of (List.filter (src "cd") r_ev) in
   let d_regs = List.map reg_of (List.filter (src "dd") ev) in
-  let ins = 
+
+  (* Produce a compare-and-swap between write event [rd_ev] and read
+     event [wr_ev] (which may be the same event).  If [rd_ev] stores
+     its retrieved value in a register, pass this as the optional
+     parameter [reg]. *)
+  let mk_cas reg rd_ev wr_ev =
+    let loc = List.assoc rd_ev maps.Exec.loc_map in
+    let loc_expr = Litmus.mk_expr loc a_regs in
+    let rval = List.assoc rd_ev maps.Exec.rval_map in
+    let wval = List.assoc wr_ev maps.Exec.wval_map in
+
+    let wval_expr = Litmus.mk_expr wval d_regs in
+    Litmus.Cas (reg, loc_expr, rval, wval_expr)
+  in
+
+  let ins =
     match List.mem e (Exec.get_set x "R"),
 	  List.mem e (Exec.get_set x "W"),
 	  List.mem e (Exec.get_set x "F")
     with
     | true, true, false ->
-       let loc = List.assoc e maps.Exec.loc_map in
-       let rval = List.assoc e maps.Exec.rval_map in
-       let wval = List.assoc e maps.Exec.wval_map in
-       let loc_expr = Litmus.mk_expr loc a_regs in
-       let wval_expr = Litmus.mk_expr wval d_regs in
-       Litmus.Cas (loc_expr, rval, wval_expr)
+       (* If we're reading and writing at the same time,
+          we have a one-event CAS. *)
+       [mk_cas None e e]
     | true, false, false ->
-       let loc = List.assoc e maps.Exec.loc_map in
        let reg = reg_of e in
-       let loc_expr = Litmus.mk_expr loc a_regs in
-       Litmus.Load (reg, loc_expr)
+       if List.mem e (Rel.dom atom) then
+         (* This event is the 'read' part of a two-event CAS. *)
+         let write_e = List.assoc e atom in
+         [mk_cas (Some reg) e write_e]
+       else
+         let loc = List.assoc e maps.Exec.loc_map in
+         let loc_expr = Litmus.mk_expr loc a_regs in
+         [Litmus.Load (reg, loc_expr)]
     | false, true, false ->
-       let loc = List.assoc e maps.Exec.loc_map in
-       let wval = List.assoc e maps.Exec.wval_map in
-       let loc_expr = Litmus.mk_expr loc a_regs in
-       let wval_expr = Litmus.mk_expr wval d_regs in
-       Litmus.Store (loc_expr, wval_expr)
+       if List.mem e (Rel.rng atom) then
+         (* This event is the 'write' part of a two-event CAS.
+            We already emitted the CAS when handling the 'read' part,
+            so ignore it here. *)
+         []
+       else
+         let loc = List.assoc e maps.Exec.loc_map in
+         let wval = List.assoc e maps.Exec.wval_map in
+         let loc_expr = Litmus.mk_expr loc a_regs in
+         let wval_expr = Litmus.mk_expr wval d_regs in
+         [Litmus.Store (loc_expr, wval_expr)]
     | false, false, true ->
-       Fence
+       [Fence]
     | _ -> assert false
   in
-  let cs = [Litmus.Basic (ins, attrs)] in
+  let cs = List.map (fun ins -> Litmus.Basic (ins, attrs)) ins in
 
   let mk_txn_block txn_rel outcome cs =
     let txn_sb =
