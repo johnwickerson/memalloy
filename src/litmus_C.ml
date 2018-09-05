@@ -86,8 +86,9 @@ let pp_instr oc = function
          (pp_expr MyLocation.pp) le (pp_expr Value.pp) ve
   | Litmus.StoreCnd _, _ ->
      (* We've already emitted a CAS for the LoadLink, so we don't emit
-        a separate StoreCnd instruction. *)
-     ()
+        a separate StoreCnd instruction.  (We still print _something_,
+        to avoid throwing off the indentation. *)
+     fprintf oc "// elided store-conditional instruction"
   | Litmus.Cas (obj,exp,des), attrs ->
      let mo = get_mo attrs in
      pp_cas oc mo obj None exp des
@@ -96,17 +97,30 @@ let pp_instr oc = function
      let mo = get_mo attrs in
      fprintf oc "atomic_thread_fence(%s)" mo
 
-  | Litmus.TxnBegin, _ -> fprintf oc "atomic {\n" (* FIXME: currently gets an erroneous semicolon afterwards *)
-  | Litmus.TxnEnd _, _ -> fprintf oc "}\n" (* FIXME: currently gets an erroneous semicolon afterwards *)
+  | Litmus.TxnBegin, _ -> fprintf oc "atomic {"
+  | Litmus.TxnEnd _, _ -> fprintf oc "}"
 
 let no_braces_needed = function
   | Litmus.Basic (Litmus.Cas _, _) -> false
   | _ -> true
-                        
-(** Pretty-printing of components *)     
+
+(** [semicolon_needed b] asks whether basic component [b] needs a semicolon
+    at the end. *)
+
+let semicolon_needed = function
+  | Litmus.StoreCnd _
+    | Litmus.TxnBegin
+    | Litmus.TxnEnd _ -> false
+  | _ -> true
+
+let pp_instr_and_semicolon oc b =
+  pp_instr oc b;
+  if semicolon_needed (fst b) then fprintf oc ";" else ()
+
+(** Pretty-printing of components *)
 let rec pp_component i oc = function
   | Litmus.Basic b ->
-     fprintf oc "%a%a;\n" mk_indent i pp_instr b
+     fprintf oc "%a%a\n" mk_indent i pp_instr_and_semicolon b
   | Litmus.If (r,v,[c]) when no_braces_needed c ->
      fprintf oc "%aif (%a == %a)\n" mk_indent i pp_reg r Value.pp v;
      pp_component (i+1) oc c
