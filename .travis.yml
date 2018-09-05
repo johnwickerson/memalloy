@@ -2,9 +2,6 @@ language: java
 jdk: oraclejdk8
 sudo: required
 env:
-  - TARGET=txn_tests 
-  - TARGET=more_txn_tests
-  - TARGET=even_more_txn_tests
   - TARGET=moretests
 before_install:
   - OCAML_VERSION=4.07.0
