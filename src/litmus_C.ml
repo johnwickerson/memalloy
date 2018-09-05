@@ -72,7 +72,10 @@ let pp_instr oc = function
      else
        fprintf oc "%a = %a"
          pp_reg r (pp_expr MyLocation.pp) le
-
+  | Litmus.LoadLink (r, obj, exp, des), attrs ->
+     (* We model LL/SC as a CAS in C11 witnesses. *)
+     let mo = get_mo attrs in
+     pp_cas oc mo obj (Some r) exp des
   | Litmus.Store (le,ve), attrs ->
      if List.mem "A" attrs then
        let mo = get_mo attrs in
@@ -81,15 +84,18 @@ let pp_instr oc = function
      else
        fprintf oc "%a = %a"
          (pp_expr MyLocation.pp) le (pp_expr Value.pp) ve
-
-  | Litmus.Cas (exp_reg,obj,exp,des), attrs ->
+  | Litmus.StoreCnd _, _ ->
+     (* We've already emitted a CAS for the LoadLink, so we don't emit
+        a separate StoreCnd instruction. *)
+     ()
+  | Litmus.Cas (obj,exp,des), attrs ->
      let mo = get_mo attrs in
-     pp_cas oc mo obj exp_reg exp des
+     pp_cas oc mo obj None exp des
 
   | Litmus.Fence, attrs ->
      let mo = get_mo attrs in
      fprintf oc "atomic_thread_fence(%s)" mo
-     
+
   | Litmus.TxnBegin, _ -> fprintf oc "atomic {\n" (* FIXME: currently gets an erroneous semicolon afterwards *)
   | Litmus.TxnEnd _, _ -> fprintf oc "}\n" (* FIXME: currently gets an erroneous semicolon afterwards *)
 
@@ -111,8 +117,10 @@ let rec pp_component i oc = function
 
 let partition_locs_in_instr (a_locs, na_locs) = function
   | Litmus.Load (_,le), attrs
+  | Litmus.LoadLink (_,le,_,_), attrs
   | Litmus.Store (le,_), attrs
-  | Litmus.Cas (_,le,_,_), attrs ->
+  | Litmus.StoreCnd (le,_), attrs
+  | Litmus.Cas (le,_,_), attrs ->
      let l = Litmus.expr_base_of le in
      begin match List.mem "NAL" attrs with
      | true ->
@@ -138,17 +146,17 @@ let partition_locs lt =
     CAS without a destination register.  (If one exists, we need to
     create a temporary variable to store it.) *)
 let rec contains_regless_cas = function
-  | Litmus.Basic (Litmus.Cas (None, _, _, _), _) -> true
+  | Litmus.Basic (Litmus.Cas (_, _, _), _) -> true
   | Litmus.Basic _ -> false
   | Litmus.If (_,_,cs) -> List.exists contains_regless_cas cs
 
 let rec extract_regs regs = function
   | Litmus.Basic (Litmus.Load (r,_), _)
-    | Litmus.Basic (Litmus.Cas (Some r,_,_,_), _) -> MySet.union [r] regs
+    | Litmus.Basic (Litmus.LoadLink (r,_,_,_), _) -> MySet.union [r] regs
   | Litmus.Basic _ -> regs
   | Litmus.If (r,_,cs) -> MySet.union [r] (List.fold_left extract_regs regs cs)
-                              
-  
+
+
 let pp oc lt =
 
   let atomic_locs, nonatomic_locs = partition_locs lt in

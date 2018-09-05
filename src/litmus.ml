@@ -68,9 +68,10 @@ let pp_txn_outcome oc = function
 (** Instruction in a litmus test *)
 type instruction =
   | Load of Register.t * MyLocation.t expr
+  | LoadLink of Register.t * MyLocation.t expr * Value.t * Value.t expr
   | Store of MyLocation.t expr * Value.t expr
-  | Cas of Register.t option (* Two-event CASes use a register; others don't *)
-           * MyLocation.t expr * Value.t * Value.t expr
+  | StoreCnd of MyLocation.t expr * Value.t expr
+  | Cas of MyLocation.t expr * Value.t * Value.t expr
   | Fence
   | TxnBegin
   | TxnEnd of txn_outcome
@@ -84,16 +85,22 @@ let pp_instr oc = function
      fprintf oc "%a := load(%a%a)"
 	     Register.pp r (pp_expr MyLocation.pp) le
 	     pp_attrs attrs
+  | LoadLink (r,le,v,ve), attrs ->
+     fprintf oc "%a := ll(%a,%a,%a%a)"
+             Register.pp r
+             (pp_expr MyLocation.pp) le
+             Value.pp v
+             (pp_expr Value.pp) ve
+	     pp_attrs attrs
   | Store (le,ve), attrs ->
      fprintf oc "store(%a,%a%a)"
 	     (pp_expr MyLocation.pp) le (pp_expr Value.pp) ve
              pp_attrs attrs
-  | Cas (Some r,le,v,ve), attrs ->
-     fprintf oc "%a := cas(%a,%a,%a%a)"
-             Register.pp r
-             (pp_expr MyLocation.pp) le Value.pp v (pp_expr Value.pp) ve
+  | StoreCnd (le,ve), attrs ->
+     fprintf oc "sc(%a,%a%a)"
+	     (pp_expr MyLocation.pp) le (pp_expr Value.pp) ve
              pp_attrs attrs
-  | Cas (None,le,v,ve), attrs ->
+  | Cas (le,v,ve), attrs ->
      fprintf oc "cas(%a,%a,%a%a)"
              (pp_expr MyLocation.pp) le Value.pp v (pp_expr Value.pp) ve
              pp_attrs attrs
@@ -102,7 +109,7 @@ let pp_instr oc = function
 	     (MyList.pp_gen "" (fun oc -> fprintf oc ",%s")) attrs
   | TxnBegin, _ -> fprintf oc "txn_begin"
   | TxnEnd outcome, _ -> fprintf oc "txn_end %a" pp_txn_outcome outcome
-      
+
 (** A component is either a single instruction or an if-statement *)
 type 'a component =
   | Basic of 'a
