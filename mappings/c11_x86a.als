@@ -92,7 +92,4 @@ pred apply_map[X:SW/Exec_C, X':HW/Exec_X86, map:SE->HE] {
   // the mapping preserves threads
   X.sthd = map . (X'.sthd) . ~map
 
-  // the mapping preserves transactions
-  X.stxn = map . (X'.stxn) . ~map
-
 }

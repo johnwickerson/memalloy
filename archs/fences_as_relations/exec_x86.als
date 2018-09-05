@@ -6,9 +6,8 @@ sig Exec_X86 extends Exec_H {
 }{
   is_fence_rel[mfence, sb]
 
-  // RMWs are consecutive and do not straddle XBEGIN/XEND instructions
+  // RMWs are consecutive
   atom in imm[sb]
-  atom in stxn + ((EV - dom[stxn]) -> (EV - dom[stxn]))
 
   // control dependencies only come out of reads
   cd in (R -> EV)

@@ -75,7 +75,4 @@ pred apply_map[
   // the mapping preserves rmw-edges (and inserts ctrl edges)
   X.atom = map . (X'.atom & X'.cd) . ~map
 
-  // the mapping preserves transactions
-  X.stxn = map . (X'.stxn) . ~map
-
 }
