@@ -1,5 +1,5 @@
 open ../archs/exec_arm8[E]
-open ../models/aarch64_txn[E] as M
+open ../models/aarch64[E] as M
 
 module arm8_txn_strengthening[E]
 
@@ -24,8 +24,6 @@ pred apply_map[X,X':Exec_Arm8] {
   X.DMBST = X'.DMBST
   X.DMBLD = X'.DMBLD
   X.ISB = X'.ISB
-    
-  X.stxn in X'.stxn
 
 }
 

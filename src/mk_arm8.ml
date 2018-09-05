@@ -40,22 +40,8 @@ let mk_fence attrs =
   | [false; false; false; true], _ | _, [false; false; true] -> ISB
   | _ -> failwith "Invalid fence attributes: %a!" (MyList.pp pp_str) attrs
 
-let mk_tstart reg lbl =
-  [Litmus_HW.TSTART (reg, lbl); Litmus_HW.CMP reg; BNZ lbl]
-
-let mk_tabort reg imm = [Litmus_HW.TABORT (reg, imm)]
-
-let mk_tabort_handler reg tstart_reg = [Litmus_HW.MOVREG (reg, tstart_reg)]
-
-let encode_sentinel imm8 =
-  assert (0 <= imm8 && imm8 < 256);
-  let abt_caused_by_tabort = 0x1 in
-  (imm8 lsl 24) lor abt_caused_by_tabort
-
 let arm8_specific_params = {
-    Litmus_HW.use_status_reg=true;
-    mk_fence; mk_tstart; mk_tabort; mk_tabort_handler;
-    encode_sentinel;
+    Litmus_HW.use_status_reg=true; mk_fence
 }
 
 (** Print a register in 64-bit mode *)
@@ -139,9 +125,6 @@ let pp_ins oc = function
   | Litmus_HW.BNZ lbl -> fprintf oc "BNE %s" lbl
   | Litmus_HW.J lbl -> fprintf oc "B %s" lbl
   | Litmus_HW.LBL lbl -> fprintf oc "%s:" lbl
-  | Litmus_HW.TSTART (r, _) -> fprintf oc "TSTART %a" pp_32reg r
-  | Litmus_HW.TCOMMIT -> fprintf oc "TCOMMIT"
-  | Litmus_HW.TABORT (_, imm) -> fprintf oc "TABORT #%d" imm
 
 let arm8_of_lit name lt =
   Mk_litmus_HW.hw_lit_of_lit name arm8_specific_params lt

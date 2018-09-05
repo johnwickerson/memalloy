@@ -5,7 +5,6 @@ sig Exec_C extends Exec {
   A : set E,            // atomic events
   NAL : set E,          // events accessing non-atomic locations
   ACQ, REL, SC : set E, // acquire, release, sc events
-  atxn : E->E,          // atomic transaction
 }{
 
   // initial writes are non-atomic
@@ -44,28 +43,11 @@ sig Exec_C extends Exec {
   // non-atomic reads do not access atomic locations
   R-A in NAL
 
-  // atomic transactions are a type of transaction
-  atxn in stxn
-  atxn.stxn in atxn
-
-  // atxn is a partial equivalence relation among a subset of
-  // the non-initalisation events
-  atxn in (EV - IW) -> (EV - IW)
-  symmetric[atxn]
-  transitive[atxn]
-
-  // atomic transactions must be contiguous
-  ((sb.sb & atxn) . ~sb) & sb in atxn
-    
-  // atomic transactions do not contain atomic operations
-  no (A & dom[atxn])
-
   // control dependencies only come out of reads
   cd in (R -> EV)
 
-  // RMWs are consecutive and do not straddle XBEGIN/XEND instructions
+  // RMWs are consecutive
   atom in imm[sb]
-  atom in stxn + ((EV - dom[stxn]) -> (EV - dom[stxn]))
 
 }
 

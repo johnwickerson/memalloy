@@ -1,7 +1,0 @@
-"BASIC"
-
-include "basic_H.cat"
-include "txn.cat"
-let com = rf | fr | co
-          
-acyclic stronglift(com, stxn) as Strong_atomicity

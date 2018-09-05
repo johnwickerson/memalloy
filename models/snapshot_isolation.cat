@@ -1,6 +1,0 @@
-"BASIC"
-
-include "basic.cat"
-include "txn.cat"
-
-irreflexive ((weaklift(rf, stxn) | weaklift(co, stxn)); (weaklift(fr, stxn))?)+ as SI

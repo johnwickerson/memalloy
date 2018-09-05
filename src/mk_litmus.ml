@@ -88,26 +88,6 @@ let mk_instr x maps reg_map e =
     | _ -> assert false
   in
   let cs = [Litmus.Basic (ins, attrs)] in
-
-  let mk_txn_block txn_rel outcome cs =
-    let txn_sb =
-      MySet.inter (Exec.get_rel x txn_rel) (Exec.get_rel x "sb") in
-    let txn_events = Rel.dom (Exec.get_rel x txn_rel) in
-    let is_first_in_txn =
-      List.mem e txn_events &&
-	not (List.exists (fun e' -> List.mem (e',e) txn_sb) ev)
-    in
-    let is_last_in_txn =
-      List.mem e txn_events &&
-	not (List.exists (fun e' -> List.mem (e,e') txn_sb) ev)
-    in
-    let txn_beg =
-      if is_first_in_txn then [Litmus.Basic (Litmus.TxnBegin, [])] else [] in
-    let txn_end =
-      if is_last_in_txn then [Litmus.Basic (Litmus.TxnEnd outcome, [])] else [] in
-    txn_beg @ cs @ txn_end
-  in
-  let cs = mk_txn_block "stxn" TxnCommit cs in
   let mk_fence f cs =
     if List.mem e (Rel.rng (Exec.get_rel x f))
                 (* FIXME: This currently inserts too many fences *)

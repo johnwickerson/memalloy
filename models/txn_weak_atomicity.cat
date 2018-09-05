@@ -1,7 +1,0 @@
-"BASIC"
-
-include "basic_H.cat"
-include "txn.cat"
-let com = rf | fr | co
-                              
-acyclic weaklift(com, stxn) as Weak_atomicity

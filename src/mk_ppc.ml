@@ -39,30 +39,9 @@ let mk_fence attrs =
   | false, false, true -> ISYNC
   | _ -> failwith "Invalid fence attributes!"
 
-let mk_tstart reg lbl =
-  [ Litmus_HW.TSTART (reg, lbl);
-    Litmus_HW.BEQ lbl]
-
-let mk_tabort reg imm =
-  [ Litmus_HW.MOV (reg, imm);
-    Litmus_HW.TABORT (reg, imm)]
-
-let mk_tabort_handler reg _tstart_reg =
-  let texasr = (fst reg, -1) in
-  (* we shift to get the bottom word of the 64-bit texasr *)
-  [ Litmus_HW.MOVREG (reg, texasr);
-    Litmus_HW.SHIFT (Litmus_HW.LSR, reg, reg, 32) ]
-
-let encode_sentinel imm8 =
-  assert (0 <= imm8 && imm8 < 256);
-  let abt_caused_by_tabort = 0x1 in
-  (imm8 lsl 24) lor abt_caused_by_tabort
                                                                     
 let ppc_specific_params = {
-    Litmus_HW.use_status_reg=false;
-    mk_fence; mk_tstart; mk_tabort; mk_tabort_handler;
-    encode_sentinel;
-}
+    Litmus_HW.use_status_reg=false; mk_fence }
    
 (** Print a register *)
 let pp_reg oc (_,r) = fprintf oc "r%d" r
@@ -131,9 +110,6 @@ let pp_ins oc = function
   | Litmus_HW.BNZ lbl -> fprintf oc "bne %s" lbl
   | Litmus_HW.J lbl -> fprintf oc "b %s" lbl
   | Litmus_HW.LBL lbl -> fprintf oc "%s:" lbl
-  | Litmus_HW.TSTART (_, _) -> fprintf oc "tbegin." (* ignore reg parameter *)
-  | Litmus_HW.TCOMMIT -> fprintf oc "tend."
-  | Litmus_HW.TABORT (src, _) -> fprintf oc "tabort. %a" pp_reg src
 
 let ppc_of_lit name lt =
   Mk_litmus_HW.hw_lit_of_lit name ppc_specific_params lt

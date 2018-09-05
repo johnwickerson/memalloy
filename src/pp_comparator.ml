@@ -39,13 +39,10 @@ type config = {
     description : string;
     minimal : bool;
     exact : bool;
-    emptytxns : bool;
     min_thds : int;
     max_thds : int;
     min_locs : int;
     max_locs : int;
-    min_txns : int;
-    max_txns : int;
     arch : Archs.t;
     arch2 : Archs.t option;
     mapping_path : string option;
@@ -62,13 +59,10 @@ let default_config = {
     description = "";
     minimal = false;
     exact = false;
-    emptytxns = false;
     min_thds = 0;
     max_thds = -1;
     min_locs = 0;
     max_locs = -1;
-    min_txns = 0;
-    max_txns = -1;
     arch = Archs.Basic;
     arch2 = None;
     mapping_path = None;
@@ -181,16 +175,8 @@ let pp_comparator config oc =
   else
     fprintf oc "  withoutinit[X]\n";
   fprintf oc "  E in X.EV\n\n";
-  if config.emptytxns then (
-    fprintf oc "  // Every event is a read, write, fence or transaction\n";
-    fprintf oc "  E in X.R + X.W + X.F + dom[X.stxn]\n\n";
-    fprintf oc "  // All nop events are singleton-transactions\n";
-    fprintf oc "  all n : dom[X.stxn] - (X.R + X.W + X.F) |\n";
-    fprintf oc "    one n.(X.stxn)\n\n"
-  ) else (
-    fprintf oc "  // Every event is a read, write, or fence\n";
-    fprintf oc "  E in X.R + X.W + X.F\n\n"
-  );
+  fprintf oc "  // Every event is a read, write, or fence\n";
+  fprintf oc "  E in X.R + X.W + X.F\n\n";
   fprintf oc "  interesting[none->none, X]\n\n";
   if config.minimal then (
     fprintf oc "  not some e : X.EV | interesting[rm_EV->e, X]\n";
@@ -205,23 +191,13 @@ let pp_comparator config oc =
     List.iter (fun (dom, set) ->
         fprintf oc
           "  not some e : X.(%s) | interesting[rm_%s->e, X]\n" dom set)
-      (Archs.arch_min_sets !Global_options.fencerels config.arch);
-    let tag = "rm_txn->e" in
-    fprintf oc "  not some e : dom[X.stxn]  {\n";
-    fprintf oc "    let tpo = X.sb & X.stxn |\n";
-    fprintf oc "    no tpo.e or no e.tpo\n";
-    pp_violated_models 4 tag "X" config oc;
-    pp_satisfied_models 4 tag "X" config oc;
-    pp_also_satisfied_models 4 tag "X" config oc;
-    fprintf oc "  }\n";
+      (Archs.arch_min_sets !Global_options.fencerels config.arch)
   );
   List.iter (pp_hint_name oc) config.hints;
   pp_min_classes "threads" "E" config.min_thds "sthd" "X.EV - X.IW" oc;
   pp_max_classes "threads" "E" config.max_thds "sthd" "X.EV - X.IW" oc;
   pp_min_classes "locations" "E" config.min_locs "sloc" "X.R + X.W" oc;
   pp_max_classes "locations" "E" config.max_locs "sloc" "X.R + X.W" oc;
-  pp_min_classes "transactions" "E" config.min_txns "stxn" "dom[X.stxn]" oc;
-  pp_max_classes "transactions" "E" config.max_txns "stxn" "dom[X.stxn]" oc;
   fprintf oc "}\n\n";
   pp_hint_predicates config.hints oc;
   fprintf oc "run gp for 1 Exec, %s%d E, 3 Int\n"
@@ -251,8 +227,6 @@ let pp_comparator2 config mapping_path arch2 oc =
   pp_max_classes "threads" "SE" config.max_thds "sthd" "X.EV - X.IW" oc;
   pp_min_classes "locations" "SE" config.min_locs "sloc" "X.R + X.W" oc;
   pp_max_classes "locations" "SE" config.max_locs "sloc" "X.R + X.W" oc;
-  pp_min_classes "transactions" "SE" config.min_txns "stxn" "dom[X.stxn]" oc;
-  pp_max_classes "transactions" "SE" config.max_txns "stxn" "dom[X.stxn]" oc;
   fprintf oc "}\n\n";
   pp_hint_predicates config.hints oc;
   fprintf oc "run gp for exactly 1 M1/Exec, exactly 1 N1/Exec, %d SE, %d HE, 3 Int\n" config.eventcount config.eventcount2
@@ -291,14 +265,11 @@ let eventcount = ref default_config.eventcount
 let eventcount2 = ref default_config.eventcount2
 let description = ref default_config.description
 let minimal = ref default_config.minimal
-let exact = ref default_config.exact
-let emptytxns = ref default_config.emptytxns	      
+let exact = ref default_config.exact      
 let min_thds = ref default_config.min_thds
 let max_thds = ref default_config.max_thds
 let min_locs = ref default_config.min_locs
 let max_locs = ref default_config.max_locs
-let min_txns = ref default_config.min_txns
-let max_txns = ref default_config.max_txns
 let arch_string = ref ""
 let arch2_string = ref None
 let mapping_path = ref default_config.mapping_path
@@ -353,18 +324,6 @@ let speclist =
    "-locations",
    Arg.Int (fun i -> min_locs := i; max_locs := i),
    "Find executions with exactly N locations";
-   
-   "-mintransactions", Arg.Set_int min_txns,
-   "Find executions with at least N transactions (default 0)";
-   
-   "-maxtransactions", Arg.Set_int max_txns,
-   "Find executions with at most N transactions";
-   
-   "-transactions",
-   Arg.Int (fun i -> min_txns := i; max_txns := i),
-   "Find executions with exactly N transactions";
-   
-   "-emptytxns", Arg.Set emptytxns, "Option: allow empty transactions";
    
    "-withinit", Arg.Set withinit,
    "Option: explicit initial writes";
@@ -427,13 +386,10 @@ let build_config () =
     description = !description;
     minimal = !minimal;
     exact = !exact;
-    emptytxns = !emptytxns;
     min_thds = !min_thds;
     max_thds = !max_thds;
     min_locs = !min_locs;
     max_locs = !max_locs;
-    min_txns = !min_txns;
-    max_txns = !max_txns;
     arch = Archs.parse_arch !arch_string;
     arch2 = begin match !arch2_string with
             | Some a -> Some (Archs.parse_arch a)

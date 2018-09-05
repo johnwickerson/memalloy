@@ -1,9 +1,0 @@
-"BASIC"
-
-let ST = domain(stxn)
-
-let weaklift(r,t) = t; (r \ t); t
-let stronglift(r,t) = t?; (r \ t); t?
-                 
-let into(r)  = !r; r
-let outof(r) = r; !r

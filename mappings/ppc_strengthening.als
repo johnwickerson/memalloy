@@ -1,5 +1,5 @@
 open ../archs/exec_ppc[E]
-open ../models/ppc_txn[E] as M
+open ../models/ppc[E] as M
 
 module ppc_strengthening[E]
 
@@ -24,8 +24,6 @@ pred apply_map[X,X':Exec_PPC] {
   X.ISYNC = X'.ISYNC
   X.LWSYNC = X'.LWSYNC
   X.SYNC = X'.SYNC
-
-  X.stxn in X'.stxn
 
 }
 

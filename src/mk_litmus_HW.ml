@@ -34,7 +34,6 @@ type mk_litmus_state = {
     next_lbl : int; (** next label *)
     next_sentinel : int; (** next sentinel value *)
     current_post: (Litmus.address, Value.t) Assoc.t; (** postcondition *)
-    next_txid : int; (** next transaction id *)
   }
 
 let get_fresh_reg tid state =
@@ -56,21 +55,11 @@ let add_to_loc_map (l, r) state =
 let update_post f state =
   {state with current_post = f (state.current_post)}
 
-let get_fresh_txid state =
-  let txid = state.next_txid in
-  {state with next_txid = txid + 1}, txid
-
 let get_exit_lbl tid =
   (sprintf "Exit%d" tid)
 
 let get_excl_fail_lbl tid =
   (sprintf "ExclFail%d" tid)
-
-let get_txn_success_lbl tid txid =
-  (sprintf "TxnSuccess%d_%d" tid txid)
-
-let get_txn_fail_lbl tid txid =
-  (sprintf "TxnFail%d_%d" tid txid)
   
 (** [remove_Ifs r cs] removes from the component list [cs] all if-statements that test the value of the register [r] *)
 let rec remove_Ifs r = function
@@ -134,32 +123,6 @@ let rec hw_ins_of_exp tid state = function
         in
         state, il, n, Some r_off
 
-let is_tstart = function
-  | Litmus_HW.TSTART (_, _) -> true
-  | _ -> false
-
-let get_last_tstart il =
-  let tstarts = List.filter is_tstart il in
-  if tstarts = [] then failwith "Missing TSTART";
-  List.hd (List.rev tstarts)
-
-let reg_of_tstart = function
-  | Litmus_HW.TSTART (r, _) -> r
-  | _ -> failwith "Not a TSTART!"
-
-let last_txn_block il =
-  List.rev (MyList.take (fun x -> not (is_tstart x)) (List.rev il))
-
-(** Given the instruction list [il] determine whether we are currently in a txn block *)
-let in_txn_block il =
-  let rec walk = function
-    | [] -> false
-    | Litmus_HW.TCOMMIT :: _xs -> false
-    | Litmus_HW.TSTART (_, _) :: _xs -> true
-    | _ :: xs -> walk xs
-  in
-  walk (List.rev il)
-
 let is_ld = function
   | Litmus_HW.Access a when a.Litmus_HW.dir = Litmus_HW.LD -> true
   | _ -> false
@@ -172,14 +135,8 @@ let expected_val_of_reg post r =
   try List.assoc (Litmus.Reg r) post with
     Not_found -> failwith "Couldn't find register %a!" Register.pp r
 
-let mk_st_excl_prologue arch_params tid state il =
-  if in_txn_block il then
-    let state, lbl_succ = get_fresh_lbl ~prefix:"ExclSucc" tid state in
-    let state, r_txn = get_fresh_reg tid state in
-    let tabort_false = arch_params.Litmus_HW.mk_tabort r_txn 0xf in
-    state, [ Litmus_HW.BEQ lbl_succ ] @ tabort_false @ [ Litmus_HW.LBL lbl_succ ]
-  else
-    state, [ Litmus_HW.BNZ (get_excl_fail_lbl tid) ]
+let mk_st_excl_prologue _arch_params tid state _il =
+  state, [ Litmus_HW.BNZ (get_excl_fail_lbl tid) ]
 
 (** Whether to flatten a false address-dependence into multiple instructions. This is because not all load/store instructions support offset addressing. TODO: maybe take arch into account since PPC can handle offsets with lwarx/stwcx. *)
 let flatten_ad = function
@@ -267,74 +224,6 @@ let hw_ins_of_ins arch_params tid state il ins =
        [Litmus_HW.HW_fence (arch_params.Litmus_HW.mk_fence attrs)]
      in
      state, il @ il_f
-  | Litmus.TxnBegin, _ ->
-     let state, r_txn = get_fresh_reg tid state in
-     let state, txid = get_fresh_txid state in
-     let il_tbegin =
-       arch_params.Litmus_HW.mk_tstart r_txn (get_txn_fail_lbl tid txid)
-     in
-     state, il @ il_tbegin
-  | Litmus.TxnEnd TxnCommit, _ ->
-     let _ = assert (in_txn_block il) in
-     let state, r_zero = get_fresh_reg tid state in
-     let state, r_ok = get_fresh_reg tid state in
-     let txid = state.next_txid - 1 in
-     let success_lbl = get_txn_success_lbl tid txid in
-     let fail_lbl = get_txn_fail_lbl tid txid in
-     let state = add_to_loc_map (-1, r_ok) state in
-     let il_tcommit = [
-         Litmus_HW.TCOMMIT;
-         Litmus_HW.J success_lbl;
-         Litmus_HW.LBL fail_lbl;
-         Litmus_HW.MOV (r_zero, 0);
-         mk_ST [] (r_zero, r_ok, None, None, Some 0, Some (-1));
-         Litmus_HW.J (get_exit_lbl tid);
-         Litmus_HW.LBL success_lbl;
-       ] in
-     state, il @ il_tcommit
-  | Litmus.TxnEnd TxnAbort, _ ->
-     let _ = assert (in_txn_block il) in
-     let state, r_zero = get_fresh_reg tid state in
-     let state, r_ok = get_fresh_reg tid state in
-     let txid = state.next_txid - 1 in
-     let fail_lbl = get_txn_fail_lbl tid txid in
-     let last_tstart = get_last_tstart il in
-     let tstart_reg = reg_of_tstart last_tstart in
-     let txn_block = last_txn_block il in
-     let lds = List.filter is_ld txn_block in
-     let rs = List.rev (List.map dst_of_ld lds) in
-     let vs = List.map (expected_val_of_reg state.current_post) rs in
-     let state =
-       update_post
-         (Assoc.remove_assocs (List.map (fun r -> Litmus.Reg r) rs)) state
-     in
-     let state, lbl = get_fresh_lbl ~prefix:"Else" tid state in
-     let mk_eq r v =
-       [ Litmus_HW.CMPIMM (r, v); Litmus_HW.BNZ lbl ]
-     in
-     let cond =
-       List.fold_right (fun (r,v) acc -> acc @ mk_eq r v)
-         (List.combine rs vs) []
-     in
-     let state, r_txn = get_fresh_reg tid state in
-     let state, sentinel = get_fresh_sentinel state in
-     let encoded = arch_params.Litmus_HW.encode_sentinel sentinel in
-     let state, r_txn_status = get_fresh_reg tid state in
-     let state = update_post ((@) [Litmus.Reg r_txn_status, encoded]) state in
-     let tabort_true = arch_params.Litmus_HW.mk_tabort r_txn sentinel in 
-     let tabort_false = arch_params.Litmus_HW.mk_tabort r_txn 0xf in
-     let state = add_to_loc_map (-1, r_ok) state in
-     let il_tabort =
-       cond
-       @ tabort_true
-       @ [ Litmus_HW.LBL lbl ]
-       @ tabort_false
-       @ [ Litmus_HW.MOV (r_zero, 0);
-           mk_ST [] (r_zero, r_ok, None, None, Some 0, Some (-1));
-           Litmus_HW.LBL fail_lbl ]
-       @ arch_params.Litmus_HW.mk_tabort_handler r_txn_status tstart_reg
-     in
-     state, il @ il_tabort
   | ins, attr -> failwith "Not yet implemented! %a" Litmus.pp_instr (ins, attr)
 
 let is_st_excl = function
@@ -342,15 +231,11 @@ let is_st_excl = function
     a.Litmus_HW.dir = Litmus_HW.ST && a.Litmus_HW.is_exclusive
   | _ -> false
 
-let is_tstart = function
-  | Litmus_HW.TSTART (_, _) -> true
-  | _ -> false
-
 (** [can_fail il] holds iff the instruction list [il] contains
- * a failing instruction: a store-exclusive or a tstart. *)
+ * a failing instruction (i.e. a store-exclusive). *)
 let can_fail il =
   let is_failing_instr i =
-    is_st_excl i || is_tstart i
+    is_st_excl i
   in
   List.exists is_failing_instr il
 
@@ -358,7 +243,6 @@ let can_fail il =
 let rec hw_ins_of_components arch_params tid (state,il) =
   function
   | [] when (List.exists is_st_excl il) ->
-     (* TODO: Check that there exists a store-exclusive *inside a txn* *)
      let state, r_zero = get_fresh_reg tid state in
      let state, r_ok = get_fresh_reg tid state in
      let state = add_to_loc_map (-1, r_ok) state in
@@ -405,10 +289,8 @@ let rec hw_thds_of_thds
   | thd :: thds ->
      let next_reg = first_unused_reg 0 thd in
      let next_sentinel = 0x10 in
-     let next_txid = 0 in
      let state =
-       {loc_map; next_reg; next_lbl; next_sentinel;
-        current_post; next_txid}
+       {loc_map; next_reg; next_lbl; next_sentinel; current_post}
      in
      let state,il1 =
        hw_ins_of_components arch_params tid (state, []) thd

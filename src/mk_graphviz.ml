@@ -105,29 +105,18 @@ let dot_of_execution' maps x =
     Cluster (ns, ["color", "azure4"; "style", "dashed"])
   in
   let mk_gl_cluster ns = Cluster (ns, ["color", "white"]) in
-  let mk_cluster_stxn ns =
-    Cluster (ns, ["color", "darkorchid"; "style", "solid"])
-  in
   let ev = get_set x "EV" in
   let iw = get_set x "IW" in
   let niw = MySet.diff ev iw in
   let sgl = get_rel x "sgl" @ get_rel x "sdv" in
   let scta = get_rel x "scta" @ get_rel x "swg" in
   let sthd = get_rel x "sthd" in
-  let stxn = get_rel x "stxn" in
-  let txn_events = Rel.dom stxn in
   let gl_map = Rel.partition sgl niw in
   let gls = Assoc.val_list (Assoc.invert_map gl_map) in
   let doe = dot_of_event x maps in
   let initials = List.map doe iw in
   let thds = Assoc.val_list (Assoc.invert_map maps.thd_map) in
-    let dot_of_thd thd =
-      let stxn_map = Rel.partition stxn (MySet.inter thd txn_events) in
-      let stxns = Assoc.val_list (Assoc.invert_map stxn_map) in
-      let non_txn = List.map doe (MySet.diff thd txn_events) in
-      let dot_of_stxn txn = mk_cluster_stxn (List.map doe txn) in
-      mk_thd_cluster (non_txn @ List.map dot_of_stxn stxns)
-    in
+  let dot_of_thd thd = mk_thd_cluster (List.map doe thd) in
   let dot_of_cta cta =
     let thd_map = Rel.partition sthd (MySet.inter cta niw) in
     let thds = Assoc.val_list (Assoc.invert_map thd_map) in
@@ -146,7 +135,7 @@ let dot_of_execution' maps x =
   in
   let visible_rels =
     Assoc.remove_assocs
-      ["sloc";"sthd";"sgl";"scta";"sdv";"swg";"stxn"] x.rels
+      ["sloc";"sthd";"sgl";"scta";"sdv";"swg"] x.rels
   in
   let edges = List.concat (List.map dot_of_rel visible_rels) in
   {nodes = nodes; edges = edges}

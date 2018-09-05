@@ -87,17 +87,10 @@ type 'fence hw_instruction =
   | BNZ of label (** ... and branch if it is nonzero *)
   | J of label (** unconditional branch *)
   | LBL of label (** label *)
-  | TSTART of Register.t * label (** begin transaction *)
-  | TCOMMIT (** end transaction *)
-  | TABORT of Register.t * int (** abort transaction *)
 
 type 'fence arch_specific_params = {
   use_status_reg : bool;
   mk_fence : string list -> 'fence;
-  mk_tstart : Register.t -> label -> 'fence hw_instruction list;
-  mk_tabort : Register.t -> int -> 'fence hw_instruction list;
-  mk_tabort_handler : Register.t -> Register.t -> 'fence hw_instruction list;
-  encode_sentinel : int -> int;
 }
 
 (** Type of hardware litmus tests *)

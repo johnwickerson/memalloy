@@ -157,13 +157,6 @@ let not_already_seen soln =
 let run_single out_dir xml_path =
   let soln = Xml.parse_file xml_path in
   let set_EV = get_set "EV" [soln] in
-  let stxn = get_rel "stxn" [soln] in
-  let po = get_rel "sb" [soln] in
-  let tpo = MySet.inter stxn po in
-  let set_ST = Rel.dom stxn in
-  let tbegins = MySet.diff set_ST (Rel.rng tpo) in
-  let tends = MySet.diff set_ST (Rel.dom tpo) in
-  let set_stxn = MySet.union tbegins tends in
   let rm_edge (r,except) =
     Rel.dom (MySet.diff (get_rel r [soln]) except), rm_from_dom r
   in
@@ -204,7 +197,7 @@ let run_single out_dir xml_path =
       "MEMBAR_SYS", [];
     ] in
   let perturbations =
-    [set_EV, rm_EV; set_stxn, rm_from_dom_and_rng "stxn"]
+    [set_EV, rm_EV]
     @ List.map rm_edge edges_to_reduce
     @ List.map rm_evt evts_to_reduce
   in

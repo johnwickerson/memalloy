@@ -97,9 +97,6 @@ let pp_instr oc = function
      let mo = get_mo attrs in
      fprintf oc "atomic_thread_fence(%s)" mo
 
-  | Litmus.TxnBegin, _ -> fprintf oc "atomic {"
-  | Litmus.TxnEnd _, _ -> fprintf oc "}"
-
 let no_braces_needed = function
   | Litmus.Basic (Litmus.Cas _, _) -> false
   | _ -> true
@@ -108,9 +105,7 @@ let no_braces_needed = function
     at the end. *)
 
 let semicolon_needed = function
-  | Litmus.StoreCnd _
-    | Litmus.TxnBegin
-    | Litmus.TxnEnd _ -> false
+  | Litmus.StoreCnd _ -> false
   | _ -> true
 
 let pp_instr_and_semicolon oc b =

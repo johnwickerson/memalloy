@@ -57,14 +57,6 @@ let is_fake_dependence_expr = function
   | Just _ -> false
   | Madd (_,_) -> true
 
-type txn_outcome =
-  | TxnAbort
-  | TxnCommit
-
-let pp_txn_outcome oc = function
-  | TxnAbort -> fprintf oc "Abort"
-  | TxnCommit -> fprintf oc "Commit"
-
 (** Instruction in a litmus test *)
 type instruction =
   | Load of Register.t * MyLocation.t expr
@@ -73,8 +65,6 @@ type instruction =
   | StoreCnd of MyLocation.t expr * Value.t expr
   | Cas of MyLocation.t expr * Value.t * Value.t expr
   | Fence
-  | TxnBegin
-  | TxnEnd of txn_outcome
 
 (** Simple pretty-printing of attributes (for debugging) *)
 let pp_attrs = MyList.pp_gen "" (fun oc -> fprintf oc ",%s")
@@ -107,8 +97,6 @@ let pp_instr oc = function
   | Fence, attrs ->
      fprintf oc "fence(%a)"
 	     (MyList.pp_gen "" (fun oc -> fprintf oc ",%s")) attrs
-  | TxnBegin, _ -> fprintf oc "txn_begin"
-  | TxnEnd outcome, _ -> fprintf oc "txn_end %a" pp_txn_outcome outcome
 
 (** A component is either a single instruction or an if-statement *)
 type 'a component =

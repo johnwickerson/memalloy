@@ -10,7 +10,6 @@ sig Exec {
   atom : E->E,     // atomicity relation
   sthd : E->E,     // same thread (partial E.R.)
   sloc : E->E,     // same location (partial E.R.)
-  stxn : E -> E,   // same transaction (partial E.R.)
   //////////////////////////////////////
   rf : E->E,       // reads-from
   co : E->E,       // coherence order
@@ -41,7 +40,7 @@ sig Exec {
   */
 
   // sequenced-before is total within a thread
-  sthd in *sb + ~*sb
+  sthd in *sb + ~*sb /* TODO: drop this constraint */
 
   // sthd is an equivalence relation among non-initial events
   is_equivalence[sthd, EV - IW]
@@ -83,18 +82,6 @@ sig Exec {
   // there are no single-event RMWs
   no (R&W)
     
-  // transactions are intra-thread
-  stxn in sthd
-
-  // stxn is a partial equivalence relation among a subset of
-  // the non-initalisation events
-  stxn in (EV - IW) -> (EV - IW)
-  symmetric[stxn]
-  transitive[stxn]
-
-  // transactions must be contiguous
-  ((sb.sb & stxn) . ~sb) & sb in stxn
-    
 }
 
 pred withinit[X:Exec] {
@@ -128,7 +115,6 @@ one sig rm_EV extends PTag {}
 one sig rm_ad extends PTag {}
 one sig rm_cd extends PTag {}
 one sig rm_dd extends PTag {}
-one sig rm_txn extends PTag {}
 one sig rm_atom extends PTag {}
 
 fun rm_EV_rel[e:PTag->E, r:E->E] : E->E {
@@ -159,7 +145,5 @@ fun dd [e:PTag->E, X:Exec] : E->E {
   rm_EV_rel[e, (univ - e[rm_dd]) <: X.dd] }
 fun cd [e:PTag->E, X:Exec] : E->E {
   rm_EV_rel[e, (univ - e[rm_cd]) <: X.cd] }
-fun stxn[e:PTag->E, X:Exec] : E->E {
-  rm_EV_rel[e, (univ - e[rm_txn]) <: X.stxn :> (univ - e[rm_txn])] }
 fun atom[e:PTag->E, X:Exec] : E->E {
   (univ - e[rm_EV] - e[rm_atom]) <: X.atom :> (univ - e[rm_EV]) }

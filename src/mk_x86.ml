@@ -35,23 +35,9 @@ let mk_fence attrs =
   | true -> MFENCE
   | _ -> failwith "Invalid fence attributes!"
 
-let mk_tstart reg lbl = [Litmus_HW.TSTART (reg, lbl)]
-
-let mk_tabort reg imm = [Litmus_HW.TABORT (reg, imm)]
-
-let mk_tabort_handler reg _tstart_reg =
-  let eax = (fst reg, -1) in [Litmus_HW.MOVREG (reg, eax)]
-
-let encode_sentinel imm8 =
-  assert (0 <= imm8 && imm8 < 256);
-  let abt_caused_by_xabort = 0x1 in
-  (imm8 lsl 24) lor abt_caused_by_xabort
-                                                                 
+                                                         
 let x86_specific_params = {
-    Litmus_HW.use_status_reg=false;
-    mk_fence; mk_tstart; mk_tabort; mk_tabort_handler;
-    encode_sentinel;
-}
+    Litmus_HW.use_status_reg=false; mk_fence }
 
 let reg_name_of_num = function
   | (-1) -> "EAX" (* Reserve EAX for XBEGIN *)
@@ -159,9 +145,6 @@ let pp_ins oc = function
   | BNZ lbl -> fprintf oc "JNE %s" lbl
   | J lbl -> fprintf oc "JMP %s" lbl
   | LBL lbl -> fprintf oc "%s:" lbl
-  | TSTART (_, lbl) -> fprintf oc "XBEGIN %s" lbl (* ignore reg parameter *)
-  | TCOMMIT -> fprintf oc "XEND"
-  | TABORT (_, imm)  -> fprintf oc "XABORT %d" imm
 
 (** [map_excls] maps exclusive pairs (LD/ST) so they can be emitted by
  * [pp_ins] as MOV/XCHG *)
