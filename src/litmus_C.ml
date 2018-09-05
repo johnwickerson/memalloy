@@ -42,14 +42,18 @@ let rec pp_expr k oc = function
   | Litmus.Just x -> k oc x
   | Litmus.Madd (e,r) -> fprintf oc "%a + 0*%a" (pp_expr k) e pp_reg r
 
+let get_mo attrs =
+    match List.mem "SC" attrs, List.mem "ACQ" attrs, List.mem "REL" attrs with
+    | true, _, _ -> "memory_order_seq_cst"
+    | false, true, true -> "memory_order_acq_rel"
+    | false, true, false -> "memory_order_acquire"
+    | false, false, true -> "memory_order_release"
+    | false, false, false -> "memory_order_relaxed"
+
 let pp_instr oc = function
   | Litmus.Load (r,le), attrs ->
      if List.mem "A" attrs then
-       let mo = match List.mem "SC" attrs, List.mem "ACQ" attrs with
-         | true, _ -> "memory_order_seq_cst"
-         | false, true -> "memory_order_acquire"
-         | false, false -> "memory_order_relaxed"
-       in
+       let mo = get_mo attrs in
        fprintf oc "%a = atomic_load_explicit(&%a, %s)"
          pp_reg r (pp_expr MyLocation.pp) le mo
      else
@@ -58,11 +62,7 @@ let pp_instr oc = function
 
   | Litmus.Store (le,ve), attrs ->
      if List.mem "A" attrs then
-       let mo = match List.mem "SC" attrs, List.mem "REL" attrs with
-         | true, _ -> "memory_order_seq_cst"
-         | false, true -> "memory_order_release"
-         | false, false -> "memory_order_relaxed"
-       in
+       let mo = get_mo attrs in
        fprintf oc "atomic_store_explicit(&%a, %a, %s)"
          (pp_expr MyLocation.pp) le (pp_expr Value.pp) ve mo
      else
@@ -70,15 +70,7 @@ let pp_instr oc = function
          (pp_expr MyLocation.pp) le (pp_expr Value.pp) ve
 
   | Litmus.Cas (r,le,v,ve), attrs ->
-     let mo =
-       match List.mem "SC" attrs, List.mem "ACQ" attrs, List.mem "REL" attrs with
-       | true, _, _ -> "memory_order_seq_cst"
-       | false, true, true -> "memory_order_acq_rel"
-       | false, true, false -> "memory_order_acquire"
-       | false, false, true -> "memory_order_release"
-       | false, false, false -> "memory_order_relaxed"
-     in
-
+     let mo = get_mo attrs in
      fprintf oc "%a = %a; " pp_cas_reg r Value.pp v;
      fprintf oc "/* returns bool */ atomic_compare_exchange_strong_explicit(&%a, &%a, %a, %s, memory_order_relaxed)"
        (pp_expr MyLocation.pp) le
@@ -86,14 +78,7 @@ let pp_instr oc = function
        (pp_expr Value.pp) ve mo
     
   | Litmus.Fence, attrs ->
-     let mo =
-       match List.mem "SC" attrs, List.mem "ACQ" attrs, List.mem "REL" attrs with
-       | true, _, _ -> "memory_order_seq_cst"
-       | false, true, true -> "memory_order_acq_rel"
-       | false, true, false -> "memory_order_acquire"
-       | false, false, true -> "memory_order_release"
-       | false, false, false -> "memory_order_relaxed"
-     in
+     let mo = get_mo attrs in
      fprintf oc "atomic_thread_fence(%s)" mo
      
   | Litmus.TxnBegin, _ -> fprintf oc "atomic {\n" (* FIXME: currently gets an erroneous semicolon afterwards *)
