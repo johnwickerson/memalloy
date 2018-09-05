@@ -38,9 +38,22 @@ let pp_cas_reg oc = function
   | Some rr -> pp_reg oc rr
   | None    -> fprintf oc "expected"
 
+
 let rec pp_expr k oc = function
   | Litmus.Just x -> k oc x
   | Litmus.Madd (e,r) -> fprintf oc "%a + 0*%a" (pp_expr k) e pp_reg r
+
+(** [pp_cas oc mo obj exp_reg exp des] prints a compare-and-exchange on
+    location [obj], from [exp] to [des].  It loads [exp] into either register
+    [exp_reg] (if [exp_reg = Some]) or the 'expected' temporary variable
+    (if not). It uses memory order [mo] for success, and relaxed for fail. *)
+let pp_cas oc mo obj exp_reg exp des =
+  fprintf oc "%a = %a; " pp_cas_reg exp_reg Value.pp exp;
+  fprintf oc "/* returns bool */ atomic_compare_exchange_strong_explicit(&%a, &%a, %a, %s, memory_order_relaxed)"
+    (pp_expr MyLocation.pp) obj
+    pp_cas_reg exp_reg
+    (pp_expr Value.pp) des
+    mo
 
 let get_mo attrs =
     match List.mem "SC" attrs, List.mem "ACQ" attrs, List.mem "REL" attrs with
@@ -69,14 +82,10 @@ let pp_instr oc = function
        fprintf oc "%a = %a"
          (pp_expr MyLocation.pp) le (pp_expr Value.pp) ve
 
-  | Litmus.Cas (r,le,v,ve), attrs ->
+  | Litmus.Cas (exp_reg,obj,exp,des), attrs ->
      let mo = get_mo attrs in
-     fprintf oc "%a = %a; " pp_cas_reg r Value.pp v;
-     fprintf oc "/* returns bool */ atomic_compare_exchange_strong_explicit(&%a, &%a, %a, %s, memory_order_relaxed)"
-       (pp_expr MyLocation.pp) le
-       pp_cas_reg r
-       (pp_expr Value.pp) ve mo
-    
+     pp_cas oc mo obj exp_reg exp des
+
   | Litmus.Fence, attrs ->
      let mo = get_mo attrs in
      fprintf oc "atomic_thread_fence(%s)" mo
