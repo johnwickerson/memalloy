@@ -184,16 +184,19 @@ let mk_st_excl_prologue arch_params tid state il =
 (** Whether to flatten a false address-dependence into multiple instructions. This is because not all load/store instructions support offset addressing. TODO: maybe take arch into account since PPC can handle offsets with lwarx/stwcx. *)
 let flatten_ad = function
   | Litmus.Load (_r_dst, le), attrs ->
-      Litmus.is_fake_dependence_expr le &&
-      (List.mem "SCACQ" attrs || List.mem "X" attrs)
+      Litmus.is_fake_dependence_expr le && List.mem "SCACQ" attrs
   | Litmus.Store (le, _ve), attrs ->
-      Litmus.is_fake_dependence_expr le &&
-      (List.mem "SCREL" attrs || List.mem "X" attrs)
+      Litmus.is_fake_dependence_expr le && List.mem "SCREL" attrs
+  | Litmus.LoadLink (_, le, _, _), _
+    | Litmus.StoreCnd (le, _), _ ->
+     Litmus.is_fake_dependence_expr le
   | _ -> false
 
 (** [hw_ins_of_ins tid (locs, nr) ins] builds a sequence of HW instructions from a single generic instruction [ins]. The current thread identifier is [tid], the correspondence between locations and registers is in [locs], [nr] is the next register to use, and [nl] is the next label to use. *)
-let hw_ins_of_ins arch_params tid state il = function
-  | Litmus.Load (r_dst, le), attrs as ins ->
+let hw_ins_of_ins arch_params tid state il ins =
+  match ins with
+  | Litmus.Load (r_dst, le), attrs
+    | Litmus.LoadLink (r_dst, le, _, _), attrs ->
      let state, il_exp, l, r_off = hw_ins_of_exp tid state le in
      let state, r_src = get_fresh_reg tid state in
      let state = add_to_loc_map (l, r_src) state in
@@ -205,8 +208,7 @@ let hw_ins_of_ins arch_params tid state il = function
          [mk_LD attrs (r_dst, r_src, r_off, Some l)]
      in
      state, il @ il_exp @ il_ld
-  | Litmus.Store (le, ve), attrs as ins
-       when List.mem "X" attrs && arch_params.Litmus_HW.use_status_reg ->
+  | Litmus.StoreCnd (le, ve), attrs when arch_params.Litmus_HW.use_status_reg ->
      let state, il_exp1, l, r_off_a = hw_ins_of_exp tid state le in
      let state, il_exp2, v, r_off_d = hw_ins_of_exp tid state ve in
      let state, r_src = get_fresh_reg tid state in
@@ -228,8 +230,7 @@ let hw_ins_of_ins arch_params tid state il = function
      in
      let state, il_st_prologue = mk_st_excl_prologue arch_params tid state il in
      state, il @ il_exp1 @ il_exp2 @ il_st @ il_st_prologue
-  | Litmus.Store (le, ve), attrs as ins
-       when List.mem "X" attrs && not arch_params.Litmus_HW.use_status_reg ->
+  | Litmus.StoreCnd (le, ve), attrs when not arch_params.Litmus_HW.use_status_reg ->
      let state, il_exp1, l, r_off_a = hw_ins_of_exp tid state le in
      let state, il_exp2, v, r_off_d = hw_ins_of_exp tid state ve in
      let state, r_src = get_fresh_reg tid state in
@@ -248,7 +249,7 @@ let hw_ins_of_ins arch_params tid state il = function
      in
      let state, il_st_prologue = mk_st_excl_prologue arch_params tid state il in
      state, il @ il_exp1 @ il_exp2 @ il_st @ il_st_prologue
-  | Litmus.Store (le, ve), attrs when not (List.mem "X" attrs) ->
+  | Litmus.Store (le, ve), attrs ->
      let state, il_exp1, l, r_off_a = hw_ins_of_exp tid state le in
      let state, il_exp2, v, r_off_d = hw_ins_of_exp tid state ve in
      let state, r_src = get_fresh_reg tid state in
