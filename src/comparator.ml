@@ -53,7 +53,8 @@ let run_alloy alloystar_dir xml_dir comparator_script iter solver quiet =
   let solver_dir = MyFilename.concat [alloystar_dir; os] in
   let cmd =
     String.concat " "
-      ["java";
+      [sprintf "PATH=%s/%s:$PATH" alloystar_dir os;
+       "java";
        "-Xmx" ^ java_heap_size;
        "-Djava.library.path=" ^ solver_dir;
        "-Dout=" ^ xml_dir;

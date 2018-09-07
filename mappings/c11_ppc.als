@@ -1,5 +1,5 @@
-open ../../archs/fences_as_relations/exec_C[SE] as SW
-open ../../archs/fences_as_relations/exec_ppc[HE] as HW
+open ../archs/exec_C[SE] as SW
+open ../archs/exec_ppc[HE] as HW
 
 
 

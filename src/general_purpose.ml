@@ -66,3 +66,5 @@ let iden x = x
 
 (** [opt a k None = a] and [opt a k (Some b) = k b] *)
 let opt a k = function None -> a | Some x -> k x
+
+let the = function None -> failwith "Expected Some here" | Some x -> x
