@@ -178,13 +178,16 @@ let pp oc lt =
     fprintf oc "#endif // NO_PTHREADS\n";
   in
 
+  (* Print an include *)
+  let pp_incl oc = fprintf oc "#include <%s.h>\n" in
+
   (* Include standard headers. *)
   fprintf oc "// Hint: try compiling with gcc -std=c11 <name_of_file.c>\n";
   fprintf oc "\n";
-  fprintf oc "#include <stdio.h>\n";
-  fprintf oc "#include <stdatomic.h>\n";
+  pp_incl oc "stdio";
+  pp_incl oc "stdatomic";
   fprintf oc "\n";
-  if_pthreads (fun () -> fprintf oc "#include <pthread.h>\n");
+  if_pthreads (fun () -> pp_incl oc "pthread");
   fprintf oc "\n";
 
   (* Declare global variables. *)
@@ -202,9 +205,7 @@ let pp oc lt =
   List.iter (fprintf oc "int %a = 0;\n" pp_reg) regs;
   fprintf oc "\n";
 
-  let pp_thd_name oc =
-    fprintf oc "P%d"
-  in
+  let pp_thd_name oc = fprintf oc "P%d" in
 
   (* Print a function for each thread. *)
   let pp_thd tid cs =
@@ -222,9 +223,7 @@ let pp oc lt =
   let pp_pthread_harness () =
     let tids = List.mapi (fun i _ -> i) lt.Litmus.thds in
 
-    let pp_thd_wrapper_name oc =
-      fprintf oc "thread%d"
-    in
+    let pp_thd_wrapper_name oc = fprintf oc "thread%d" in
 
     (* Print a pthread thread stub for each thread. *)
     let pp_thd_wrapper tid =
