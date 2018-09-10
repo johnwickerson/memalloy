@@ -28,7 +28,7 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 open! Format
 open! General_purpose
        
-type output_type = Dot | Als | Lit
+type output_type = Dot | Als | Lit | C
 
 let als_sub = ref false
 let als_super = ref false
@@ -40,6 +40,7 @@ let get_args () =
   let output_dot = ref false in
   let output_als = ref false in
   let output_lit = ref false in
+  let output_c = ref false in
   let arch = ref None in
   let speclist =
     ["-Tdot", Arg.Set output_dot, "Produce .dot output";
@@ -47,7 +48,9 @@ let get_args () =
      "-Tals", Arg.Set output_als, "Produce .als constraints";
      
      "-Tlit", Arg.Set output_lit, "Produce litmus test";
-     
+
+     "-Tc", Arg.Set output_c, "Produce executable C test";
+
      "-arch", Arg.String (set_option_ref arch),
      "Optional: execution type";
      
@@ -81,10 +84,11 @@ let get_args () =
   let out_path =
     try MyList.the !out_path with Not_found -> bad_arg ()
   in
-  let out_type = match !output_dot, !output_als, !output_lit with
-    | true, false, false -> Dot
-    | false, true, false -> Als
-    | false, false, true -> Lit
+  let out_type = match !output_dot, !output_als, !output_lit, !output_c with
+    | true, false, false, false -> Dot
+    | false, true, false, false -> Als
+    | false, false, true, false -> Lit
+    | false, false, false, true -> C
     | _ -> bad_arg ()
   in
   xml_path, out_path, out_type, !arch
@@ -161,15 +165,25 @@ let run xml_path out_path out_type arch =
 		fprintf fmtr "%a\n" Mk_ppc.pp ppc_lt
 	     | _ -> fprintf fmtr "%a\n" Litmus.pp lt)
        end
+    | C ->
+       assert (Filename.check_suffix out_path ".c");
+       begin
+         (* TODO: share this with the Lit stage? *)
+	 match exec with
+	 | Soln.Single x ->
+	    let lt = Mk_litmus.litmus_of_execution x in
+            fprintf fmtr "%a\n" Litmus_C.pp lt
+         | _ -> assert false
+       end
   end;
   close_out oc
-  
+
 let main () =
   let xml_path, out_path, out_type, arch = get_args () in
   let arch = opt Archs.Basic Archs.parse_arch arch in
   run xml_path out_path out_type arch;
   exit 0
-	    
+
 let _ =
   if MyStr.endswith Sys.argv.(0) "gen" then
     main ()
