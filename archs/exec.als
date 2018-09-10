@@ -79,9 +79,6 @@ sig Exec {
   // the atom relation relates a read/write pair in program order
   atom in (R->W) & sb & sloc
     
-  // there are no single-event RMWs
-  no (R&W)
-    
 }
 
 pred withinit[X:Exec] {
