@@ -33,6 +33,7 @@ type config = {
     also_satisfies_paths : string list;
     violates_paths : string list;
     withinit : bool;
+    omitdeadness : bool;
     hints : string list;
     eventcount : int;
     eventcount2 : int;
@@ -53,6 +54,7 @@ let default_config = {
     also_satisfies_paths = [];
     violates_paths = [];
     withinit = false;
+    omitdeadness = false;
     hints = [];
     eventcount = 0;
     eventcount2 = 0;
@@ -104,8 +106,9 @@ let pp_violated_models indent e exec_sig config oc =
       fun i _ ->
       fprintf oc "%snot(N%d/consistent[%s,%s])\n"
         (mk_indent indent) (i+1) e exec_sig;
-      fprintf oc "%sN%d/dead[%s,%s]\n\n"
-        (mk_indent indent) (i+1) e exec_sig
+      if not config.omitdeadness then
+        fprintf oc "%sN%d/dead[%s,%s]\n\n"
+          (mk_indent indent) (i+1) e exec_sig
     ) config.violates_paths
 
 let pp_satisfied_models indent e exec_sig config oc =
@@ -260,6 +263,7 @@ let satisfies_paths = ref default_config.satisfies_paths
 let also_satisfies_paths = ref default_config.also_satisfies_paths
 let violates_paths = ref default_config.violates_paths
 let withinit = ref default_config.withinit
+let omitdeadness = ref default_config.omitdeadness
 let hints = ref default_config.hints
 let eventcount = ref default_config.eventcount
 let eventcount2 = ref default_config.eventcount2
@@ -327,6 +331,9 @@ let speclist =
    
    "-withinit", Arg.Set withinit,
    "Option: explicit initial writes";
+
+   "-omitdeadness", Arg.Set omitdeadness,
+   "Option: omit deadness predicates";
    
    "-fencerels", Arg.Set Global_options.fencerels,
    "Option: fences as relations";
@@ -380,6 +387,7 @@ let build_config () =
     also_satisfies_paths = !also_satisfies_paths;
     violates_paths = !violates_paths;
     withinit = !withinit;
+    omitdeadness = !omitdeadness;
     hints = !hints;
     eventcount = !eventcount;
     eventcount2 = !eventcount2;
