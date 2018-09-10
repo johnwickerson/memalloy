@@ -148,7 +148,7 @@ let run xml_path out_path out_type arch =
 		let x86_lt = Mk_x86.x86_of_lit name lt in
 		fprintf fmtr "%a\n" Mk_x86.pp x86_lt
              | Archs.C ->
-                fprintf fmtr "%a\n" Litmus_C.pp lt
+                fprintf fmtr "%a\n" (Litmus_C.pp name LitmusC) lt
 	     | _ -> fprintf fmtr "%a\n" Litmus.pp lt)
 	 | Soln.Double (x,y,pi) ->
 	    let lt_src,lt =
@@ -167,12 +167,15 @@ let run xml_path out_path out_type arch =
        end
     | C ->
        assert (Filename.check_suffix out_path ".c");
+       let name =
+         Filename.chop_extension (Filename.basename out_path)
+       in
        begin
          (* TODO: share this with the Lit stage? *)
 	 match exec with
 	 | Soln.Single x ->
 	    let lt = Mk_litmus.litmus_of_execution x in
-            fprintf fmtr "%a\n" Litmus_C.pp lt
+            fprintf fmtr "%a\n" (Litmus_C.pp name ExecutableC11) lt
          | _ -> assert false
        end
   end;

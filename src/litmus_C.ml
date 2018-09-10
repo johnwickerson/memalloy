@@ -28,6 +28,12 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 open! Format
 open! General_purpose
 
+type c_dialect =
+  | (** An executable form of C using pthreads. *)
+    ExecutableC11
+  | (** A stripped-back form of C close to the herd/litmus format. *)
+    LitmusC
+
 let pp_reg oc (tid,reg) =
   fprintf oc "t%dr%d" tid reg
 
@@ -165,30 +171,47 @@ let rec extract_regs regs = function
   | Litmus.Basic _ -> regs
   | Litmus.If (r,_,cs) -> MySet.union [r] (List.fold_left extract_regs regs cs)
 
-let pp oc lt =
+let pp name dialect oc lt =
 
   let atomic_locs, nonatomic_locs = partition_locs lt in
   assert (MySet.equal (atomic_locs @ nonatomic_locs) lt.Litmus.locs);
 
-  (* Hoists a piece of pthreads harness code in an include guard, so that
-     we can disable it if needed. *)
+  (* Handles a pretty-printing function [thunk] that will emit pthreads
+     harness code. *)
   let if_pthreads thunk =
-    fprintf oc "#ifndef NO_PTHREADS\n";
-    thunk ();
-    fprintf oc "#endif // NO_PTHREADS\n";
+    match dialect with
+    | ExecutableC11 ->
+       fprintf oc "#ifndef NO_PTHREADS\n";
+       thunk ();
+       fprintf oc "#endif // NO_PTHREADS\n";
+    | LitmusC -> ()
   in
 
   (* Print an include *)
   let pp_incl oc = fprintf oc "#include <%s.h>\n" in
 
-  (* Include standard headers. *)
-  fprintf oc "// Hint: try compiling with gcc -std=c11 <name_of_file.c>\n";
-  fprintf oc "\n";
-  pp_incl oc "stdio";
-  pp_incl oc "stdatomic";
-  fprintf oc "\n";
-  if_pthreads (fun () -> pp_incl oc "pthread");
-  fprintf oc "\n";
+  let nl oc = fprintf oc "\n" in
+
+  let preamble oc =
+    match dialect with
+    | ExecutableC11 ->
+       fprintf oc "// Hint: try compiling with gcc -std=c11 <%s.c>\n" name;
+       nl oc;
+       pp_incl oc "stdio";
+       pp_incl oc "stdatomic";
+       nl oc;
+       if_pthreads (fun () -> pp_incl oc "pthread");
+    | LitmusC ->
+       (* TODO: do we need to handle special characters in the name? *)
+       fprintf oc "C %s\n" name;
+       fprintf oc "// Hint: try simulating with herd <%s.litmus>\n" name;
+       nl oc;
+       fprintf oc "// WARNING: C litmus output is experimental!\n";
+       nl oc;
+       fprintf oc "{}"
+  in
+  preamble oc;
+  nl oc;
 
   (* Declare global variables. *)
   fprintf oc "// Declaring global variables.\n";
