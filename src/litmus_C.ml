@@ -238,6 +238,12 @@ let pp name dialect oc lt =
   let registers_are_global =
     dialect = ExecutableC11
   in
+  (* In dialects such as litmus, we pass each shared variable to each
+     thread as a pointer, instead of making them global.
+     TODO: should we always pass the shared variables as pointers? *)
+  let pass_locations_by_pointer =
+    dialect = LitmusC
+  in
 
   let pp_regs oc i =
     List.iter (fprintf oc "%aint %a = 0;\n" mk_indent i pp_reg)
@@ -253,12 +259,24 @@ let pp name dialect oc lt =
       nl oc
     end;
 
+  (* Print the argument vector for a thread function. *)
+  let pp_argv oc () =
+    if pass_locations_by_pointer
+    then
+      let locs =
+        (List.map (fun x -> ("atomic_int", x)) atomic_locs)
+        @ (List.map (fun x -> ("int", x)) nonatomic_locs)
+      in
+      let pp_arg oc (t,n) = fprintf oc "%s *%a" t MyLocation.pp n in
+      MyList.pp_gen ", " pp_arg oc locs
+  in
+
   let pp_thd_name oc = fprintf oc "P%d" in
 
   (* Print a function for each thread. *)
   let pp_thd tid cs =
     fprintf oc "// Thread %d\n" tid;
-    fprintf oc "void %a() {\n" pp_thd_name tid;
+    fprintf oc "void %a(%a) {\n" pp_thd_name tid pp_argv ();
     if List.exists contains_regless_cas cs then
       fprintf oc "  int expected;\n";
 
