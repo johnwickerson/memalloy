@@ -297,11 +297,15 @@ let pp name dialect oc lt =
   if registers_global_in dialect
   then
     begin
-      fprintf oc "// Declaring thread-local variables at global scope\n";
-      fprintf oc "// so they can be checked in the postcondition.\n";
-      let regs = List.fold_left (List.fold_left extract_regs) [] lt.Litmus.thds in
-      pp_regs dialect oc 0 regs;
-      nl oc
+      match (List.fold_left (List.fold_left extract_regs) [] lt.Litmus.thds) with
+      | [] -> ()
+      | regs ->
+         begin
+           fprintf oc "// Declaring thread-local variables at global scope\n";
+           fprintf oc "// so they can be checked in the postcondition.\n";
+           pp_regs dialect oc 0 regs;
+           nl oc
+         end;
     end;
 
   (* Print the argument vector for a thread function. *)
