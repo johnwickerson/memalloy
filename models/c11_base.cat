@@ -12,11 +12,13 @@ Tyler Sorensen and George A. Constantinides (POPL'17).
 
 include "basic.cat"
 
-let myco = co \ (NAL * EV) \ (EV * NAL)
+let myco = co \ (NAL * EV) \ (EV * NAL) (* "co \ (NAL * EV)" should suffice *)
 let mycoe = myco \ sthd
 let mycoi = myco & sthd
 let unforced_myco =
   (imm(myco); imm(myco); (imm(myco))^-1) \ (rf?; (po; (rf^-1)?)?)
+
+let co_na = co & (NAL * EV) (* co on non-atomic locations *)
 
 let fsb = [F]; po
 let sbf = po; [F]
@@ -29,6 +31,9 @@ let sw = ([REL]; fsb?; [A & W]; rs; rf; [R & A]; sbf?; [ACQ]) \ thd
 
 (* happens before *)
 let hb = (po | sw)+
+
+(* axiom to ensure non-atomic locations are read correctly in postcondition *)
+acyclic (co_na | hb) as NonatomicCo
 
 let hbl = hb & loc
 

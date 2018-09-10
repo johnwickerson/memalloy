@@ -86,14 +86,7 @@ let run tests =
   let tests = List.mapi parse_test tests in
   let tests = List.filter (fun t -> not t.slow || !withslow) tests in
   let run_test t =
-    let events2 = match t.events2 with
-      | None -> ""
-      | Some e2 -> sprintf " -events2 %d" e2
-    in
-    let cmd =
-      sprintf "%s -events %d -solver %s%s -batch"
-        t.base_cmd t.events t.solver events2
-    in
+    let cmd = sprintf "%s -batch" t.base_cmd in
     printf "%s: Running test %d (%s):\n%!" (MyTime.now ()) t.id t.name;
     printf "`%s`\n%!" cmd;
     let ic = Unix.open_process_in cmd in
