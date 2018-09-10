@@ -194,21 +194,40 @@ let pp oc lt =
   List.iter (fprintf oc "int %a = 0;\n" pp_reg) regs;
   fprintf oc "\n";
 
+  let tids = List.mapi (fun i _ -> i) lt.Litmus.thds in
+
+  let pp_thd_name oc =
+    fprintf oc "P%d"
+  in
+
   (* Print a function for each thread. *)
   let pp_thd tid cs =
     fprintf oc "// Thread %d\n" tid;
-    fprintf oc "void *thread%d (void *unused) {\n" tid;
+    fprintf oc "void %a() {\n" pp_thd_name tid;
     if List.exists contains_regless_cas cs then
       fprintf oc "  int expected;\n";
     List.iter (pp_component 1 oc) cs;
-    fprintf oc "  pthread_exit(0);\n";
     fprintf oc "}\n";
     fprintf oc "\n";
   in
   List.iteri pp_thd lt.Litmus.thds;
 
-  let tids = List.mapi (fun i _ -> i) lt.Litmus.thds in
-  
+  let pp_thd_wrapper_name oc =
+    fprintf oc "thread%d"
+  in
+
+  (* Print a pthread thread stub for each thread. *)
+  let pp_thd_wrapper tid =
+    fprintf oc "// Thread %d: pthread wrapper\n" tid;
+    fprintf oc "void *%a(void *unused) {\n" pp_thd_wrapper_name tid;
+    fprintf oc "  %a();\n" pp_thd_name tid;
+    fprintf oc "  pthread_exit(0);\n";
+    fprintf oc "}\n";
+    fprintf oc "\n";
+  in
+  List.iter pp_thd_wrapper tids;
+
+
   (* Begin main() routine. *)
   fprintf oc "int main() {\n";
   fprintf oc "\n";
