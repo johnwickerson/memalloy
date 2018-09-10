@@ -1,7 +1,8 @@
 ./comparator -desc "c11_simp_not_sra_5ev" -arch C -violates models/c11_sra.cat -satisfies models/c11_simp.cat -satisfies models/c11_relacq.cat -satisfies models/c11_normws.cat -satisfies models/c11_simplepost.cat -events 5 -expect 0
 ./comparator -desc "c11_simp_not_sra_6ev" -arch C -violates models/c11_sra.cat -satisfies models/c11_simp.cat -satisfies models/c11_relacq.cat -satisfies models/c11_normws.cat -satisfies models/c11_simplepost.cat -events 6 -expect 1
 ./comparator -desc "c11_simp_not_swrf_7ev" -arch C -violates models/c11_swrf.cat -satisfies models/c11_simp.cat -events 7 -expect 0 #slow 
-./comparator -desc "c11_simp_not_swrf_12ev" -arch C -violates models/c11_swrf.cat -satisfies models/c11_simp.cat -events 12 -expect 1 -solver plingeling #slow
+./comparator -desc "c11_simp_not_swrf_12ev_hint" -arch C -violates models/c11_swrf.cat -satisfies models/c11_simp.cat -events 12 -solver plingeling -hint execution_hints/nienhuis_example.als -expect 1
+./comparator -desc "c11_simp_not_swrf_12ev" -arch C -violates models/c11_swrf.cat -satisfies models/c11_simp.cat -events 12 -solver plingeling -expect 1 #slow
 ./comparator -desc "c11_orig_not_simp_4ev" -arch C -violates models/c11_simp.cat -satisfies models/c11_orig.cat -events 4 -expect 0
 ./comparator -desc "c11_orig_not_simp_5ev" -arch C -violates models/c11_simp.cat -satisfies models/c11_orig.cat -events 5 -expect 1
 ./comparator -desc "x86_not_mca" -arch X86 -fencerels -violates models/mca_x86.cat -satisfies models/x86tso.cat -events 7 -expect 0 -solver plingeling
