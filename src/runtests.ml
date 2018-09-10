@@ -55,7 +55,7 @@ type test_result = {
 let withslow = ref false
     
 let run tests =
-  let parse_test id t =
+  let parse_test i t =
     let name = ref None in
     let events = ref None in
     let events2 = ref None in
@@ -75,13 +75,14 @@ let run tests =
          slow := true; parse_args args
       | _ :: args -> parse_args args
     in
-    parse_args (Str.split (Str.regexp "[ \t]+") t);
+    let whitespace = Str.regexp "[ \t]+" in
+    parse_args (Str.split whitespace t);
     let name = the !name in
     let events = the !events in
     let events2 = !events2 in
     let solver = !solver in
     let slow = !slow in
-    { id; name; solver; events; events2; base_cmd = t; slow; }
+    { id = i+1; name; solver; events; events2; base_cmd = t; slow; }
   in
   let tests = List.mapi parse_test tests in
   let tests = List.filter (fun t -> not t.slow || !withslow) tests in
@@ -122,7 +123,7 @@ let run tests =
   in
   let results = List.map run_test tests in
   let print_result (t,r) =
-    let name = MyStr.pad_right 28 t.name in
+    let name = MyStr.pad_right 30 t.name in
     let solver = match t.solver with
       | "plingeling" -> "P"
       | "glucose" -> "G"
@@ -143,9 +144,13 @@ let run tests =
     printf "%2d | %s| %s| %s| %s| %s| %4d%s\n"
       t.id name solver events t_enc t_sol r.found passed
   in
-  printf "Id | Name                        | Solver | Events | T_enc   | T_sol   | Found\n";
-  printf "---+-----------------------------+--------+--------+---------+---------+------\n";
-  List.iter print_result results
+  printf "Id | Name                          | Solver | Events | T_enc   | T_sol   | Found\n";
+  printf "---+-------------------------------+--------+--------+---------+---------+------\n";
+  List.iter print_result results;
+  if (List.for_all (fun (_,r) -> r.passed) results) then
+    exit 0
+  else
+    exit 1
   
 let main () =
   let tests_path = ref [] in
