@@ -165,18 +165,26 @@ let rec extract_regs regs = function
   | Litmus.Basic _ -> regs
   | Litmus.If (r,_,cs) -> MySet.union [r] (List.fold_left extract_regs regs cs)
 
-
 let pp oc lt =
 
   let atomic_locs, nonatomic_locs = partition_locs lt in
   assert (MySet.equal (atomic_locs @ nonatomic_locs) lt.Litmus.locs);
 
+  (* Hoists a piece of pthreads harness code in an include guard, so that
+     we can disable it if needed. *)
+  let if_pthreads thunk =
+    fprintf oc "#ifndef NO_PTHREADS\n";
+    thunk ();
+    fprintf oc "#endif // NO_PTHREADS\n";
+  in
+
   (* Include standard headers. *)
   fprintf oc "// Hint: try compiling with gcc -std=c11 <name_of_file.c>\n";
   fprintf oc "\n";
   fprintf oc "#include <stdio.h>\n";
-  fprintf oc "#include <pthread.h>\n";
   fprintf oc "#include <stdatomic.h>\n";
+  fprintf oc "\n";
+  if_pthreads (fun () -> fprintf oc "#include <pthread.h>\n");
   fprintf oc "\n";
 
   (* Declare global variables. *)
@@ -194,8 +202,6 @@ let pp oc lt =
   List.iter (fprintf oc "int %a = 0;\n" pp_reg) regs;
   fprintf oc "\n";
 
-  let tids = List.mapi (fun i _ -> i) lt.Litmus.thds in
-
   let pp_thd_name oc =
     fprintf oc "P%d"
   in
@@ -212,51 +218,56 @@ let pp oc lt =
   in
   List.iteri pp_thd lt.Litmus.thds;
 
-  let pp_thd_wrapper_name oc =
-    fprintf oc "thread%d"
-  in
+  (* Print the test harness, using pthreads. *)
+  let pp_pthread_harness () =
+    let tids = List.mapi (fun i _ -> i) lt.Litmus.thds in
 
-  (* Print a pthread thread stub for each thread. *)
-  let pp_thd_wrapper tid =
-    fprintf oc "// Thread %d: pthread wrapper\n" tid;
-    fprintf oc "void *%a(void *unused) {\n" pp_thd_wrapper_name tid;
-    fprintf oc "  %a();\n" pp_thd_name tid;
-    fprintf oc "  pthread_exit(0);\n";
-    fprintf oc "}\n";
+    let pp_thd_wrapper_name oc =
+      fprintf oc "thread%d"
+    in
+
+    (* Print a pthread thread stub for each thread. *)
+    let pp_thd_wrapper tid =
+      fprintf oc "// Thread %d: pthread wrapper\n" tid;
+      fprintf oc "void *%a(void *unused) {\n" pp_thd_wrapper_name tid;
+      fprintf oc "  %a();\n" pp_thd_name tid;
+      fprintf oc "  pthread_exit(0);\n";
+      fprintf oc "}\n";
+      fprintf oc "\n";
+    in
+    List.iter pp_thd_wrapper tids;
+
+    (* Begin main() routine. *)
+    fprintf oc "int main() {\n";
     fprintf oc "\n";
+
+    (* Declare thread-id variables. *)
+    fprintf oc "  // Declaring thread-id variables.\n";
+    List.iter (fprintf oc "  pthread_t tid%d;\n") tids;
+    fprintf oc "\n";
+
+    (* Launch threads. *)
+    fprintf oc "  // Launching threads.\n";
+    List.iter (fun tid ->
+        fprintf oc "  pthread_create(&tid%d, NULL, thread%d, NULL);\n" tid tid
+      ) tids;
+    fprintf oc "\n";
+
+    (* Join threads. *)
+    fprintf oc "  // Joining threads.\n";
+    List.iter (fprintf oc "  pthread_join(tid%d, NULL);\n") tids;
+    fprintf oc "\n";
+
+    (* Check postcondition. *)
+    let pp_cnstrnt oc (a,v) = match a with
+      | Litmus.Reg r -> fprintf oc "%a == %d" pp_reg r v
+      | Litmus.Loc l -> fprintf oc "%a == %d" MyLocation.pp l v
+    in
+    fprintf oc "  int result = %a;\n"
+            (MyList.pp_gen " && " pp_cnstrnt) lt.Litmus.post;
+    fprintf oc "  printf(\"Result: %%d\\n\", result);\n";
+    fprintf oc "  return (result);\n";
+    fprintf oc "\n";
+    fprintf oc "}\n"
   in
-  List.iter pp_thd_wrapper tids;
-
-
-  (* Begin main() routine. *)
-  fprintf oc "int main() {\n";
-  fprintf oc "\n";
-
-  (* Declare thread-id variables. *)
-  fprintf oc "  // Declaring thread-id variables.\n";
-  List.iter (fprintf oc "  pthread_t tid%d;\n") tids;
-  fprintf oc "\n";
-
-  (* Launch threads. *)
-  fprintf oc "  // Launching threads.\n";
-  List.iter (fun tid ->
-      fprintf oc "  pthread_create(&tid%d, NULL, thread%d, NULL);\n" tid tid
-    ) tids;
-  fprintf oc "\n";
-
-  (* Join threads. *)
-  fprintf oc "  // Joining threads.\n";
-  List.iter (fprintf oc "  pthread_join(tid%d, NULL);\n") tids;
-  fprintf oc "\n";
-
-  (* Check postcondition. *)
-  let pp_cnstrnt oc (a,v) = match a with
-    | Litmus.Reg r -> fprintf oc "%a == %d" pp_reg r v
-    | Litmus.Loc l -> fprintf oc "%a == %d" MyLocation.pp l v
-  in
-  fprintf oc "  int result = %a;\n"
-    (MyList.pp_gen " && " pp_cnstrnt) lt.Litmus.post;
-  fprintf oc "  printf(\"Result: %%d\\n\", result);\n";
-  fprintf oc "  return (result);\n";
-  fprintf oc "\n";
-  fprintf oc "}\n"  
+  if_pthreads pp_pthread_harness
