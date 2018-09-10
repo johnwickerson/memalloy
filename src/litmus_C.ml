@@ -221,12 +221,26 @@ let pp name dialect oc lt =
   List.iter (fprintf oc "int %a = 0;\n" MyLocation.pp) nonatomic_locs;
   fprintf oc "\n";
 
-  (* Declare thread-local registers as global too, so they can be checked in the postcondition. *)
-  fprintf oc "// Declaring thread-local variables at global scope\n";
-  fprintf oc "// so they can be checked in the postcondition.\n";
-  let regs = List.fold_left (List.fold_left extract_regs) [] lt.Litmus.thds in
-  List.iter (fprintf oc "int %a = 0;\n" pp_reg) regs;
-  fprintf oc "\n";
+  (* If we're extracting an executable C program, declare thread-local
+     registers as global too, so they can be checked in the
+     postcondition. *)
+  let registers_are_global =
+    dialect = ExecutableC11
+  in
+
+  let pp_regs oc i =
+    List.iter (fprintf oc "%aint %a = 0;\n" mk_indent i pp_reg)
+  in
+
+  if registers_are_global
+  then
+    begin
+      fprintf oc "// Declaring thread-local variables at global scope\n";
+      fprintf oc "// so they can be checked in the postcondition.\n";
+      let regs = List.fold_left (List.fold_left extract_regs) [] lt.Litmus.thds in
+      pp_regs oc 0 regs;
+      nl oc
+    end;
 
   let pp_thd_name oc = fprintf oc "P%d" in
 
@@ -236,9 +250,17 @@ let pp name dialect oc lt =
     fprintf oc "void %a() {\n" pp_thd_name tid;
     if List.exists contains_regless_cas cs then
       fprintf oc "  int expected;\n";
+
+    if not registers_are_global then
+      begin
+        let regs = List.fold_left extract_regs [] cs in
+        pp_regs oc 1 regs;
+        nl oc
+      end;
+
     List.iter (pp_component 1 oc) cs;
     fprintf oc "}\n";
-    fprintf oc "\n";
+    nl oc
   in
   List.iteri pp_thd lt.Litmus.thds;
 
