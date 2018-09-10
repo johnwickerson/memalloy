@@ -34,31 +34,76 @@ type c_dialect =
   | (** A stripped-back form of C close to the herd/litmus format. *)
     LitmusC
 
-let pp_reg oc (tid,reg) =
-  fprintf oc "t%dr%d" tid reg
+(** If we're extracting an executable C program, declare thread-local
+    registers as global too, so they can be checked in the
+    postcondition. *)
+let registers_global_in dialect =
+  dialect = ExecutableC11
+
+(** In dialects such as litmus, we pass each shared variable to each
+   thread as a pointer, instead of making them global. *)
+let pass_locations_by_pointer_in dialect =
+  (* TODO: should we always pass the shared variables as pointers? *)
+  dialect = LitmusC
+
+(** [pp_reg] pretty-prints a register [reg] in thread ID [tid].
+
+    If the [dialect] has global registers, each register is named
+    'tXrY' where x is [tid] and y is [reg].
+
+    Otherwise, the Boolean [fq] tells us whether we need to qualify
+    the register with its thread ID (eg, in Litmus postconditions). *)
+let pp_reg dialect fq oc (tid,reg) =
+  match (registers_global_in dialect), fq with
+  | true, _ -> fprintf oc "t%dr%d" tid reg
+  | false, true ->
+     (* Note: this is Litmus-specific syntax! *)
+     fprintf oc "%d:r%d" tid reg
+  | false, false -> fprintf oc "r%d" reg
 
 (** [pp_cas_reg] takes an optional register from a CAS instruction.
-    If it exists, [pp_cas_reg] returns the result of [pp_reg]; else,
-    it emits a reference to 'expected'. *)
-let pp_cas_reg oc = function
-  | Some rr -> pp_reg oc rr
+   If it exists, [pp_cas_reg] returns the result of [pp_reg]; else, it
+   emits a reference to 'expected'. *)
+let pp_cas_reg dialect oc = function
+  | Some rr -> pp_reg dialect false oc rr
   | None    -> fprintf oc "expected"
 
-
-let rec pp_expr k oc = function
+let rec pp_expr dialect k oc = function
   | Litmus.Just x -> k oc x
-  | Litmus.Madd (e,r) -> fprintf oc "%a + 0*%a" (pp_expr k) e pp_reg r
+  | Litmus.Madd (e,r) ->
+     fprintf oc "%a + 0*%a"
+             (pp_expr dialect k) e
+             (pp_reg dialect false) r
 
-(** [pp_cas oc mo obj exp_reg exp des] prints a compare-and-exchange on
-    location [obj], from [exp] to [des].  It loads [exp] into either register
-    [exp_reg] (if [exp_reg = Some]) or the 'expected' temporary variable
-    (if not). It uses memory order [mo] for success, and relaxed for fail. *)
-let pp_cas oc mo obj exp_reg exp des =
-  fprintf oc "%a = %a; " pp_cas_reg exp_reg Value.pp exp;
-  fprintf oc "/* returns bool */ atomic_compare_exchange_strong_explicit(&%a, &%a, %a, %s, memory_order_relaxed)"
-    (pp_expr MyLocation.pp) obj
-    pp_cas_reg exp_reg
-    (pp_expr Value.pp) des
+(** [pp_loc_ref dialect oc le] prints a reference to a location expression
+   [le] to formatter [oc], prepending an address-of operator & if the
+   [dialect] of C we're emitting needs one. *)
+let pp_loc_ref dialect oc le =
+  if not (pass_locations_by_pointer_in dialect) then fprintf oc "&";
+  fprintf oc "%a" (pp_expr dialect MyLocation.pp) le
+
+(** [pp_loc_ral dialect oc le] prints a value or lvalue use of a
+   location expression [le] to formatter [oc], prepending an
+   indirection operator * if the [dialect] of C we're emitting needs
+   one. *)
+let pp_loc_val dialect oc le =
+  if pass_locations_by_pointer_in dialect then fprintf oc "*";
+  fprintf oc "%a" (pp_expr dialect MyLocation.pp) le
+
+(** [pp_cas dialect oc mo obj exp_reg exp des] prints a
+   compare-and-exchange on location [obj], from [exp] to [des].  It
+   loads [exp] into either register [exp_reg] (if [exp_reg = Some]) or
+   the 'expected' temporary variable (if not). It uses memory order
+   [mo] for success, and relaxed for fail. *)
+let pp_cas dialect oc mo obj exp_reg exp des =
+  fprintf oc "%a = %a; " (pp_cas_reg dialect) exp_reg Value.pp exp;
+  (* TODO: this needs some more work to get right in LitmusC:
+     we shouldn't emit &expr_reg for litmus, but this'd need us to emit
+     the register as a pointer somehow. *)
+  fprintf oc "/* returns bool */ atomic_compare_exchange_strong_explicit(%a, &%a, %a, %s, memory_order_relaxed)"
+    (pp_loc_ref dialect) obj
+    (pp_cas_reg dialect) exp_reg
+    (pp_expr dialect Value.pp) des
     mo
 
 let get_mo attrs =
@@ -69,27 +114,33 @@ let get_mo attrs =
     | false, false, true -> "memory_order_release"
     | false, false, false -> "memory_order_relaxed"
 
-let pp_instr oc = function
+let pp_instr dialect oc = function
   | Litmus.Load (r,le), attrs ->
      if List.mem "A" attrs then
        let mo = get_mo attrs in
-       fprintf oc "%a = atomic_load_explicit(&%a, %s)"
-         pp_reg r (pp_expr MyLocation.pp) le mo
+       fprintf oc "%a = atomic_load_explicit(%a, %s)"
+               (pp_reg dialect false) r
+               (pp_loc_ref dialect) le
+               mo
      else
        fprintf oc "%a = %a"
-         pp_reg r (pp_expr MyLocation.pp) le
+               (pp_reg dialect false) r
+               (pp_loc_val dialect) le
   | Litmus.LoadLink (r, obj, exp, des), attrs ->
      (* We model LL/SC as a CAS in C11 witnesses. *)
      let mo = get_mo attrs in
-     pp_cas oc mo obj (Some r) exp des
+     pp_cas dialect oc mo obj (Some r) exp des
   | Litmus.Store (le,ve), attrs ->
      if List.mem "A" attrs then
        let mo = get_mo attrs in
-       fprintf oc "atomic_store_explicit(&%a, %a, %s)"
-         (pp_expr MyLocation.pp) le (pp_expr Value.pp) ve mo
+       fprintf oc "atomic_store_explicit(%a, %a, %s)"
+               (pp_loc_ref dialect) le
+               (pp_expr dialect Value.pp) ve
+               mo
      else
        fprintf oc "%a = %a"
-         (pp_expr MyLocation.pp) le (pp_expr Value.pp) ve
+               (pp_loc_val dialect) le
+               (pp_expr dialect Value.pp) ve
   | Litmus.StoreCnd _, _ ->
      (* We've already emitted a CAS for the LoadLink, so we don't emit
         a separate StoreCnd instruction.  (We still print _something_,
@@ -97,7 +148,7 @@ let pp_instr oc = function
      fprintf oc "// elided store-conditional instruction"
   | Litmus.Cas (obj,exp,des), attrs ->
      let mo = get_mo attrs in
-     pp_cas oc mo obj None exp des
+     pp_cas dialect oc mo obj None exp des
 
   | Litmus.Fence, attrs ->
      let mo = get_mo attrs in
@@ -114,20 +165,28 @@ let semicolon_needed = function
   | Litmus.StoreCnd _ -> false
   | _ -> true
 
-let pp_instr_and_semicolon oc b =
-  pp_instr oc b;
+let pp_instr_and_semicolon dialect oc b =
+  pp_instr dialect oc b;
   if semicolon_needed (fst b) then fprintf oc ";" else ()
 
 (** Pretty-printing of components *)
-let rec pp_component i oc = function
+let rec pp_component dialect i oc = function
   | Litmus.Basic b ->
-     fprintf oc "%a%a\n" mk_indent i pp_instr_and_semicolon b
+     fprintf oc "%a%a\n"
+             mk_indent i
+             (pp_instr_and_semicolon dialect) b
   | Litmus.If (r,v,[c]) when no_braces_needed c ->
-     fprintf oc "%aif (%a == %a)\n" mk_indent i pp_reg r Value.pp v;
-     pp_component (i+1) oc c
+     fprintf oc "%aif (%a == %a)\n"
+             mk_indent i
+             (pp_reg dialect false) r
+             Value.pp v;
+     pp_component dialect (i+1) oc c
   | Litmus.If (r,v,cs) ->
-     fprintf oc "%aif (%a == %a) {\n" mk_indent i pp_reg r Value.pp v;
-     List.iter (pp_component (i+1) oc) cs;
+     fprintf oc "%aif (%a == %a) {\n"
+             mk_indent i
+             (pp_reg dialect false) r
+             Value.pp v;
+     List.iter (pp_component dialect (i+1) oc) cs;
      fprintf oc "%a}\n" mk_indent i
 
 let partition_locs_in_instr (a_locs, na_locs) = function
@@ -146,14 +205,14 @@ let partition_locs_in_instr (a_locs, na_locs) = function
         MySet.union [l] a_locs, na_locs
      end
   | _ -> (a_locs, na_locs)
-     
+
 let rec partition_locs_in_cmps locs cs =
   List.fold_left partition_locs_in_cmp locs cs
 
 and partition_locs_in_cmp locs = function
   | Litmus.Basic b -> partition_locs_in_instr locs b
   | Litmus.If (_,_,cs) -> partition_locs_in_cmps locs cs
-     
+
 let partition_locs lt =
   List.fold_left partition_locs_in_cmps ([],[]) lt.Litmus.thds
 
@@ -204,8 +263,7 @@ let pp name dialect oc lt =
     | LitmusC ->
        (* TODO: do we need to handle special characters in the name? *)
        fprintf oc "C %s\n" name;
-       fprintf oc "// Hint: try simulating with herd <%s.litmus>\n" name;
-       nl oc;
+       fprintf oc "// Hint: try simulating with herd7 <%s.litmus>\n" name;
        fprintf oc "// WARNING: C litmus output is experimental!\n";
   in
   preamble oc;
@@ -232,36 +290,23 @@ let pp name dialect oc lt =
   end;
   nl oc;
 
-  (* If we're extracting an executable C program, declare thread-local
-     registers as global too, so they can be checked in the
-     postcondition. *)
-  let registers_are_global =
-    dialect = ExecutableC11
-  in
-  (* In dialects such as litmus, we pass each shared variable to each
-     thread as a pointer, instead of making them global.
-     TODO: should we always pass the shared variables as pointers? *)
-  let pass_locations_by_pointer =
-    dialect = LitmusC
+  let pp_regs dialect oc i =
+    List.iter (fprintf oc "%aint %a = 0;\n" mk_indent i (pp_reg dialect false))
   in
 
-  let pp_regs oc i =
-    List.iter (fprintf oc "%aint %a = 0;\n" mk_indent i pp_reg)
-  in
-
-  if registers_are_global
+  if registers_global_in dialect
   then
     begin
       fprintf oc "// Declaring thread-local variables at global scope\n";
       fprintf oc "// so they can be checked in the postcondition.\n";
       let regs = List.fold_left (List.fold_left extract_regs) [] lt.Litmus.thds in
-      pp_regs oc 0 regs;
+      pp_regs dialect oc 0 regs;
       nl oc
     end;
 
   (* Print the argument vector for a thread function. *)
   let pp_argv oc () =
-    if pass_locations_by_pointer
+    if pass_locations_by_pointer_in dialect
     then
       let locs =
         (List.map (fun x -> ("atomic_int", x)) atomic_locs)
@@ -280,18 +325,23 @@ let pp name dialect oc lt =
     if List.exists contains_regless_cas cs then
       fprintf oc "  int expected;\n";
 
-    if not registers_are_global then
+    if not (registers_global_in dialect) then
       begin
         let regs = List.fold_left extract_regs [] cs in
-        pp_regs oc 1 regs;
-        nl oc
+        pp_regs dialect oc 1 regs;
+        if regs <> [] then nl oc
       end;
 
-    List.iter (pp_component 1 oc) cs;
+    List.iter (pp_component dialect 1 oc) cs;
     fprintf oc "}\n";
     nl oc
   in
   List.iteri pp_thd lt.Litmus.thds;
+
+  let pp_cnstrnt oc (a,v) = match a with
+    | Litmus.Reg r -> fprintf oc "%a == %d" (pp_reg dialect true) r v
+    | Litmus.Loc l -> fprintf oc "%a == %d" MyLocation.pp l v
+  in
 
   (* Print the test harness, using pthreads. *)
   let pp_pthread_harness () =
@@ -332,10 +382,6 @@ let pp name dialect oc lt =
     fprintf oc "\n";
 
     (* Check postcondition. *)
-    let pp_cnstrnt oc (a,v) = match a with
-      | Litmus.Reg r -> fprintf oc "%a == %d" pp_reg r v
-      | Litmus.Loc l -> fprintf oc "%a == %d" MyLocation.pp l v
-    in
     fprintf oc "  int result = %a;\n"
             (MyList.pp_gen " && " pp_cnstrnt) lt.Litmus.post;
     fprintf oc "  printf(\"Result: %%d\\n\", result);\n";
@@ -343,4 +389,14 @@ let pp name dialect oc lt =
     fprintf oc "\n";
     fprintf oc "}\n"
   in
-  if_pthreads pp_pthread_harness
+
+  (* If we're in a litmus test, we can emit the postcondition without a
+     harness. *)
+  let pp_litmus_post () =
+    fprintf oc "exists (%a)\n"
+            (MyList.pp_gen " /\\ " pp_cnstrnt) lt.Litmus.post
+  in
+
+  match dialect with
+  | ExecutableC11 -> if_pthreads pp_pthread_harness
+  | LitmusC -> pp_litmus_post ()
