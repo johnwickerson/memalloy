@@ -173,10 +173,11 @@ let run xml_path out_path out_type arch =
        begin
          (* TODO: share this with the Lit stage? *)
 	 match exec with
-	 | Soln.Single x ->
+	 | Soln.Single x
+           | Soln.Double (x, _, _) ->
+            (* TODO: the double-execution case isn't quite right. *)
 	    let lt = Mk_litmus.litmus_of_execution x in
             fprintf fmtr "%a\n" (Litmus_C.pp name ExecutableC11) lt
-         | _ -> assert false
        end
   end;
   close_out oc
