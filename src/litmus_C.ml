@@ -207,19 +207,30 @@ let pp name dialect oc lt =
        fprintf oc "// Hint: try simulating with herd <%s.litmus>\n" name;
        nl oc;
        fprintf oc "// WARNING: C litmus output is experimental!\n";
-       nl oc;
-       fprintf oc "{}"
   in
   preamble oc;
   nl oc;
 
   (* Declare global variables. *)
   fprintf oc "// Declaring global variables.\n";
-  List.iter
-    (fprintf oc "atomic_int %a = ATOMIC_VAR_INIT(0);\n" MyLocation.pp)
-    atomic_locs;
-  List.iter (fprintf oc "int %a = 0;\n" MyLocation.pp) nonatomic_locs;
-  fprintf oc "\n";
+  begin
+    match dialect with
+    | ExecutableC11 ->
+       List.iter
+         (fprintf oc "atomic_int %a = ATOMIC_VAR_INIT(0);\n" MyLocation.pp)
+         atomic_locs;
+       List.iter (fprintf oc "int %a = 0;\n" MyLocation.pp) nonatomic_locs;
+    | LitmusC ->
+       (* TODO: do we need to differentiate between atomic and non-atomic
+          locations, and are these assignments really necessary? *)
+       fprintf oc "{\n";
+       List.iter (fprintf oc "  %a = 0;\n" MyLocation.pp)
+                 atomic_locs;
+       List.iter (fprintf oc "  %a = 0;\n" MyLocation.pp)
+                 nonatomic_locs;
+       fprintf oc "}\n";
+  end;
+  nl oc;
 
   (* If we're extracting an executable C program, declare thread-local
      registers as global too, so they can be checked in the
