@@ -33,7 +33,7 @@ let sw = ([REL]; fsb?; [A & W]; rs; rf; [R & A]; sbf?; [ACQ]) \ thd
 let hb = (po | sw)+
 
 (* axiom to ensure non-atomic locations are read correctly in postcondition *)
-acyclic (co_na | hb) as NonatomicCo
+irreflexive (co_na; hb) as NonatomicCo
 
 let hbl = hb & loc
 
@@ -68,7 +68,7 @@ let cde = ((rf \ thd) | ctrl)* ; ctrl
 (* dependable release sequence *)
 let drs = rs \ ([R]; !cde)
 (* dependable synchronises-with *)
-let dsw = sw & (((fsb?; [REL]; drs?) \ (!ctrl; !cde)) ; rf)		 
+let dsw = sw & (((fsb?; [REL]; drs?) \ (ctrl^-1; !cde)) ; rf)		 
 (* dependable happens-before *)
 let dhb = po?; (dsw;ctrl)*
 (* self-satisfying cycle *)	    
