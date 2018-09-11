@@ -11,9 +11,9 @@ A C11-to-C11 mapping that allows:
 
 module c11_strengthening_seq[E]
 
-pred apply_map_c11[X,X':Exec_C] { 
+pred apply_map[X,X':Exec_C] { 
 
-  apply_map[X,X']
+  strengthening[X,X']
 
   // memory orders are kept the same
   X.ACQ = X'.ACQ
@@ -21,6 +21,8 @@ pred apply_map_c11[X,X':Exec_C] {
   X.SC = X'.SC
 
   // atomicity is preserved
-  X.ATO = X'.ATO
-
+  X.A = X'.A
+		
+  // the mapping preserves naL in both directions
+  X.NAL = X'.NAL
 }

@@ -126,10 +126,21 @@ let parse_soln alloy_soln =
   | Some x2 ->
      let exec2 = Exec.empty_exec in
      let exec2 = List.fold_left (add_field (Some x2)) exec2 fieldnodes in
-     let pi_node = List.find (label_is "$gp_map") skolem_nodes in
-     match mk_field None pi_node with
-     | Rel pi -> Soln.Double (exec1, exec2, pi)
-     | _ -> failwith "Ill-formed 'map' relation"
+     let pi_node =
+       try Some (List.find (label_is "$gp_map") skolem_nodes)
+       with Not_found -> None
+     in
+     match pi_node with
+     | None ->
+        let ev = Exec.get_set exec1 "EV" in
+        let pi = List.map (fun e -> ("S" ^ e, "H" ^ e)) ev in
+        let exec1 = Exec.map_events (fun e -> "S" ^ e) exec1 in
+        let exec2 = Exec.map_events (fun e -> "H" ^ e) exec2 in
+        Soln.Double (exec1, exec2, pi)
+     | Some pi_node ->
+        match mk_field None pi_node with
+        | Rel pi -> Soln.Double (exec1, exec2, pi)
+        | _ -> failwith "Ill-formed 'map' relation"
 
 let parse_file xml_path =
   parse_soln (Xml.parse_file xml_path)

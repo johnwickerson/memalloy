@@ -36,7 +36,7 @@ type config = {
     omitdeadness : bool;
     hints : string list;
     eventcount : int;
-    eventcount2 : int;
+    eventcount2 : int option;
     description : string;
     minimal : bool;
     exact : bool;
@@ -57,7 +57,7 @@ let default_config = {
     omitdeadness = false;
     hints = [];
     eventcount = 0;
-    eventcount2 = 0;
+    eventcount2 = None;
     description = "";
     minimal = false;
     exact = false;
@@ -206,18 +206,31 @@ let pp_comparator config oc =
   fprintf oc "run gp for 1 Exec, %s%d E, 3 Int\n"
     (if config.exact then "exactly " else "") config.eventcount
 
-(** [pp_comparator2 config mapping_path arch2 oc] generates an Alloy file (sent to [oc]) that can be used to find an execution {i X} of type [config.arch] and an execution {i Y} of type [arch2] such that {i X} satisfies all the models in [config.satisfies_paths], {i Y} violates all the models in [config.violates_paths], and {i X} and {i Y} are related by the mapping in [mapping_path] *)
-let pp_comparator2 config mapping_path arch2 oc =
+(** [pp_comparator2 config mapping_path arch2 oc] generates an Alloy file (sent to [oc]) that can be used to find an execution {i X} of type [config.arch] and an execution {i Y} of type [config.arch2] such that {i X} satisfies all the models in [config.satisfies_paths], {i Y} violates all the models in [config.violates_paths], and {i X} and {i Y} are related by the mapping in [mapping_path] *)
+let pp_comparator2 config mapping_path oc =
+  let shareevents = (config.eventcount2 = None) in
+  let arch2 = match config.arch2 with
+    | None -> config.arch
+    | Some a2 -> a2
+  in
   if config.withinit then
     failwith "Initial writes not supported in compiler mappings";
   if config.description <> "" then
     fprintf oc "/* %s */\n" config.description;
-  pp_open_modules "HE" "SE" config oc;
   let mapping = Filename.chop_extension mapping_path in
-  fprintf oc "open ../../%s[SE,HE] as mapping\n\n" mapping;
-  fprintf oc "sig SE, HE {}\n\n";
-  fprintf oc "pred gp [X:%a, Y:%a, map:SE->HE] {\n\n"
-    Archs.pp_Arch config.arch Archs.pp_Arch arch2;
+  if shareevents then (
+    pp_open_modules "E" "E" config oc;
+    fprintf oc "open ../../%s[E] as mapping\n\n" mapping;
+    fprintf oc "sig E {}\n\n";
+    fprintf oc "pred gp [X:%a, Y:%a] {\n\n"
+      Archs.pp_Arch config.arch Archs.pp_Arch arch2
+  ) else (
+    pp_open_modules "HE" "SE" config oc;
+    fprintf oc "open ../../%s[SE,HE] as mapping\n\n" mapping;
+    fprintf oc "sig SE, HE {}\n\n";
+    fprintf oc "pred gp [X:%a, Y:%a, map:SE->HE] {\n\n"
+      Archs.pp_Arch config.arch Archs.pp_Arch arch2
+  );
   fprintf oc "  withoutinit[X]\n";
   fprintf oc "  withoutinit[Y]\n\n";
   pp_violated_models 2 "none->none" "X" config oc;
@@ -225,24 +238,26 @@ let pp_comparator2 config mapping_path arch2 oc =
   pp_also_satisfied_models 2 "none->none" "X" config oc;
   List.iter (pp_hint_name oc) config.hints;
   fprintf oc "  // We have a valid application of the mapping\n";
-  fprintf oc "  apply_map[X, Y, map]\n\n";
-  pp_min_classes "threads" "SE" config.min_thds "sthd" "X.EV - X.IW" oc;
-  pp_max_classes "threads" "SE" config.max_thds "sthd" "X.EV - X.IW" oc;
-  pp_min_classes "locations" "SE" config.min_locs "sloc" "X.R + X.W" oc;
-  pp_max_classes "locations" "SE" config.max_locs "sloc" "X.R + X.W" oc;
+  if shareevents then
+    fprintf oc "  apply_map[X, Y]\n\n"
+  else
+    fprintf oc "  apply_map[X, Y, map]\n\n";
+  let se = if shareevents then "E" else "SE" in
+  pp_min_classes "threads" se config.min_thds "sthd" "X.EV - X.IW" oc;
+  pp_max_classes "threads" se config.max_thds "sthd" "X.EV - X.IW" oc;
+  pp_min_classes "locations" se config.min_locs "sloc" "X.R + X.W" oc;
+  pp_max_classes "locations" se config.max_locs "sloc" "X.R + X.W" oc;
   fprintf oc "}\n\n";
   pp_hint_predicates config.hints oc;
-  fprintf oc "run gp for exactly 1 M1/Exec, exactly 1 N1/Exec, %d SE, %d HE, 3 Int\n" config.eventcount config.eventcount2
-
-  (*
-(** Print a description of the comparison being undertaken *)
-let pp_description () =
-  printf "\n";
-  printf "\n";
-  printf "==============================\n";
-  printf "%s\n" !description;
-  printf "------------------------------\n"      
-   *)
+  match config.eventcount2 with
+  | None ->
+     fprintf oc
+       "run gp for 2 Exec, %d E, 3 Int\n"
+       config.eventcount
+  | Some e2 ->
+     fprintf oc
+       "run gp for exactly 1 M1/Exec, exactly 1 N1/Exec, %d SE, %d HE, 3 Int\n"
+       config.eventcount e2
   
 let main config comparator_als_opt =
   let oc = match comparator_als_opt with
@@ -250,12 +265,9 @@ let main config comparator_als_opt =
     | None -> stdout
   in
   let fmtr = formatter_of_out_channel oc in
-  begin match config.mapping_path, config.arch2, config.eventcount2 with
-  | None, None, 0 -> pp_comparator config fmtr
-  | Some mapping_path, Some arch2, n when n>0 ->
-     pp_comparator2 config mapping_path arch2 fmtr
-  | _ ->
-     failwith "Expected all or none of: -mapping, -arch2, -events2"
+  begin match config.mapping_path with
+  | None -> pp_comparator config fmtr
+  | Some mapping_path -> pp_comparator2 config mapping_path fmtr
   end;
   close_out oc
 
@@ -297,7 +309,7 @@ let speclist =
    "-arch2", Arg.String (set_option_ref arch2_string),
    "Type of target execution (required iff -mapping is given)";
    
-   "-events2", Arg.Set_int eventcount2,
+   "-events2", Arg.Int (set_option_ref eventcount2),
    "Max number of target events (required iff -mapping is given)";
    
    "-alsosatisfies", Arg.String (set_list_ref also_satisfies_paths),
@@ -367,19 +379,6 @@ let check_args () =
     failwith "Expected at least one -satisfies or -violates flag";
   if !eventcount <= 0 then
     failwith "Expected -events <n> with n>0"
-
-  (* DOESN'T SEEM TO BE USED ANYWHERE 
-let read_file filename = 
-  let lines = ref [] in
-  let chan = open_in filename in
-  try
-    while true; do
-      lines := input_line chan :: !lines
-    done; !lines
-  with End_of_file ->
-    close_in chan;
-    List.rev !lines
-   *)
 
 let build_config () =
   {

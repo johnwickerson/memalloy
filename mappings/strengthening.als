@@ -2,7 +2,7 @@ open ../archs/exec[E]
 
 module strengthening[E]
 
-pred apply_map[X,X':Exec] { 
+pred strengthening[X,X':Exec] { 
 
   X.EV = X'.EV
   
@@ -12,6 +12,9 @@ pred apply_map[X,X':Exec] {
   // writes compile to writes
   X.W = X'.W
 
+  // RMWs are preserved		
+  X.atom = X'.atom
+		
   // fences compile to fences
   X.F = X'.F
  
@@ -34,9 +37,6 @@ pred apply_map[X,X':Exec] {
 
   // the mapping preserves loc in both directions
   X.sloc = X'.sloc
-
-  // the mapping preserves naL in both directions
-  X.NAL = X'.NAL
 
   // the mapping preserves the thd-equivalence,
   // but only one way (that is, it may introduce

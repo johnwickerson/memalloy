@@ -75,6 +75,12 @@ let update_rel x (r_name, r) =
 let update_set x (s_name, s) =
   { x with sets = (s_name, s) :: (Assoc.remove_assocs [s_name] x.sets) }
 
+(** [map_events f x] returns an execution that is the same as [x] but every event {i e} has been replaced with [f] {i e} *)
+let map_events f x =
+  let map_set (s_name, s) = (s_name, List.map f s) in
+  let map_rel (r_name, r) = (r_name, List.map (fun (e1,e2) -> (f e1, f e2)) r) in
+  { sets = List.map map_set x.sets; rels = List.map map_rel x.rels; }
+  
 (** {2 Removing redundant edges and event-labels } *)
     
 (** [remove_transitive r_name x] returns an execution that is the same as [x] but the relation named [r_name] has been replaced with its intransitive core *)
@@ -189,13 +195,13 @@ let rectify_maps (x,xmaps) (y,ymaps) pi =
       let e' = List.find is_mismatch xev in
       let v = Assoc.strong_assoc map e in
       let v' = Assoc.strong_assoc map' e' in
-      printf "Permuting %d and %d!\n" v v';
+      (* printf "Permuting %d and %d!\n" v v'; *)
       Assoc.permute_vals (v, v') map
     with Not_found -> map
   in
-  printf "Permuting threads!\n";
+  (* printf "Permuting threads!\n"; *)
   let thd_map = List.fold_left (fix xmaps.thd_map) ymaps.thd_map yev in
-  printf "Permuting locations!\n";
+  (* printf "Permuting locations!\n"; *)
   let loc_map = List.fold_left (fix xmaps.loc_map) ymaps.loc_map yev in
   { ymaps with thd_map = thd_map; loc_map = loc_map }
 

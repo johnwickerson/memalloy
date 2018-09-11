@@ -8,17 +8,20 @@ A C11-to-C11 mapping that (only) allows memory orders to be strengthened.
 
 module c11_strengthening_mo[E]
 
-pred apply_map_c11[X,X':Exec_C] { 
+pred apply_map[X,X':Exec_C] { 
 
-  apply_map[X,X']
+  strengthening[X,X']
 
   // memory orders are kept the same or strengthened
   X.ACQ in X'.ACQ
   X.REL in X'.REL
   X.SC in X'.SC
 
+  // the mapping preserves naL in both directions
+  X.NAL = X'.NAL
+
   // atomicity is preserved in both directions
-  X.ATO = X'.ATO
+  X.A = X'.A
  
   // the mapping preserves sb in both directions
   X.sb = X'.sb
