@@ -53,7 +53,8 @@ let run_alloy alloystar_dir xml_dir comparator_script iter solver quiet =
   let solver_dir = MyFilename.concat [alloystar_dir; os] in
   let cmd =
     String.concat " "
-      ["java";
+      [sprintf "PATH=%s/%s:$PATH" alloystar_dir os;
+       "java";
        "-Xmx" ^ java_heap_size;
        "-Djava.library.path=" ^ solver_dir;
        "-Dout=" ^ xml_dir;
@@ -338,23 +339,30 @@ let main () =
   MyFilename.iter (generate_lit results_dir) xml_dir;
   if !allowset then begin
       printf "Generating litmus files for allow-set.\n%!";
-      MyFilename.iter (generate_lit allow_dir) allow_xml_dir 
+      MyFilename.iter (generate_lit allow_dir) allow_xml_dir
     end;
   MyTime.stop_timer();
 
-  (* 11. Copy to C directory if arch=C. *)
+  (* 11. Also build C witness if arch=C. *)
   if ppc_config.arch = Archs.C then begin
-      MyFilename.iter (fun lit_path ->
-          if Filename.check_suffix lit_path ".litmus" then begin
-              let test_name =
-                Filename.chop_extension (Filename.basename lit_path)
-              in
-              let c_path = MyFilename.concat [c_dir; test_name ^ ".c"] in
-              ignore (Sys.command (sprintf "cp %s %s" lit_path c_path))
-            end
-        ) lit_dir
+      MyTime.start_timer("dump C");
+      printf "Generating C files.\n%!";
+      let generate_c dir xml_file =
+        let all_file = MyFilename.concat [dir; "C"; "@all"] in
+        let test_name = Filename.chop_extension (Filename.basename xml_file) in
+        let c_file = test_name ^ ".c" in
+        let c_path = MyFilename.concat [dir; "C"; c_file] in
+        append_line_to_file all_file c_file;
+        Gen.run xml_file c_path Gen.C ppc_config.arch
+      in
+      MyFilename.iter (generate_c results_dir) xml_dir;
+      if !allowset then begin
+          printf "Generating C files for allow-set.\n%!";
+          MyFilename.iter (generate_c allow_dir) allow_xml_dir
+        end;
+      MyTime.stop_timer();
     end;
- 
+
   (* 12. Show outcome graphically. *)
   if not !batch then
     if nsolutions = 1 then begin

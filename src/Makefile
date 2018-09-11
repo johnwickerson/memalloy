@@ -27,7 +27,7 @@ DEST := ..
 
 DOCDIR := ../doc
 
-BINARIES = cat2als pp_comparator gen weaken mk_hash comparator
+BINARIES = cat2als pp_comparator gen weaken mk_hash comparator runtests
 
 .PHONY: all clean doc top $(BINARIES) 
 

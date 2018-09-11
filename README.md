@@ -11,7 +11,7 @@
 
 - Python 2.7
 
-- Java runtime version 8 (Java SE 8).
+- Java runtime version 8 (tested with [Java SE Development Kit 8u181](http://www.oracle.com/technetwork/java/javase/downloads/jdk8-downloads-2133151.html)).
 
 - Graphviz (hint: `brew install graphviz`)
 

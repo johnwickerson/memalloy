@@ -8,6 +8,6 @@ include "c11_base.cat"
 irreflexive s; hb as S1
 irreflexive s; fsb?; myco; sbf? as S2
 irreflexive s; rf^-1; [SC]; myco as S3 
-irreflexive s; fsb; fr as S5
-irreflexive s; fr; sbf as S6
-irreflexive s; fsb; fr; sbf as S7
+irreflexive s; fsb; rb as S5
+irreflexive s; rb; sbf as S6
+irreflexive s; fsb; rb; sbf as S7

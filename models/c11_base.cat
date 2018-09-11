@@ -12,11 +12,15 @@ Tyler Sorensen and George A. Constantinides (POPL'17).
 
 include "basic.cat"
 
-let myco = co \ (NAL * EV) \ (EV * NAL)
+let myco = co \ (NAL * EV) \ (EV * NAL) (* "co \ (NAL * EV)" should suffice *)
 let mycoe = myco \ sthd
 let mycoi = myco & sthd
 let unforced_myco =
   (imm(myco); imm(myco); (imm(myco))^-1) \ (rf?; (po; (rf^-1)?)?)
+
+let rb = fr \ id
+  
+let co_na = co & (NAL * EV) (* co on non-atomic locations *)
 
 let fsb = [F]; po
 let sbf = po; [F]
@@ -29,6 +33,9 @@ let sw = ([REL]; fsb?; [A & W]; rs; rf; [R & A]; sbf?; [ACQ]) \ thd
 
 (* happens before *)
 let hb = (po | sw)+
+
+(* axiom to ensure non-atomic locations are read correctly in postcondition *)
+irreflexive (co_na; hb) as NonatomicCo
 
 let hbl = hb & loc
 
@@ -47,7 +54,7 @@ let ur = (cnf & thd) \ (po | po^-1)
 undefined_unless empty ur as Ur
 
 (* coherence, etc *)
-acyclic hbl | rf | myco | fr as HbCom
+acyclic hbl | rf | myco | rb as HbCom
 
 (* no "if(r==0)" *)
 deadness_requires empty if_zero as No_If_Zero 
@@ -63,7 +70,7 @@ let cde = ((rf \ thd) | ctrl)* ; ctrl
 (* dependable release sequence *)
 let drs = rs \ ([R]; !cde)
 (* dependable synchronises-with *)
-let dsw = sw & (((fsb?; [REL]; drs?) \ (!ctrl; !cde)) ; rf)		 
+let dsw = sw & (((fsb?; [REL]; drs?) \ (ctrl^-1; !cde)) ; rf)		 
 (* dependable happens-before *)
 let dhb = po?; (dsw;ctrl)*
 (* self-satisfying cycle *)	    
@@ -75,5 +82,5 @@ let narf = rf & (NAL*NAL)
 
 deadness_requires empty pdr \ (dhb | dhb^-1 | narf;ssc | ssc;narf^-1) as Dead_Pdr
 
-let scb = fsb?; (myco | fr | hb); sbf?
+let scb = fsb?; (myco | rb | hb); sbf?
 let scp = (scb & (SC * SC)) \ id

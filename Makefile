@@ -17,24 +17,11 @@ comparator:
 	@ printf '#!/bin/sh\npython top/comparator.py "$$@"' > $@
 	@ chmod +x $@
 
-include tests.makefile
-
-quicktest: 
-	make c11_partial_not_lidbury
-
-moretests:
-	ARGS="-batch -maxtransactions 0" make $(ALL_TESTS)
-
-txn_tests:
-	ARGS="-batch" make $(TXN_TESTS)
-
-more_txn_tests:
-	ARGS="-batch" make $(MORE_TXN_TESTS)
-
-even_more_txn_tests:
-	ARGS="-batch" make $(EVEN_MORE_TXN_TESTS)
+tests:
+	./runtests tests.sh
 
 slowtests:
+	./runtests -withslow tests.sh
 
 clean:
 	cd models && python ../etc/rm_als.py
