@@ -185,13 +185,13 @@ let rec pp_component dialect i oc = function
              mk_indent i
              (pp_reg dialect false) r
              Value.pp v;
-     pp_component (i+1) oc c
+     pp_component dialect (i+1) oc c
   | Litmus.If (r,v,cs) ->
      fprintf oc "%aif (%a == %a) {\n"
              mk_indent i
              (pp_reg dialect false) r
              Value.pp v;
-     List.iter (pp_component (i+1) oc) cs;
+     List.iter (pp_component dialect (i+1) oc) cs;
      fprintf oc "%a}\n" mk_indent i
 
 let partition_locs_in_instr (a_locs, na_locs) = function
