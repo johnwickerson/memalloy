@@ -262,7 +262,6 @@ let pp_comparator2 config mapping_path oc =
   pp_also_satisfied_models 2 "none->none" "X" config oc;
   List.iter (pp_hint_name oc) config.hints;
   fprintf oc "  // We have a valid application of the mapping\n";
-  fprintf oc "  apply_map[X, Y, map]\n\n";
   if shareevents then
     fprintf oc "  apply_map[X, Y]\n\n"
   else
