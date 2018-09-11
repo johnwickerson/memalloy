@@ -25,3 +25,4 @@
 ./comparator -desc "compile_opencl_ptx_cumul_4ev" -arch OpenCL -arch2 PTX -fencerels -violates models/opencl_scoped.cat -satisfies models/ptx_cumul.cat -mapping mappings/fences_as_relations/opencl_ptx_buggy.als -events 4 -events2 6 -expect 0
 ./comparator -desc "compile_opencl_ptx_cumul_5ev" -arch OpenCL -arch2 PTX -fencerels -violates models/opencl_scoped.cat -satisfies models/ptx_cumul.cat -mapping mappings/fences_as_relations/opencl_ptx_buggy.als -events 5 -events2 5 -expect 1
 ./comparator -desc "c11_simp_not_sra_iter" -arch C -violates models/c11_sra.cat -satisfies models/c11_simp.cat -satisfies models/c11_relacq.cat -satisfies models/c11_normws.cat -satisfies models/c11_simplepost.cat -events 6 -iter -expect 1
+./comparator -desc "c11_not_lahav" -arch C -violates models/c11_lahav.cat -satisfies models/c11_normws.cat -events 4 -iter -expect 14
