@@ -2,6 +2,9 @@ language: java
 jdk: oraclejdk8
 sudo: required
 env:
+  - TESTFILE=tests.sh
+  - TESTFILE=tests2.sh
+  - TESTFILE=tests3.sh
 before_install:
   - OCAML_VERSION=4.07.0
   - sudo apt-get update
@@ -21,7 +24,7 @@ before_install:
 install:
   - make install
 script:
-  - ./runtests tests.sh
+  - ./runtests $TESTFILE
 notifications:
   slack:
     secure: MRoPSn7gMcpSuG/l5/ZQuYU3nLLv7YCvmo+mk5OMCTtfPQLIF+jUkCHN31fp+rVX6cc8u8YELoXH1JImErCp+FBTmnozEy9dtvJLdsQp5PSq7h5zDYdUQ68W9E4toyw/wl10//4j5rBjReZN8tjlMRjzGrdNsDTxBgxwFQihJedJZS2qpKsEq2v15PDldOwNv1XyvvdnW7i8bv8Vwz3PWvtYVR4aYvdy6V4YyuzO0dA/W+DlAPNNRjpw5wRtvdSBHkQ6k0wI0c315zSFX0QypLBQUKdrps658EA8ISLFr/RqcTxLUnmqj47hz8hJrAuUhf/f8IfhE8L7AZZuX31sFmburZVXAMyZ65IzL8eJ4ForcsorupH4K3wkvR1utQERUSC5Whe8oKAYgT8h+L37Cl5TnLxKXxsznSLhRCFDUcHtvhCMjnLMLgOIGexjuJsboh5/hVAPaxXjDIqjwDZwrC5ZjoSFqEcXLTMW1CfacHNoL+aYqYJ9o2ibQuPf+v/LHnQypJrN/O9ldO1LyFXBhThprgEfpsX3C6IggAL8uDHC2U3ltYoRazluKgHvrFNuvakv4HoEgqKvpLAaEL+WyN+lRiGxq7dNd2k5G8EG0VeHtrU4FjPcbLRNAy657lfymKuijfDzqRoWMwtWQXQFYLbK6Rhjcv4503I1DWA3Sww=
