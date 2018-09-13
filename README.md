@@ -26,9 +26,6 @@
 3. Run `make install`. HTML documentation can now be browsed at
    `doc/index.html`.
 
-4. Run `make quicktest`. After a few minutes you should find some
-   pictures of distinguishing executions in the `png` directory.
-
 # Converting .cat models to Alloy (.als) format
 
 - Each `.cat` file must begin with a description of the architecture
