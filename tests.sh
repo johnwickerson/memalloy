@@ -9,7 +9,6 @@
 ./comparator -desc "c11_partial_not_lidbury_3ev" -arch C -violates models/c11_lidbury.cat -satisfies models/c11_partial.cat -satisfies models/c11_normws.cat -events 3 -expect 0
 ./comparator -desc "c11_partial_not_lidbury_4ev" -arch C -violates models/c11_lidbury.cat -satisfies models/c11_partial.cat -satisfies models/c11_normws.cat -events 4 -expect 1
 ./comparator -desc "c11_partial_not_lidbury_iter" -arch C -violates models/c11_lidbury.cat -satisfies models/c11_partial.cat -satisfies models/c11_normws.cat -events 4 -iter -expect 5
-./comparator -desc "x86_not_mca" -arch X86 -fencerels -violates models/mca_x86.cat -satisfies models/x86tso.cat -events 7 -expect 0 -solver plingeling
 ./comparator -desc "ppc_not_mca_5ev" -arch PPC -fencerels -violates models/mca_ppc.cat -satisfies models/ppc.cat -events 5 -expect 0
 ./comparator -desc "ppc_not_mca_6ev" -arch PPC -fencerels -violates models/mca_ppc.cat -satisfies models/ppc.cat -events 6 -expect 1
 ./comparator -arch C -desc "c11_scdrf_bug_4ev" -violates models/sc.cat -satisfies models/c11_nodrf.cat -satisfies models/c11_normws.cat -satisfies models/c11_onlysc.cat -events 4 -expect 1
@@ -28,8 +27,6 @@
 ./comparator -desc "compile_c11_arm7_5ev" -arch C -arch2 ARM7 -fencerels -violates models/c11_simp.cat -satisfies models/arm7.cat -mapping mappings/fences_as_relations/c11_arm7.als -alsosatisfies models/nofences.cat -events 5 -events2 5 -expect 1
 ./comparator -desc "compile_c11_ppc_4ev" -arch C -arch2 PPC -fencerels -violates models/c11_simp.cat -satisfies models/ppc.cat -mapping mappings/fences_as_relations/c11_ppc.als -events 4 -events2 6 -expect 0
 ./comparator -desc "compile_c11_ppc_5ev" -arch C -arch2 PPC -fencerels -violates models/c11_simp.cat -satisfies models/ppc.cat -mapping mappings/fences_as_relations/c11_ppc.als -events 5 -events2 5 -expect 1
-./comparator -desc "compile_c11_x86_4ev" -arch C -arch2 X86 -fencerels -violates models/c11_simp.cat -satisfies models/x86tso.cat -mapping mappings/fences_as_relations/c11_x86a.als -events 4 -events2 4 -expect 0
-./comparator -desc "compile_c11_x86_5ev" -arch C -arch2 X86 -fencerels -violates models/c11_simp.cat -satisfies models/x86tso.cat -mapping mappings/fences_as_relations/c11_x86a.als -events 5 -events2 5 -expect 0 #slow (about 2 min)
 ./comparator -desc "compile_opencl_ptx_orig_4ev" -arch OpenCL -arch2 PTX -fencerels -violates models/opencl_scoped.cat -satisfies models/ptx_orig.cat -mapping mappings/fences_as_relations/opencl_ptx.als -events 4 -events2 6 -expect 0
 ./comparator -desc "compile_opencl_ptx_orig_5ev" -arch OpenCL -arch2 PTX -fencerels -violates models/opencl_scoped.cat -satisfies models/ptx_orig.cat -mapping mappings/fences_as_relations/opencl_ptx.als -events 5 -events2 5 -expect 1
 ./comparator -desc "compile_opencl_ptx_cumul_4ev" -arch OpenCL -arch2 PTX -fencerels -violates models/opencl_scoped.cat -satisfies models/ptx_cumul.cat -mapping mappings/fences_as_relations/opencl_ptx_buggy.als -events 4 -events2 6 -expect 0
