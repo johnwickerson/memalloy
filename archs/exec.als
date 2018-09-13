@@ -41,7 +41,7 @@ sig Exec {
   */
 
   // sequenced-before is total within a thread
-  sthd in *sb + ~*sb
+  sthd in *sb + ~*sb /* TODO: drop this constraint */
 
   // sthd is an equivalence relation among non-initial events
   is_equivalence[sthd, EV - IW]
