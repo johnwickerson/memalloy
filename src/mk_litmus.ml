@@ -130,7 +130,8 @@ let litmus_of_execution' x maps =
   let thd_classes = Assoc.val_list inv_thd_map in
   let sb = Exec.get_rel x "sb" in
   let thds = List.map (partition_seq sb) thd_classes in
-  let reg_evts = MySet.diff (Exec.get_set x "R") (Exec.get_set x "W") in
+  (* let reg_evts = MySet.diff (Exec.get_set x "R") (Exec.get_set x "W") in *)
+  let reg_evts = Exec.get_set x "R" in
   let mk_reg_map (i,res) e =
     let thd = Assoc.strong_assoc maps.Exec.thd_map e in
     (i+1, (e,(thd,i))::res)
