@@ -53,6 +53,11 @@ type test_result = {
 
 
 let withslow = ref false
+
+let rec input_and_print_line ic =
+  match input_char ic with
+  | '\n' -> ""
+  | c -> printf "%c%!" c; String.make 1 c ^ input_and_print_line ic
     
 let run tests =
   let parse_test i t =
@@ -93,21 +98,24 @@ let run tests =
     let ic = Unix.open_process_in cmd in
     let encoding_time =
       let rec extract_encoding_time () =
-        let line = input_line ic in
+        let line = input_and_print_line ic in
+        printf "\n";
         try Scanf.sscanf line "%_s Translation took %fs" (fun i -> i)
         with Scanf.Scan_failure _ -> extract_encoding_time ()
       in extract_encoding_time ()
     in
     let solve_time =
       let rec extract_solve_time () =
-        let line = input_line ic in
+        let line = input_and_print_line ic in
+        printf "\n";
         try Scanf.sscanf line "Solving took %fs" (fun i -> i)
         with Scanf.Scan_failure _ -> extract_solve_time ()
       in extract_solve_time ()
     in
     let found =
       let rec extract_found () =
-        let line = input_line ic in
+        let line = input_and_print_line ic in
+        printf "\n";
         try Scanf.sscanf line "No solution" 0
         with Scanf.Scan_failure _ ->
           try Scanf.sscanf line "Alloy found %d solutions" (fun i -> i)
@@ -115,7 +123,7 @@ let run tests =
             extract_found ()
       in extract_found ()
     in
-    (try while true do ignore (input_line ic) done
+    (try while true do ignore (input_and_print_line ic); printf "\n" done
      with End_of_file -> ());
     let exitcode = Unix.close_process_in ic in
     let passed = (exitcode = Unix.WEXITED 0) in
