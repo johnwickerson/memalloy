@@ -169,6 +169,8 @@ let run_single out_dir xml_path =
       "dd", [];
       "atom", [];
       "mfence", [];
+      "pfence", [];
+      "psync", [];
       "sync", [];
       "lwsync", get_rel "sync" [soln];
       "isync", [];

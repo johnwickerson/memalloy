@@ -5,6 +5,7 @@ sig Exec {
   EV : set E,      // domain of all events
   W, R, F : set E, // writes, reads, fences
   IW : set E,      // initial writes
+  P : set E,       // persistent events
   sb : E->E,       // sequenced before
   ad,cd,dd : E->E, // address, control, data dependencies
   atom : E->E,     // atomicity relation
@@ -13,6 +14,7 @@ sig Exec {
   //////////////////////////////////////
   rf : E->E,       // reads-from
   co : E->E,       // coherence order
+  nvo : E->E,      // non-volatile order
 }{
   // EV captures all and only the events involved
   W + R + F in EV
@@ -57,6 +59,18 @@ sig Exec {
   // total orders on writes to x
   (co + ~co) = (W -> W) & sloc - iden
 
+  // nvo is prefix-closed with respect to persistent events
+  (nvo . P) in P
+
+  // reads are vacuously persistent
+  R in P		
+		
+  // nvo is a total order over all events that affect the non-volatile
+  // memory (i.e. all writes and certain fences)
+  strict_partial_order[nvo]
+  nvo in sq[W + F]
+  (sq[W] - iden) in (nvo + ~nvo)	
+		
   // Event e2 has an "address dependency" on e1 if
   // location[e2] depends on valr[e1]. Therefore "(e1,e2) in ad"
   // only makes sense when e1 is a read and e2 is a read or a write

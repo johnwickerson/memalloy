@@ -116,7 +116,7 @@ let all = ["BASIC"; "C"; "HW"; "X86"; "PPC"; "ARM7";
 
 (** Pre-defined fence sets for given architecture *)
 let fence_sets = function
-  | X86 -> ["MFENCE"]
+  | X86 -> ["MFENCE"; "PFENCE"; "PSYNC"]
   | Power -> ["SYNC"; "LWSYNC"; "ISYNC"]
   | Arm7 | Arm8 -> ["DMB"; "DMBST"; "DMBLD"; "ISB"]
   | PTX -> ["MEMBAR_CTA"; "MEMBAR_GL"; "MEMBAR_SYS"]
@@ -124,7 +124,7 @@ let fence_sets = function
 
 (** Pre-defined fence relations for given architecture *)
 let fence_rels = function
-  | X86 -> ["mfence"]
+  | X86 -> ["mfence"; "pfence"; "psync"]
   | Power -> ["sync"; "lwsync"; "isync"]
   | Arm7 | Arm8 -> ["dmb"; "dmbst"; "dmbld"; "isb"]
   | PTX -> ["membar_cta"; "membar_gl"; "membar_sys"]
@@ -149,10 +149,11 @@ let arch_sets fences_as_relations arch =
 
 (** Pre-defined event relations for given architecture *)
 let rec arch_rels = function
-  | Basic -> ["ad"; "atom"; "cd"; "co"; "dd"; "rf"; "sb"; "sloc"; "sthd"] @ ["fr"]
+  | Basic -> ["ad"; "atom"; "cd"; "co"; "dd"; "nvo"; "rf"; "sb"; "sloc"; "sthd"] @
+               ["fr"]
   | C -> arch_rels Basic
   | Basic_HW -> arch_rels Basic
-  | X86 -> arch_rels Basic_HW @ ["mfence"]
+  | X86 -> arch_rels Basic_HW @ ["mfence"; "pfence"; "psync"]
   | Power -> arch_rels Basic_HW @ ["sync"; "lwsync"; "isync"]
   | Arm7 -> arch_rels Basic_HW @ ["dmb"; "dmbst"; "dmbld"; "isb"]
   | Arm8 -> arch_rels Arm7
@@ -198,7 +199,7 @@ let all_fences =
   ["dmb"; "dmbst"; "dmbld"; "isb";
    "sync"; "lwsync"; "isync";
    "membar_cta"; "membar_gl"; "membar_sys";
-   "mfence"]
+   "mfence"; "pfence"; "psync"]
 
 (** List of all pairs of relations [(r1,r2)] where membership of [r1] implies membership of [r2] (and hence [r2] need not be drawn) *)
 let all_implied_rels =
@@ -216,7 +217,8 @@ let all_implied_sets =
 
 (** List of all sets that should be reduced as much as possible *)
 let min_sets = [
-    "SC"; "ACQ"; "REL"; "A"; "SCREL"; "SCACQ"; "MFENCE"; "SYNC";
+    "SC"; "ACQ"; "REL"; "A"; "SCREL"; "SCACQ"; "MFENCE";
+    "PFENCE"; "PSYNC"; "SYNC";
     "LWSYNC"; "ISYNC"; "DMB"; "DMBST"; "DMBLD"; "ISB";
     "MEMBAR_CTA"; "MEMBAR_GL"; "MEMBAR_SYS"
   ]
@@ -225,5 +227,5 @@ let min_sets = [
 let min_rels = [
     "ad"; "cd"; "dd"; "dmb"; "dmbst"; "dmbld"; "isb"; "sync";
     "lwsync"; "isync"; "membar_cta"; "membar_gl";
-    "membar_sys"; "mfence";
+    "membar_sys"; "mfence"; "pfence"; "psync";
   ]

@@ -28,11 +28,15 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 open! Format
 open! General_purpose
 
-type fence = MFENCE | LFENCE | SFENCE
+type fence = MFENCE | LFENCE | SFENCE | PFENCE | PSYNC
 
 let mk_fence attrs =
-  match (List.mem "mfence" attrs || List.mem "MFENCE" attrs) with
-  | true -> MFENCE
+  match (List.mem "mfence" attrs || List.mem "MFENCE" attrs),
+        (List.mem "PFENCE" attrs), (List.mem "PSYNC" attrs) 
+  with
+  | true, false, false -> MFENCE
+  | false, true, false -> PFENCE
+  | false, false, true -> PSYNC
   | _ -> failwith "Invalid fence attributes!"
 
                                                          
@@ -139,6 +143,8 @@ let pp_ins oc = function
   | HW_fence MFENCE -> fprintf oc "MFENCE"
   | HW_fence LFENCE -> fprintf oc "LFENCE"
   | HW_fence SFENCE -> fprintf oc "SFENCE"
+  | HW_fence PFENCE -> fprintf oc "PFENCE"
+  | HW_fence PSYNC -> fprintf oc "PSYNC"
   | CMPIMM (src, imm) -> fprintf oc "CMP %a, %d" pp_reg src imm
   | CMP src -> fprintf oc "CMP %a, 0" pp_reg src
   | BEQ lbl -> fprintf oc "JE %s" lbl

@@ -108,7 +108,7 @@ let tidy_exec x =
   let all_fences =
     ["dmb"; "dmbst"; "dmbld"; "isb";
      "sync"; "lwsync"; "isync";
-     "mfence";
+     "mfence"; "pfence"; "psync";
      "membar_cta"; "membar_gl"; "membar_sys"]
   in
   let x = List.fold_left reduce_fence_rel x all_fences in

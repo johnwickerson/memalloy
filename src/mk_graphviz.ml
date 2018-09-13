@@ -78,6 +78,7 @@ let dot_of_event x maps e =
 let dot_of_rel (name, tuples) =
   let edge_color = function
     | "co" -> "cornflowerblue"
+    | "nvo" -> "blueviolet"
     | "rf" -> "crimson"
     | "sb" | "ad" | "cd" | "dd" -> "black"
     | "pi" -> "red"
@@ -100,6 +101,7 @@ let dot_of_execution' maps x =
   let x = tidy_exec x in
   let x = remove_transitive "sb" x in
   let x = remove_transitive "co" x in
+  let x = remove_transitive "nvo" x in
   let mk_thd_cluster ns = Cluster (ns, ["color", "white"]) in
   let mk_cta_cluster ns =
     Cluster (ns, ["color", "azure4"; "style", "dashed"])
