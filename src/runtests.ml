@@ -53,6 +53,7 @@ type test_result = {
 
 
 let withslow = ref false
+let notxns = ref false
 
 let rec input_and_print_line ic =
   match input_char ic with
@@ -93,6 +94,7 @@ let run tests =
   let tests = List.filter (fun t -> not t.slow || !withslow) tests in
   let run_test t =
     let cmd = sprintf "%s -batch" t.base_cmd in
+    let cmd = if !notxns then cmd ^ " -maxtransactions 0" else cmd in
     printf "%s: Running test %d (%s):\n%!" (MyTime.now ()) t.id t.name;
     printf "`%s`\n%!" cmd;
     let ic = Unix.open_process_in cmd in
@@ -164,6 +166,7 @@ let main () =
   let tests_path = ref [] in
   let speclist = [
       ("-withslow", Arg.Set withslow, "Include slow tests");
+      ("-notxns", Arg.Set notxns, "Disable transactions");
     ] in
   let usage_msg = "Usage: `runtests [options]`.\n\
                    Options available:"

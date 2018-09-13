@@ -35,7 +35,3 @@
 ./comparator -desc "compile_opencl_ptx_cumul_4ev" -arch OpenCL -arch2 PTX -fencerels -violates models/opencl_scoped.cat -satisfies models/ptx_cumul.cat -mapping mappings/fences_as_relations/opencl_ptx_buggy.als -events 4 -events2 6 -expect 0
 ./comparator -desc "compile_opencl_ptx_cumul_5ev" -arch OpenCL -arch2 PTX -fencerels -violates models/opencl_scoped.cat -satisfies models/ptx_cumul.cat -mapping mappings/fences_as_relations/opencl_ptx_buggy.als -events 5 -events2 5 -expect 1
 ./comparator -desc "c11_not_lahav" -arch C -violates models/c11_lahav.cat -satisfies models/c11_normws.cat -events 4 -iter -expect 14
-./comparator -desc "weak_vs_strong_atomicity_3ev" -arch HW -satisfies models/txn_weak_atomicity.cat -satisfies models/sc.cat -violates models/txn_strong_atomicity.cat -events 3 -iter -expect 4
-./comparator -desc "weak_vs_strong_atomicity_5ev" -arch HW -satisfies models/txn_weak_atomicity.cat -satisfies models/sc.cat -violates models/txn_strong_atomicity.cat -events 5 -exact -iter -expect 45 # ~30 secs
-./comparator -desc "adding_txns_arm8_3ev" -arch ARM8 -satisfies models/aarch64.cat -violates models/aarch64_txn.cat -fencerels -events 3 -iter -expect 10 # ~6 secs
-./comparator -desc "adding_txns_arm8_4ev" -arch ARM8 -satisfies models/aarch64.cat -violates models/aarch64_txn.cat -fencerels -events 4 -iter -expect 139 # ~2 min
