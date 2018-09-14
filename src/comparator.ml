@@ -363,7 +363,20 @@ let main () =
       MyTime.stop_timer();
     end;
 
-  (* 12. Show outcome graphically. *)
+  (* 12. Convert litmus extensions to ".cl" if arch=OpenCL. *)
+  if ppc_config.arch = Archs.OpenCL then begin
+      MyFilename.iter (fun lit_path ->
+          if Filename.check_suffix lit_path ".litmus" then begin
+              let test_name =
+                Filename.chop_extension (Filename.basename lit_path)
+              in
+              let cl_path = MyFilename.concat [lit_dir; test_name ^ ".cl"] in
+              ignore (Sys.command (sprintf "mv %s %s" lit_path cl_path))
+            end
+        ) lit_dir
+    end;
+  
+  (* 13. Show outcome graphically. *)
   if not !batch then
     if nsolutions = 1 then begin
         let first_litmus_test = Array.get (Sys.readdir lit_dir) 0 in
@@ -378,7 +391,7 @@ let main () =
       if running_osx () then
         ignore (Sys.command (sprintf "open %s" png_dir));
 
-  (* 13. Compare against expected number of solutions. *)
+  (* 14. Compare against expected number of solutions. *)
   if !expect >= 0 && !expect != nsolutions then
     failwith "ERROR: Expected %d solutions, found %d." !expect nsolutions;
   

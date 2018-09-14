@@ -94,17 +94,19 @@ let pp_loc_val dialect oc le =
    compare-and-exchange on location [obj], from [exp] to [des].  It
    loads [exp] into either register [exp_reg] (if [exp_reg = Some]) or
    the 'expected' temporary variable (if not). It uses memory order
-   [mo] for success, and relaxed for fail. *)
-let pp_cas dialect oc mo obj exp_reg exp des =
+   [mo] for success, and relaxed for fail. If [ms] is provided, this is used as the memory scope (only applies to scoped memory models like OpenCL). *)
+let pp_cas dialect oc mo ms obj exp_reg exp des =
+  let ms = match ms with None -> "" | Some ms -> ", " ^ ms in
   fprintf oc "%a = %a; " (pp_cas_reg dialect) exp_reg Value.pp exp;
   (* TODO: this needs some more work to get right in LitmusC:
      we shouldn't emit &expr_reg for litmus, but this'd need us to emit
      the register as a pointer somehow. *)
-  fprintf oc "/* returns bool */ atomic_compare_exchange_strong_explicit(%a, &%a, %a, %s, memory_order_relaxed)"
+  fprintf oc "/* returns bool */ atomic_compare_exchange_strong_explicit(%a, &%a, %a, %s, memory_order_relaxed%s)"
     (pp_loc_ref dialect) obj
     (pp_cas_reg dialect) exp_reg
     (pp_expr dialect Value.pp) des
     mo
+    ms
 
 let get_mo attrs =
     match List.mem "SC" attrs, List.mem "ACQ" attrs, List.mem "REL" attrs with
@@ -129,7 +131,7 @@ let pp_instr dialect oc = function
   | Litmus.LoadLink (r, obj, exp, des), attrs ->
      (* We model LL/SC as a CAS in C11 witnesses. *)
      let mo = get_mo attrs in
-     pp_cas dialect oc mo obj (Some r) exp des
+     pp_cas dialect oc mo None obj (Some r) exp des
   | Litmus.Store (le,ve), attrs ->
      if List.mem "A" attrs then
        let mo = get_mo attrs in
@@ -148,7 +150,7 @@ let pp_instr dialect oc = function
      fprintf oc "// elided store-conditional instruction"
   | Litmus.Cas (obj,exp,des), attrs ->
      let mo = get_mo attrs in
-     pp_cas dialect oc mo obj None exp des
+     pp_cas dialect oc mo None obj None exp des
 
   | Litmus.Fence, attrs ->
      let mo = get_mo attrs in
