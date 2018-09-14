@@ -141,7 +141,7 @@ let arch_sets fences_as_relations arch =
     | Arm7 -> arch_sets Basic_HW
     | Arm8 -> arch_sets Arm7 @ ["SCREL"; "SCACQ"]
     | PTX -> arch_sets Basic_HW
-    | OpenCL -> arch_sets C @ ["L"; "G"; "FGA"; "REM"; "WG"; "DV"; "SY"]
+    | OpenCL -> arch_sets C @ ["L"; "G"; "FGA"; "REM"; "DV"; "SY"]
     | OCaml -> arch_sets Basic @ ["A"]
   in
   let fences = if fences_as_relations then [] else fence_sets arch in
@@ -158,7 +158,7 @@ let rec arch_rels = function
   | Arm8 -> arch_rels Arm7
   | PTX -> arch_rels Basic_HW @
              ["scta"; "sgl"; "membar_cta"; "membar_gl"; "membar_sys"]
-  | OpenCL -> arch_rels C @ ["swg"; "sdv"; "sbar"]
+  | OpenCL -> arch_rels C @ ["swg"; "sdv"]
   | OCaml -> arch_rels Basic
 
 (** Sets that should be reduced *)
@@ -172,7 +172,7 @@ let arch_min_sets fences_as_relations arch =
     | Arm7 -> arch_min_sets Basic_HW
     | Arm8 -> arch_min_sets Arm7 @ ["SCREL"; "SCACQ"]
     | PTX -> arch_min_sets Basic_HW
-    | OpenCL -> arch_min_sets C @ ["WG"; "DV"; "SY"]
+    | OpenCL -> arch_min_sets C @ ["DV"; "SY"; "FGA"; "REM"]
     | OCaml -> arch_min_sets Basic @ ["A"]
   in
   let fence_min_sets = function
@@ -212,13 +212,15 @@ let all_implied_rels =
 (** List of all pairs of sets [(s1,s2)] where membership of [s1] implies membership of [s2] (and hence [s2] need not be drawn) *)
 let all_implied_sets =
   ["SC", "ACQ"; "SC", "REL"; "SC", "A";
-   "ACQ", "A"; "REL", "A"]
+   "ACQ", "A"; "REL", "A";
+   "FGA", "G"; "DV", "A"; "SY", "DV"; "SY", "A";
+   "FGA", "DV"; "FGA", "A"; "REM", "A"]
 
 (** List of all sets that should be reduced as much as possible *)
 let min_sets = [
     "SC"; "ACQ"; "REL"; "A"; "SCREL"; "SCACQ"; "MFENCE"; "SYNC";
     "LWSYNC"; "ISYNC"; "DMB"; "DMBST"; "DMBLD"; "ISB";
-    "MEMBAR_CTA"; "MEMBAR_GL"; "MEMBAR_SYS"
+    "MEMBAR_CTA"; "MEMBAR_GL"; "MEMBAR_SYS"; "DV"; "SY"; "FGA"; "REM";
   ]
 
 (** List of all relations that should be reduced as much as possible *)

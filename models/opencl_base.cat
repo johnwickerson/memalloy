@@ -12,6 +12,9 @@ Tyler Sorensen and George A. Constantinides (POPL'17).
 
 include "basic.cat"
 include "fr.cat"
+
+(* workgroup-scoped is just a synonym for "atomic" *)
+let WG = A
       
 let fsb = [F]; po
 let sbf = po; [F]
