@@ -45,10 +45,11 @@ let pp_instr oc = function
   | Litmus.Load (r,le), attrs ->
      if List.mem "A" attrs then
        let mo = Litmus_C.get_mo attrs in
-       fprintf oc "%a = atomic_load_explicit(&%a, %s)"
-         pp_reg r (pp_expr MyLocation.pp) le mo
+       let ms = get_ms attrs in
+       fprintf oc "%a = atomic_load_explicit(%a, %s, %s)"
+         pp_reg r (pp_expr MyLocation.pp) le mo ms
      else
-       fprintf oc "%a = %a"
+       fprintf oc "%a = *%a"
          pp_reg r (pp_expr MyLocation.pp) le
     
   | Litmus.LoadLink (r, obj, exp, des), attrs ->
@@ -60,10 +61,11 @@ let pp_instr oc = function
   | Litmus.Store (le,ve), attrs ->
      if List.mem "A" attrs then
        let mo = Litmus_C.get_mo attrs in
-       fprintf oc "atomic_store_explicit(&%a, %a, %s)"
-         (pp_expr MyLocation.pp) le (pp_expr Value.pp) ve mo
+       let ms = get_ms attrs in
+       fprintf oc "atomic_store_explicit(%a, %a, %s, %s)"
+         (pp_expr MyLocation.pp) le (pp_expr Value.pp) ve mo ms
      else
-       fprintf oc "%a = %a"
+       fprintf oc "*%a = %a"
          (pp_expr MyLocation.pp) le (pp_expr Value.pp) ve
 
   | Litmus.StoreCnd _, _ ->
@@ -79,7 +81,14 @@ let pp_instr oc = function
     
   | Litmus.Fence, attrs ->
      let mo = Litmus_C.get_mo attrs in
-     fprintf oc "atomic_thread_fence(%s)" mo
+     let ms = get_ms attrs in
+     let flags = match List.mem "G" attrs, List.mem "L" attrs with
+       | true, true -> "CLK_GLOBAL_MEM_FENCE | CLK_LOCAL_MEM_FENCE"
+       | false, true -> "CLK_LOCAL_MEM_FENCE"
+       | true, false -> "CLK_GLOBAL_MEM_FENCE"
+       | false, false -> "0"
+     in
+     fprintf oc "atomic_work_item_fence(%s, %s, %s)" flags mo ms
 
 let no_braces_needed = function
   | Litmus.Basic (Litmus.Cas _, _) -> false
@@ -97,12 +106,14 @@ let rec pp_component i oc = function
      List.iter (pp_component (i+1) oc) cs;
      fprintf oc "%a}\n" mk_indent i
 
-let partition_locs_in_instr (a_locs, na_locs) = function
+let partition_locs_in_instr s (a_locs, na_locs) = function
   | Litmus.Load (_,le), attrs
+  | Litmus.LoadLink (_,le,_,_), attrs
   | Litmus.Store (le,_), attrs
+  | Litmus.StoreCnd (le,_), attrs
   | Litmus.Cas (le,_,_), attrs ->
      let l = Litmus.expr_base_of le in
-     begin match List.mem "NAL" attrs with
+     begin match List.mem s attrs with
      | true ->
         assert (not (List.mem l a_locs));
         a_locs, MySet.union [l] na_locs
@@ -112,15 +123,15 @@ let partition_locs_in_instr (a_locs, na_locs) = function
      end
   | _ -> (a_locs, na_locs)
      
-let rec partition_locs_in_cmps locs cs =
-  List.fold_left partition_locs_in_cmp locs cs
+let rec partition_locs_in_cmps s locs cs =
+  List.fold_left (partition_locs_in_cmp s) locs cs
 
-and partition_locs_in_cmp locs = function
-  | Litmus.Basic b -> partition_locs_in_instr locs b
-  | Litmus.If (_,_,cs) -> partition_locs_in_cmps locs cs
+and partition_locs_in_cmp s locs = function
+  | Litmus.Basic b -> partition_locs_in_instr s locs b
+  | Litmus.If (_,_,cs) -> partition_locs_in_cmps s locs cs
      
-let partition_locs lt =
-  List.fold_left partition_locs_in_cmps ([],[]) lt.Litmus.thds
+let partition_locs s lt =
+  List.fold_left (partition_locs_in_cmps s) ([],[]) lt.Litmus.thds
 
 let rec contains_cas = function
   | Litmus.Basic (Litmus.Cas _, _) -> true
@@ -135,74 +146,37 @@ let rec extract_regs regs = function
   
 let pp oc lt =
 
-  let atomic_locs, nonatomic_locs = partition_locs lt in
+  let atomic_locs, nonatomic_locs = partition_locs "NAL" lt in
   assert (MySet.equal (atomic_locs @ nonatomic_locs) lt.Litmus.locs);
+  
+  let global_locs, local_locs = partition_locs "L" lt in
+  assert (MySet.equal (global_locs @ local_locs) lt.Litmus.locs);
 
-  (* Include standard headers. *)
-  fprintf oc "#include <stdio.h>\n";
-  fprintf oc "#include <pthread.h>\n";
-  fprintf oc "#include <stdatomic.h>\n";
+  let region l = if List.mem l global_locs then "__global" else "__local" in
+  let kind l = if List.mem l atomic_locs then "atomic_int" else "int" in
+
+  (* Print kernel type. *)
+  fprintf oc "__kernel void foo(\n";
+  fprintf oc "  ";
+  let print_formal_arg l i =
+    fprintf oc "%s%s %s *%a"
+      (if i=0 then "" else ", ") (region l) (kind l) MyLocation.pp l
+  in
+  List.iteri print_formal_arg lt.Litmus.locs;
+  fprintf oc ") {\n";
   fprintf oc "\n";
 
-  (* Declare global variables. *)
-  fprintf oc "// Declaring global variables.\n";
-  List.iter
-    (fprintf oc "atomic_int %a = ATOMIC_VAR_INIT(0);\n" MyLocation.pp)
-    atomic_locs;
-  List.iter (fprintf oc "int %a = 0;\n" MyLocation.pp) nonatomic_locs;
-  fprintf oc "\n";
-
-  (* Declare thread-local registers as global too, so they can be checked in the postcondition. *)
-  fprintf oc "// Declaring thread-local variables at global scope\n";
-  fprintf oc "// so they can be checked in the postcondition.\n";
-  let regs = List.fold_left (List.fold_left extract_regs) [] lt.Litmus.thds in
-  List.iter (fprintf oc "int %a = 0;\n" pp_reg) regs;
-  fprintf oc "\n";
+  (* Get thread identifier. *)
+  fprintf oc "  int gid = get_global_id(0);\n";
 
   (* Print a function for each thread. *)
-  let pp_thd tid cs =
-    fprintf oc "// Thread %d\n" tid;
-    fprintf oc "void *thread%d (void *unused) {\n" tid;
-    if List.exists contains_cas cs then
-      fprintf oc "  int *expected;\n";
-    List.iter (pp_component 1 oc) cs;
-    fprintf oc "  pthread_exit(0);\n";
-    fprintf oc "}\n";
-    fprintf oc "\n";
+  let pp_thd gid cs =
+    if gid > 0 then fprintf oc " else " else fprintf oc "  ";
+    fprintf oc "if (gid == %d) {\n" gid;
+    List.iter (pp_component 2 oc) cs;
+    fprintf oc "  }"
   in
   List.iteri pp_thd lt.Litmus.thds;
-
-  let tids = List.mapi (fun i _ -> i) lt.Litmus.thds in
-  
-  (* Begin main() routine. *)
-  fprintf oc "int main() {\n";
   fprintf oc "\n";
+  fprintf oc "}\n"
 
-  (* Declare thread-id variables. *)
-  fprintf oc "  // Declaring thread-id variables.\n";
-  List.iter (fprintf oc "  pthread_t tid%d;\n") tids;
-  fprintf oc "\n";
-
-  (* Launch threads. *)
-  fprintf oc "  // Launching threads.\n";
-  List.iter (fun tid ->
-      fprintf oc "  pthread_create(&tid%d, NULL, thread%d, NULL);\n" tid tid
-    ) tids;
-  fprintf oc "\n";
-
-  (* Join threads. *)
-  fprintf oc "  // Joining threads.\n";
-  List.iter (fprintf oc "  pthread_join(tid%d, NULL);\n") tids;
-  fprintf oc "\n";
-
-  (* Check postcondition. *)
-  let pp_cnstrnt oc (a,v) = match a with
-    | Litmus.Reg r -> fprintf oc "%a == %d" pp_reg r v
-    | Litmus.Loc l -> fprintf oc "%a == %d" MyLocation.pp l v
-  in
-  fprintf oc "  int result = %a;\n"
-    (MyList.pp_gen " && " pp_cnstrnt) lt.Litmus.post;
-  fprintf oc "  printf(\"Result: %%d\\n\", result);\n";
-  fprintf oc "  return (result);\n";
-  fprintf oc "\n";
-  fprintf oc "}\n"  
