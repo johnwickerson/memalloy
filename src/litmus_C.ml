@@ -191,32 +191,33 @@ let rec pp_component dialect i oc = function
      List.iter (pp_component dialect (i+1) oc) cs;
      fprintf oc "%a}\n" mk_indent i
 
-let partition_locs_in_instr (a_locs, na_locs) = function
+let partition_locs_in_instr s (a_locs, b_locs) = function
   | Litmus.Load (_,le), attrs
   | Litmus.LoadLink (_,le,_,_), attrs
   | Litmus.Store (le,_), attrs
   | Litmus.StoreCnd (le,_), attrs
   | Litmus.Cas (le,_,_), attrs ->
      let l = Litmus.expr_base_of le in
-     begin match List.mem "NAL" attrs with
+     begin match List.mem s attrs with
      | true ->
         assert (not (List.mem l a_locs));
-        a_locs, MySet.union [l] na_locs
+        a_locs, MySet.union [l] b_locs
      | false ->
-        assert (not (List.mem l na_locs));
-        MySet.union [l] a_locs, na_locs
+        assert (not (List.mem l b_locs));
+        MySet.union [l] a_locs, b_locs
      end
-  | _ -> (a_locs, na_locs)
+  | _ -> (a_locs, b_locs)
 
-let rec partition_locs_in_cmps locs cs =
-  List.fold_left partition_locs_in_cmp locs cs
+let rec partition_locs_in_cmps s locs cs =
+  List.fold_left (partition_locs_in_cmp s) locs cs
 
-and partition_locs_in_cmp locs = function
-  | Litmus.Basic b -> partition_locs_in_instr locs b
-  | Litmus.If (_,_,cs) -> partition_locs_in_cmps locs cs
+and partition_locs_in_cmp s locs = function
+  | Litmus.Basic b -> partition_locs_in_instr s locs b
+  | Litmus.If (_,_,cs) -> partition_locs_in_cmps s locs cs
 
-let partition_locs lt =
-  List.fold_left partition_locs_in_cmps ([],[]) lt.Litmus.thds
+(** [partition_locs s lt] partitions the locations in litmus test [lt] into [(a_locs, b_locs)], such that any location that is accessed by an event that contains [s] among its attributes is placed into [b_locs], and all other locations are placed into [a_locs]. *)
+let partition_locs s lt =
+  List.fold_left (partition_locs_in_cmps s) ([],[]) lt.Litmus.thds
 
 (** [contains_regless_cas i] checks to see if [i] has at least one
     CAS without a destination register.  (If one exists, we need to
@@ -234,7 +235,7 @@ let rec extract_regs regs = function
 
 let pp name dialect oc lt =
 
-  let atomic_locs, nonatomic_locs = partition_locs lt in
+  let atomic_locs, nonatomic_locs = partition_locs "NAL" lt in
   assert (MySet.equal (atomic_locs @ nonatomic_locs) lt.Litmus.locs);
 
   (* Handles a pretty-printing function [thunk] that will emit pthreads
