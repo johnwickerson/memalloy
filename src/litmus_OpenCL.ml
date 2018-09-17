@@ -173,10 +173,14 @@ let pp oc lt =
   let pp_thd gid cs =
     if gid > 0 then fprintf oc " else " else fprintf oc "  ";
     fprintf oc "if (gid == %d) {\n" gid;
+    fprintf oc "    // Work-item %d:\n" gid;
     List.iter (pp_component 2 oc) cs;
     fprintf oc "  }"
   in
   List.iteri pp_thd lt.Litmus.thds;
   fprintf oc "\n";
+
+  (* TODO: Print the postcondition here *)
+  
   fprintf oc "}\n"
 
