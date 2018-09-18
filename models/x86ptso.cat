@@ -32,3 +32,8 @@ let implied = [LOCKED]; po | po; [LOCKED]
 
 let hb = mfence | implied | ppo | rfe | fr | co
 acyclic hb as Order
+
+empty (nvo & sloc) \ hb as NvoTso
+
+let PE = W | PSYNC | PFENCE
+empty ([PSYNC | PFENCE]; hb; [PE]) | ([PE]; hb; [PSYNC | PFENCE]) \ nvo as NvoPsf

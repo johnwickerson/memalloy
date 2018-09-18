@@ -137,12 +137,14 @@ fun W [e:PTag->E, X:Exec] : set E { X.W - e[rm_EV] }
 fun IW [e:PTag->E, X:Exec] : set E { X.IW - e[rm_EV] }
 fun R [e:PTag->E, X:Exec] : set E { X.R - e[rm_EV] }
 fun F [e:PTag->E, X:Exec] : set E { X.F - e[rm_EV] }
+fun P [e:PTag->E, X:Exec] : set E { X.P - e[rm_EV] }
 
 fun sb [e:PTag->E, X:Exec] : E->E { rm_EV_rel[e, X.sb] }
 fun sthd [e:PTag->E, X:Exec] : E->E { rm_EV_rel[e, X.sthd] }
 fun sloc [e:PTag->E, X:Exec] : E->E { rm_EV_rel[e, X.sloc] }
 fun rf [e:PTag->E, X:Exec] : E->E { rm_EV_rel[e, X.rf] }
 fun co [e:PTag->E, X:Exec] : E->E { rm_EV_rel[e, X.co] }
+fun nvo [e:PTag->E, X:Exec] : E->E { rm_EV_rel[e, X.nvo] }
 
 fun fr [e:PTag->E, X:Exec] : E->E {
   let fr_base = ((X.R -> X.W) & X.sloc) - (~(X.rf) . *~(X.co)) |
