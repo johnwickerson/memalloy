@@ -29,6 +29,6 @@ let ppo = (W * W) & po | (R * M) & po
 
 let LOCKED = domain(atom) | range(atom)
 let implied = [LOCKED]; po | po; [LOCKED]
-
-let hb = mfence | implied | ppo | rfe | fr | co
+                             
+let hb = [F];po | po;[F] | implied | ppo | rfe | fr | co
 acyclic hb as Order

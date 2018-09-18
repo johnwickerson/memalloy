@@ -30,10 +30,13 @@ let ppo = (W * W) & po | (R * M) & po
 let LOCKED = domain(atom) | range(atom)
 let implied = [LOCKED]; po | po; [LOCKED]
 
-let hb = mfence | implied | ppo | rfe | fr | co
+let hb = [F];po | po;[F] | implied | ppo | rfe | fr | co
 acyclic hb as Order
 
 empty (nvo & sloc) \ hb as NvoTso
 
 let PE = W | PSYNC | PFENCE
-empty ([PSYNC | PFENCE]; hb; [PE]) | ([PE]; hb; [PSYNC | PFENCE]) \ nvo as NvoPsf
+let phb = [PSYNC | PFENCE]; hb; [PE]
+let hbp = [PE]; hb; [PSYNC | PFENCE]
+                     
+empty (phb | hbp) \ nvo as NvoPsf
