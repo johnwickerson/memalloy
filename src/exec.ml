@@ -176,11 +176,18 @@ let resolve_exec x =
   let rw = MySet.union rs ws in
   let nI = MySet.diff (get_set x "EV") iws in
   let thd_map = Rel.partition (get_rel x "sthd") nI in
+  let add_attr prefix x (i,es) = update_set x (sprintf "%s%d" prefix i, es) in
+  let group_events_by prefix equiv_rel x =
+    List.fold_left (add_attr prefix) x
+      (Assoc.invert_map (Rel.partition (get_rel x equiv_rel) nI))
+  in
+  let x = group_events_by "wg" "swg" x in
+  let x = group_events_by "wg" "swg" x in
   let loc_map = Rel.partition (get_rel x "sloc") rw in
   let wval_map = mk_wval_map loc_map (get_rel x "co") ws iws in
   let rval_map = mk_rval_map wval_map (get_rel x "rf") rs in
-  { thd_map = thd_map; loc_map = loc_map;
-    wval_map = wval_map; rval_map = rval_map }
+  let xmaps = { thd_map; loc_map; wval_map; rval_map; } in
+  x, xmaps 
 
 (** [rectify_maps (x,xmaps) (y,ymaps) pi] returns a new set of execution maps for [y] that is consistent with the threads/locations/values used for [x] according to the mapping [pi]. For instance, if an event {i e} in [x] has location {i l} according to [xmaps], and [pi] relates {i e} to {i e'} in [y], then {i e'} will also have location {i l} in the returned execution maps. *)
 let rectify_maps (x,xmaps) (y,ymaps) pi =

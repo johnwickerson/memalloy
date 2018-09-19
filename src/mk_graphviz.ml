@@ -142,13 +142,13 @@ let dot_of_execution' maps x =
 	   
 (** Convert an execution into a complete Graphviz file *)
 let dot_of_execution x =
-  let maps = resolve_exec x in
+  let x, maps = resolve_exec x in
   dot_of_execution' maps x
 
 (** Convert a pair of executions into a complete Graphviz file *)
 let dot_of_execution_pair x y pi =
-  let xmaps = resolve_exec x in
-  let ymaps = resolve_exec y in
+  let x,xmaps = resolve_exec x in
+  let y,ymaps = resolve_exec y in
   let ymaps = rectify_maps (x,xmaps) (y,ymaps) pi in
   let gx = dot_of_execution' xmaps x in
   let gy = dot_of_execution' ymaps y in

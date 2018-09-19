@@ -150,12 +150,12 @@ let litmus_of_execution' x maps =
   {Litmus.locs = locs; thds = thds; post = reg_post @ loc_post}
     
 let litmus_of_execution x =
-  let maps = Exec.resolve_exec x in
+  let x,maps = Exec.resolve_exec x in
   litmus_of_execution' x maps
 
 let litmus_of_execution_pair x y pi =
-  let xmaps = Exec.resolve_exec x in
-  let ymaps = Exec.resolve_exec y in
+  let x,xmaps = Exec.resolve_exec x in
+  let y,ymaps = Exec.resolve_exec y in
   let ymaps = Exec.rectify_maps (x,xmaps) (y,ymaps) pi in
   let lit1 = litmus_of_execution' x xmaps in
   let lit2 = litmus_of_execution' y ymaps in
