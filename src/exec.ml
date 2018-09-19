@@ -105,13 +105,7 @@ let tidy_exec x =
     let f = Rel.remove_edges f sb f in
     update_rel x (f_name, f)
   in
-  let all_fences =
-    ["dmb"; "dmbst"; "dmbld"; "isb";
-     "sync"; "lwsync"; "isync";
-     "mfence";
-     "membar_cta"; "membar_gl"; "membar_sys"]
-  in
-  let x = List.fold_left reduce_fence_rel x all_fences in
+  let x = List.fold_left reduce_fence_rel x Archs.all_fences in
   let remove_implied_rel x (r1_name, r2_name) =
     let r1 = get_rel x r1_name in
     let r2 = get_rel x r2_name in
@@ -119,6 +113,7 @@ let tidy_exec x =
     update_rel x (r2_name, r2)
   in
   let x = List.fold_left remove_implied_rel x Archs.all_implied_rels in
+  (*
   let remove_implied_set x (s1_name, s2_name) =
     let s1 = get_set x s1_name in
     let s2 = get_set x s2_name in
@@ -126,6 +121,7 @@ let tidy_exec x =
     update_set x (s2_name, s2)
   in
   let x = List.fold_left remove_implied_set x Archs.all_implied_sets in
+   *)
   x
 	     
 (** {2 Resolving locations, threads and values } *)
