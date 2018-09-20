@@ -177,6 +177,7 @@ let arch_min_sets fences_as_relations arch =
     | OCaml -> arch_min_sets Basic @ ["A"]
   in
   let fence_min_sets = function
+    | X86 -> ["PSYNC", "PSYNC"; "PFENCE", "PFENCE"]
     | Power -> ["SYNC","SYNC"]
     | Arm7 | Arm8 -> ["DMBLD & DMBST", "DMBST"; "DMBLD & DMBST", "DMBLD"]
     | PTX -> ["MEMBAR_GL", "MEMBAR_GL"; "MEMBAR_SYS", "MEMBAR_SYS"]
@@ -213,7 +214,8 @@ let all_implied_rels =
 (** List of all pairs of sets [(s1,s2)] where membership of [s1] implies membership of [s2] (and hence [s2] need not be drawn) *)
 let all_implied_sets =
   ["SC", "ACQ"; "SC", "REL"; "SC", "A";
-   "ACQ", "A"; "REL", "A"]
+   "ACQ", "A"; "REL", "A";
+  "PSYNC", "PFENCE"; "PSYNC", "MFENCE"; "PFENCE", "MFENCE"]
 
 (** List of all sets that should be reduced as much as possible *)
 let min_sets = [

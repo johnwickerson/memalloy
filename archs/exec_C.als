@@ -49,6 +49,10 @@ sig Exec_C extends Exec {
   // RMWs are consecutive
   atom in imm[sb]
 
+  // nvo relates all and only events that affect non-volatile memory 
+  // (i.e. writes and fences)
+  (nvo + ~nvo) = sq[W + F] - iden		
+
 }
 
 one sig rm_A extends PTag {}

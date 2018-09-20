@@ -35,8 +35,8 @@ let mk_fence attrs =
         (List.mem "PFENCE" attrs), (List.mem "PSYNC" attrs) 
   with
   | true, false, false -> MFENCE
-  | false, true, false -> PFENCE
-  | false, false, true -> PSYNC
+  | _,     true, false -> PFENCE
+  | _,        _, true  -> PSYNC
   | _ -> failwith "Invalid fence attributes!"
 
                                                          
