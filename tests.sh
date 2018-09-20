@@ -33,4 +33,5 @@
 ./comparator -desc "compile_opencl_ptx_cumul_5ev" -arch OpenCL -arch2 PTX -fencerels -violates models/opencl_scoped.cat -satisfies models/ptx_cumul.cat -mapping mappings/fences_as_relations/opencl_ptx_buggy.als -events 5 -events2 5 -expect 1
 ./comparator -desc "c11_not_lahav" -arch C -violates models/c11_lahav.cat -satisfies models/c11_normws.cat -events 4 -iter
 ./comparator -desc "TSO_not_PTSO" -arch X86 -satisfies models/x86tso.cat -violates models/x86ptso.cat -satisfies models/normws.cat -events 4 -iter -expect 15
-./comparator -desc "C11_not_PC11" -arch C -satisfies models/c11_lahav.cat -violates models/c11_lahav_persistent.cat -satisfies models/c11_normws.cat -events 3 -iter -expect 21
+./comparator -desc "C11_not_PC11" -arch C -satisfies models/c11_lahav.cat -violates models/c11_lahav_persistent.cat -satisfies models/c11_normws.cat -events 3 -iter -expect 9
+./comparator -desc "PC11_sequentialisation" -arch C -violates models/c11_lahav_persistent.cat -satisfies models/c11_lahav_persistent.cat -alsosatisfies models/c11_normws.cat -mapping mappings/c11_strengthening_seq.als -events 3 -expect 1

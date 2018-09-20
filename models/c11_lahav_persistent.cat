@@ -69,4 +69,4 @@ deadness_requires empty pdr \ (dhb | dhb^-1) as Dead_Pdr
 (** Persistency *)
 let PE = W | F
 empty (PE * PE) & (fsb | sbf) \ nvo as FencesPersist
-empty (PE * PE) & (po*;sw;po*) \ nvo as RelAcqPersist
+empty (PE * PE) & (po*;[REL];rfe;[ACQ];po*) \ nvo as RelAcqPersist

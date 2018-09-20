@@ -35,6 +35,9 @@ pred strengthening[X,X':Exec] {
   // the mapping preserves co in both directions
   X.co = X'.co
 
+  // the mapping preserves nvo in both directions
+  X.nvo = X'.nvo
+		
   // the mapping preserves loc in both directions
   X.sloc = X'.sloc
 
