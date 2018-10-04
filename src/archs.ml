@@ -120,6 +120,7 @@ let fence_sets = function
   | Power -> ["SYNC"; "LWSYNC"; "ISYNC"]
   | Arm7 | Arm8 -> ["DMB"; "DMBST"; "DMBLD"; "ISB"]
   | PTX -> ["MEMBAR_CTA"; "MEMBAR_GL"; "MEMBAR_SYS"]
+  | C -> ["WPF"; "PF"; "PS"]
   | _ -> []
 
 (** Pre-defined fence relations for given architecture *)
@@ -133,8 +134,8 @@ let fence_rels = function
 (** Pre-defined event sets for given architecture *)
 let arch_sets fences_as_relations arch =
   let rec arch_sets = function
-    | Basic -> ["EV"; "W"; "R"; "F"; "NAL"; "IW"]
-    | C -> arch_sets Basic @ ["A"; "ACQ"; "REL"; "SC"]
+    | Basic -> ["EV"; "W"; "R"; "F"; "NAL"; "IW"; "P"]
+    | C -> arch_sets Basic @ ["A"; "ACQ"; "REL"; "SC"; "WB"; "PL"]
     | Basic_HW -> arch_sets Basic
     | X86 -> arch_sets Basic_HW
     | Power -> arch_sets Basic_HW
@@ -181,6 +182,7 @@ let arch_min_sets fences_as_relations arch =
     | Power -> ["SYNC","SYNC"]
     | Arm7 | Arm8 -> ["DMBLD & DMBST", "DMBST"; "DMBLD & DMBST", "DMBLD"]
     | PTX -> ["MEMBAR_GL", "MEMBAR_GL"; "MEMBAR_SYS", "MEMBAR_SYS"]
+    | C -> ["WPF", "WPF"; "PF", "PF"; "PS", "PS"] 
     | _ -> []
   in
   let fences = if fences_as_relations then [] else fence_min_sets arch in
@@ -215,14 +217,17 @@ let all_implied_rels =
 let all_implied_sets =
   ["SC", "ACQ"; "SC", "REL"; "SC", "A";
    "ACQ", "A"; "REL", "A";
-  "PSYNC", "PFENCE"; "PSYNC", "MFENCE"; "PFENCE", "MFENCE"]
+   "PSYNC", "PFENCE"; "PSYNC", "MFENCE"; "PFENCE", "MFENCE";
+   "PF", "WPF"; "PS", "PF"; "PS", "WPF";
+  ]
 
 (** List of all sets that should be reduced as much as possible *)
 let min_sets = [
     "SC"; "ACQ"; "REL"; "A"; "SCREL"; "SCACQ"; "MFENCE";
     "PFENCE"; "PSYNC"; "SYNC";
     "LWSYNC"; "ISYNC"; "DMB"; "DMBST"; "DMBLD"; "ISB";
-    "MEMBAR_CTA"; "MEMBAR_GL"; "MEMBAR_SYS"
+    "MEMBAR_CTA"; "MEMBAR_GL"; "MEMBAR_SYS";
+    "WPF"; "PF"; "PS";
   ]
 
 (** List of all relations that should be reduced as much as possible *)

@@ -67,6 +67,15 @@ let pdr = cnf \ (A*A)
 deadness_requires empty pdr \ (dhb | dhb^-1) as Dead_Pdr
 
 (** Persistency *)
-let PE = W | F
-empty (PE * PE) & (fsb | sbf) \ nvo as FencesPersist
-empty (PE * PE) & (po*;[REL];rfe;[ACQ];po*) \ nvo as RelAcqPersist
+let D = (W & PL) | WB | PF | PS
+
+empty (nvo & sloc & (PL * PL) & (W * W)) \ mo as NvoMo
+
+let swp = sw & (PL * PL)
+let psw = (sb?; swp)+; sb?
+
+empty ([D]; psw; [D]) \ nvo as NvoPsw
+empty (([PS | PF]; sb; [D]) | ([D]; sb; [PS | PF])) \ nvo as NvoPsf
+empty (([WPF]; sb; [D]) | ([WB]; sb; [WPF])) \ nvo as NvoWpf
+
+empty ([W & PL]; (sb & sloc); [WB]) \ nvo as NvoPre

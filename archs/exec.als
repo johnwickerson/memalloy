@@ -4,8 +4,8 @@ open relations[E]
 sig Exec {
   EV : set E,      // domain of all events
   W, R, F : set E, // writes, reads, fences
+  WB : set E,      // write-back events
   IW : set E,      // initial writes
-  P : set E,       // persistent events
   sb : E->E,       // sequenced before
   ad,cd,dd : E->E, // address, control, data dependencies
   atom : E->E,     // atomicity relation
@@ -13,14 +13,13 @@ sig Exec {
   sloc : E->E,     // same location (partial E.R.)
   //////////////////////////////////////
   rf : E->E,       // reads-from
-  co : E->E,       // coherence order
-  nvo : E->E,      // non-volatile order
+  co : E->E        // coherence order
 }{
   // EV captures all and only the events involved
   W + R + F in EV
-    
+		
   // fences are disjoint from accesses
-  no ((R + W) & F)
+  disj[R + W, F, WB]	
 
   // initial events are ordinary writes
   IW in W - R
@@ -47,8 +46,8 @@ sig Exec {
   // sthd is an equivalence relation among non-initial events
   is_equivalence[sthd, EV - IW]
     
-  // loc is an equivalence relation among reads and writes
-  is_equivalence[sloc, R + W]
+  // loc is an equivalence relation among reads and writes and write-backs
+  is_equivalence[sloc, R + W + WB]
 
   rf in sloc
 
@@ -58,18 +57,6 @@ sig Exec {
   // co is a union, over all locations x, of strict
   // total orders on writes to x
   (co + ~co) = (W -> W) & sloc - iden
-
-  // nvo is prefix-closed with respect to persistent events
-  (nvo . P) in P
-
-  // reads are vacuously persistent
-  R in P		
-		
-  // nvo is a total order over all events that affect the non-volatile
-  // memory (i.e. all writes and certain fences)
-  strict_partial_order[nvo]
-  nvo in sq[W + F]
-  (sq[W] - iden) in (nvo + ~nvo)	
 		
   // Event e2 has an "address dependency" on e1 if
   // location[e2] depends on valr[e1]. Therefore "(e1,e2) in ad"
@@ -137,14 +124,13 @@ fun W [e:PTag->E, X:Exec] : set E { X.W - e[rm_EV] }
 fun IW [e:PTag->E, X:Exec] : set E { X.IW - e[rm_EV] }
 fun R [e:PTag->E, X:Exec] : set E { X.R - e[rm_EV] }
 fun F [e:PTag->E, X:Exec] : set E { X.F - e[rm_EV] }
-fun P [e:PTag->E, X:Exec] : set E { X.P - e[rm_EV] }
+fun WB [e:PTag->E, X:Exec] : set E { X.WB - e[rm_EV] } 
 
 fun sb [e:PTag->E, X:Exec] : E->E { rm_EV_rel[e, X.sb] }
 fun sthd [e:PTag->E, X:Exec] : E->E { rm_EV_rel[e, X.sthd] }
 fun sloc [e:PTag->E, X:Exec] : E->E { rm_EV_rel[e, X.sloc] }
 fun rf [e:PTag->E, X:Exec] : E->E { rm_EV_rel[e, X.rf] }
 fun co [e:PTag->E, X:Exec] : E->E { rm_EV_rel[e, X.co] }
-fun nvo [e:PTag->E, X:Exec] : E->E { rm_EV_rel[e, X.nvo] }
 
 fun fr [e:PTag->E, X:Exec] : E->E {
   let fr_base = ((X.R -> X.W) & X.sloc) - (~(X.rf) . *~(X.co)) |

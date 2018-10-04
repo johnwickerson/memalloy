@@ -5,6 +5,8 @@ sig Exec_X86 extends Exec_H {
   MFENCE : set E, // memory fence
   PFENCE : set E, // persistent fence
   PSYNC : set E,  // persistent sync
+  P : set E,      // persistent events
+  nvo : E->E,     // non-volatile order
 }{
 
   // Every fence is an MFENCE
@@ -15,16 +17,23 @@ sig Exec_X86 extends Exec_H {
 
   // A PSYNC is stronger than a PFENCE
   PSYNC in PFENCE
+
+  // nvo is prefix-closed with respect to persistent events
+  (nvo . P) in P
+
+  // reads are vacuously persistent
+  R in P		
+
+  // nvo relates all and only events that affect non-volatile memory 
+  // (i.e. writes, PFENCEs and PSYNCs)
+  strict_partial_order[nvo]
+  (nvo + ~nvo) = sq[W + PFENCE] - iden
 		
   // RMWs are consecutive
   atom in imm[sb]
 
   // control dependencies only come out of reads
   cd in (R -> EV)
-
-  // nvo relates all and only events that affect non-volatile memory 
-  // (i.e. writes, PFENCEs and PSYNCs)
-  (nvo + ~nvo) = sq[W + PFENCE] - iden
 
   // MFENCEs and PSYNCs are always persistent (but PFENCEs may not be) 	
   MFENCE - PFENCE in P
@@ -41,7 +50,9 @@ fun PFENCE[e:PTag->E, X:Exec_X86] : set E {
   X.PFENCE - e[rm_EV] - e[rm_PFENCE] - e[rm_MFENCE] }
 fun PSYNC[e:PTag->E, X:Exec_X86] : set E {
   X.PSYNC - e[rm_EV] - e[rm_PSYNC] - e[rm_PFENCE] - e[rm_MFENCE] }
-    
+fun P [e:PTag->E, X:Exec] : set E { X.P - e[rm_EV] }
+
+fun nvo [e:PTag->E, X:Exec] : E->E { rm_EV_rel[e, X.nvo] }
 fun mfence[e:PTag->E, X:Exec_X86] : E->E { addsb[e,X,MFENCE[e,X]] }
 fun pfence[e:PTag->E, X:Exec_X86] : E->E { addsb[e,X,PFENCE[e,X]] }
 fun psync[e:PTag->E, X:Exec_X86] : E->E { addsb[e,X,PSYNC[e,X]] }
