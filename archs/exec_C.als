@@ -75,9 +75,11 @@ sig Exec_C extends Exec {
 
   // nvo relates all and only durable events
   strict_partial_order[nvo]
-  let D = (W & PL) + WB + PF |
-  (nvo + ~nvo) = sq[D] - iden		
-
+  let D = (W & PL) + WB + PF {
+  (nvo + ~nvo) = sq[D] - iden
+  P in D	  	  	
+  }
+		
   // nvo is prefix-closed with respect to persistent events
   (nvo . P) in P
 
