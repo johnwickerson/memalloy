@@ -1,0 +1,60 @@
+"ARM8"
+
+include "basic_H.cat"
+include "fr.cat"
+
+(* Coherence-after *)
+let ca = fr | co
+
+(* Observed-by *)
+let obs = rfe | fre | coe
+
+(* Dependency-ordered-before *)
+let dob = addr | data
+    | ctrl; [W]
+    | ((ctrl & isb) | addr; isb); [R]
+    | addr; po; [W]
+    | (ctrl | data); coi
+    | (addr | data); rfi
+
+(* Atomic-ordered-before *)
+let aob = atom
+    | [range(atom)]; rfi; [SCACQ] (* removed case for Q *)
+
+(* Barrier-ordered-before *)
+let bob = dmb
+    | [SCREL]; po; [SCACQ]
+    | [R]; dmbld
+    | [SCACQ]; po (* removed case for Q *)
+    | [W]; dmbst; [W]
+    | po; [SCREL]
+    | po; [SCREL]; coi
+
+(* Ordered-before *)
+let ob0 = obs
+    | dob
+    | aob
+    | bob
+let ob = ob0+
+
+(* Internal visibility requirement *)
+acyclic po-loc | ca | rf as internal
+
+(* External visibility requirement *)
+irreflexive ob as external
+
+(* Atomic: Basic LDXR/STXR constraint to forbid intervening writes. *)
+empty atom & (fre; coe) as atomic
+
+(** Persistency *)
+let D = (W & PL) | WB
+                             
+empty (nvo & sloc & (PL * PL) & (W * W)) \ co as NvoMo
+
+let swp = rfe & (PL * PL)
+let psw = (sb?; swp)+; sb?
+empty ([D]; psw; [D]) \ nvo as NvoPsw
+                                                          
+empty ([W & PL]; (sb & sloc); [WB]) \ nvo as NvoWwb
+empty ([WB]; sb; [DSB]) \ nvo as NvoWpf1
+empty ([DSB]; sb; [D]) \ nvo as NvoWpf2

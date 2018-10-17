@@ -35,3 +35,4 @@
 ./comparator -desc "TSO_not_PTSO" -arch X86 -satisfies models/x86tso.cat -violates models/x86ptso.cat -satisfies models/normws.cat -events 4 -iter -expect 15
 ./comparator -desc "C_not_PC" -arch C -satisfies models/c11_lahav.cat -violates models/c11_lahav_persistent.cat -satisfies models/c11_normws.cat -events 2 -iter -expect 8
 ./comparator -desc "PC11_sequentialisation" -arch C -violates models/c11_lahav_persistent.cat -satisfies models/c11_lahav_persistent.cat -alsosatisfies models/c11_normws.cat -mapping mappings/c11_strengthening_seq.als -events 3 -expect 1
+./comparator -desc "PARM8 conformance" -arch ARM8 -satisfies models/aarch64.cat -violates models/arm8p.cat -events 3 -iter

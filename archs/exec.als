@@ -13,7 +13,11 @@ sig Exec {
   sloc : E->E,     // same location (partial E.R.)
   //////////////////////////////////////
   rf : E->E,       // reads-from
-  co : E->E        // coherence order
+  co : E->E,       // coherence order
+  //////////////////////////////////////
+  P : set E,       // persistent events
+  nvo : E->E,      // non-volatile order
+  PL : set E       // events accessing persistent locations
 }{
   // EV captures all and only the events involved
   W + R + F in EV
@@ -24,9 +28,18 @@ sig Exec {
   // initial events are ordinary writes
   IW in W - R
 
+  // initial writes to persistent locations persist
+  IW & PL in P
+		
   // at most one initial write per location
   (IW -> IW) & sloc in iden
-    	
+
+  // PL contains zero or more sloc-classes
+  PL . sloc = PL
+		
+  // some reads and writes and write-backs may access persistent locations		
+  PL in (R + W + WB)
+		
   // sequenced-before is intra-thread
   sb in sthd
 
@@ -79,7 +92,12 @@ sig Exec {
 
   // the atom relation relates a read/write pair in program order
   atom in (R->W) & sb & sloc
-    
+
+  // nvo is a strict partial order
+  strict_partial_order[nvo]
+
+  // nvo is prefix-closed with respect to persistent events
+  (nvo . P) in P			
 }
 
 pred withinit[X:Exec] {
@@ -126,11 +144,16 @@ fun R [e:PTag->E, X:Exec] : set E { X.R - e[rm_EV] }
 fun F [e:PTag->E, X:Exec] : set E { X.F - e[rm_EV] }
 fun WB [e:PTag->E, X:Exec] : set E { X.WB - e[rm_EV] } 
 
+fun P [e:PTag->E, X:Exec] : set E { X.P - e[rm_EV] } 
+fun PL [e:PTag->E, X:Exec] : set E { X.PL - e[rm_EV] }
+
 fun sb [e:PTag->E, X:Exec] : E->E { rm_EV_rel[e, X.sb] }
 fun sthd [e:PTag->E, X:Exec] : E->E { rm_EV_rel[e, X.sthd] }
 fun sloc [e:PTag->E, X:Exec] : E->E { rm_EV_rel[e, X.sloc] }
 fun rf [e:PTag->E, X:Exec] : E->E { rm_EV_rel[e, X.rf] }
 fun co [e:PTag->E, X:Exec] : E->E { rm_EV_rel[e, X.co] }
+
+fun nvo [e:PTag->E, X:Exec] : E->E { rm_EV_rel[e, X.nvo] }
 
 fun fr [e:PTag->E, X:Exec] : E->E {
   let fr_base = ((X.R -> X.W) & X.sloc) - (~(X.rf) . *~(X.co)) |

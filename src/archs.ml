@@ -118,7 +118,7 @@ let all = ["BASIC"; "C"; "HW"; "X86"; "PPC"; "ARM7";
 let fence_sets = function
   | X86 -> ["MFENCE"; "PFENCE"; "PSYNC"]
   | Power -> ["SYNC"; "LWSYNC"; "ISYNC"]
-  | Arm7 | Arm8 -> ["DMB"; "DMBST"; "DMBLD"; "ISB"]
+  | Arm7 | Arm8 -> ["DMB"; "DMBST"; "DMBLD"; "ISB"; "DSB"]
   | PTX -> ["MEMBAR_CTA"; "MEMBAR_GL"; "MEMBAR_SYS"]
   | C -> ["WPF"; "PF"; "PS"]
   | _ -> []
@@ -134,8 +134,8 @@ let fence_rels = function
 (** Pre-defined event sets for given architecture *)
 let arch_sets fences_as_relations arch =
   let rec arch_sets = function
-    | Basic -> ["EV"; "W"; "R"; "F"; "NAL"; "IW"; "P"]
-    | C -> arch_sets Basic @ ["A"; "ACQ"; "REL"; "SC"; "WB"; "PL"]
+    | Basic -> ["EV"; "W"; "R"; "F"; "NAL"; "IW"; "P"; "PL"; "WB"]
+    | C -> arch_sets Basic @ ["A"; "ACQ"; "REL"; "SC"]
     | Basic_HW -> arch_sets Basic
     | X86 -> arch_sets Basic_HW
     | Power -> arch_sets Basic_HW
@@ -180,7 +180,7 @@ let arch_min_sets fences_as_relations arch =
   let fence_min_sets = function
     | X86 -> ["PSYNC", "PSYNC"; "PFENCE", "PFENCE"]
     | Power -> ["SYNC","SYNC"]
-    | Arm7 | Arm8 -> ["DMBLD & DMBST", "DMBST"; "DMBLD & DMBST", "DMBLD"]
+    | Arm7 | Arm8 -> ["DMBLD & DMBST", "DMBST"; "DMBLD & DMBST", "DMBLD"; "DSB", "DMBST"; "DSB", "DMBLD"]
     | PTX -> ["MEMBAR_GL", "MEMBAR_GL"; "MEMBAR_SYS", "MEMBAR_SYS"]
     | C -> ["WPF", "WPF"; "PF", "PF"; "PS", "PS"] 
     | _ -> []
@@ -225,7 +225,7 @@ let all_implied_sets =
 let min_sets = [
     "SC"; "ACQ"; "REL"; "A"; "SCREL"; "SCACQ"; "MFENCE";
     "PFENCE"; "PSYNC"; "SYNC";
-    "LWSYNC"; "ISYNC"; "DMB"; "DMBST"; "DMBLD"; "ISB";
+    "LWSYNC"; "ISYNC"; "DMB"; "DMBST"; "DMBLD"; "ISB"; "DSB";
     "MEMBAR_CTA"; "MEMBAR_GL"; "MEMBAR_SYS";
     "WPF"; "PF"; "PS";
   ]

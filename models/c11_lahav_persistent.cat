@@ -78,4 +78,4 @@ empty ([D]; psw; [D]) \ nvo as NvoPsw
 empty (([PS | PF]; sb; [D]) | ([D]; sb; [PS | PF])) \ nvo as NvoPsf
 empty (([WPF]; sb; [D]) | ([WB]; sb; [WPF])) \ nvo as NvoWpf
 
-empty ([W & PL]; (sb & sloc); [WB]) \ nvo as NvoPre
+empty ([W & PL]; (sb & sloc); [WB]) \ nvo as NvoWwb

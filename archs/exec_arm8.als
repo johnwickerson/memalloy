@@ -3,7 +3,7 @@ open exec_arm7[E]
 
 sig Exec_Arm8 extends Exec_Arm7 {
   SCREL : set E, // release events
-  SCACQ : set E  // acquire events
+  SCACQ : set E, // acquire events
 }{
 
   // only reads can acquire
@@ -11,7 +11,7 @@ sig Exec_Arm8 extends Exec_Arm7 {
 
   // only non-initial writes can release
   SCREL in W - IW
-    
+		
 }
 
 one sig rm_SCREL extends PTag {}
