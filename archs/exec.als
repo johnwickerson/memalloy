@@ -12,7 +12,6 @@ sig Exec {
   sloc : E->E,     // same location (partial E.R.)
   //////////////////////////////////////
   rf : E->E,       // reads-from
-  co : E->E,       // coherence order
 }{
   // EV captures all and only the events involved
   W + R + F in EV
@@ -50,13 +49,6 @@ sig Exec {
 
   rf in sloc
 
-  // co is acyclic and transitive
-  strict_partial_order[co]
-
-  // co is a union, over all locations x, of strict
-  // total orders on writes to x
-  (co + ~co) = (W -> W) & sloc - iden
-
   // Event e2 has an "address dependency" on e1 if
   // location[e2] depends on valr[e1]. Therefore "(e1,e2) in ad"
   // only makes sense when e1 is a read and e2 is a read or a write
@@ -81,6 +73,17 @@ sig Exec {
     
 }
 
+pred wf_co[X:Exec, co:E->E] {
+
+  // co is acyclic and transitive
+  strict_partial_order[co]
+
+  // co is a union, over all locations x, of strict
+  // total orders on writes to x
+  (co + ~co) = (X.W -> X.W) & X.sloc - iden
+
+}
+
 pred withinit[X:Exec] {
   // rf connects each read to exactly one write
   X.rf in X.W one -> X.R
@@ -90,7 +93,7 @@ pred withinit[X:Exec] {
   all e : X.(R+W) | one (e.(X.sloc) & X.IW)
 
   // initial writes have no co-predecessor
-  all e : X.IW | no e.~(X.co)
+  //all e : X.IW | no e.~(X.co)
 }
 
 pred withoutinit[X:Exec] {
@@ -128,13 +131,13 @@ fun sb [e:PTag->E, X:Exec] : E->E { rm_EV_rel[e, X.sb] }
 fun sthd [e:PTag->E, X:Exec] : E->E { rm_EV_rel[e, X.sthd] }
 fun sloc [e:PTag->E, X:Exec] : E->E { rm_EV_rel[e, X.sloc] }
 fun rf [e:PTag->E, X:Exec] : E->E { rm_EV_rel[e, X.rf] }
-fun co [e:PTag->E, X:Exec] : E->E { rm_EV_rel[e, X.co] }
 
+/*
 fun fr [e:PTag->E, X:Exec] : E->E {
   let fr_base = ((X.R -> X.W) & X.sloc) - (~(X.rf) . *~(X.co)) |
   rm_EV_rel[e, fr_base]
 }
-
+*/
 
 fun ad [e:PTag->E, X:Exec] : E->E {
   rm_EV_rel[e, (univ - e[rm_ad]) <: X.ad] }
