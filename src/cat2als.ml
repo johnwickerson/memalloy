@@ -29,43 +29,40 @@ open! Format
 open! General_purpose
 open Cat_syntax
 
-let cat_dir : string ref = ref "."
-let out_dir : string ref = ref "."
+(* Set the first time als_of_file is called. The directory of the first (top-level) als file *)
+(* We set it there so it works whether called from the command line or from code *)
+let cat_dir : string ref = ref ""
+let out_dir : string ref = ref ""
 let unrolling_factor : int ref = ref 3
 
-let speclist =
-  ["-u", Arg.Set_int unrolling_factor,
-   sprintf "Number of times to unroll recursive definitions (optional, default=%d)" !unrolling_factor;
-
-   "-o", Arg.Set_string out_dir,
-   sprintf "Output directory (default=%s)" !out_dir;
-  ]
-
 let get_args () =
-  let cat_path : string ref = ref "" in
   let intermediate_model : bool ref = ref false in
+  let cat_path : string ref = ref "" in
+
   let usage_msg =
     "A translator from the .cat format into the .als (Alloy) format.\nUsage: `cat2als [options] <cat_file.cat>`.\nOptions available:"
   in
-  let speclist =
-    Global_options.speclist @ speclist @ [
+
+  let speclist = Global_options.speclist @ [
+        "-u", Arg.Set_int unrolling_factor,
+        sprintf "Number of times to unroll recursive definitions (optional, default=%d)" !unrolling_factor;
+
+        "-o", Arg.Set_string out_dir,
+        sprintf "Output directory (default=%s)" !out_dir;
+
         "-i", Arg.Set intermediate_model,
         sprintf "Intermediate model; do not generate `consistent` predicate (optional, default=%b)" !intermediate_model;
-      ]
-  in
+      ] in
+
   Arg.parse speclist (fun filename -> cat_path := filename) usage_msg;
-  begin match Sys.file_exists !cat_path with
-  | false -> failwith "Could not find cat file %s" !cat_path
-  | _ -> ()
-  end;
-  let dir = Filename.dirname !cat_path in
-  let cat_file = Filename.basename !cat_path in
-  let _ = cat_dir := dir in
-  cat_file, !intermediate_model
+
+  if not (Sys.file_exists !cat_path) then
+    failwith "Could not find cat file %s" !cat_path;
+
+  !cat_path, !intermediate_model
 
 (** Parse the given .cat file into an abstract syntax tree *)
 let parse_file cat_path =
-  let cat_path = Filename.concat !cat_dir cat_path in
   let ic = open_in cat_path in
   let lexbuf = Lexing.from_channel ic in
   Cat_parser.main Cat_lexer.token lexbuf
@@ -287,19 +284,33 @@ let rec als_of_instr withsc arch oc (env, axs) = function
      let ax_info = {cnstrnt; withsc_ax=withsc} in
      (env, (n, ax_info) :: axs)
   | Include cat_path ->
-     let env',axs' = als_of_file true (Filename.concat "models" cat_path) in
+     let full_cat_path = Filename.concat !cat_dir cat_path in
+     let env',axs' = als_of_file true full_cat_path in
      fprintf oc "open %s[E]\n\n" (Filename.chop_extension cat_path);
      (env' @ env, axs @ axs')
 
-(** [als_of_file interm_model u path] converts the Cat file [path] into a complete Alloy file, which is saved with the same name as the Cat file but with the .als extension instead of .cat. The conversion includes the top-level predicates unless [interm_model] is set. It returns the typing environment and axiom list obtained at the end of processing the file. *)
+(**
+    [als_of_file interm_model u path] converts the Cat file [path] into a
+    complete Alloy file, which is saved with the same name as the Cat file but with
+    the .als extension instead of .cat. The conversion includes the top-level
+    predicates unless [interm_model] is set. It returns the typing environment and
+    axiom list obtained at the end of processing the file.
+ *)
 and als_of_file interm_model cat_path =
+  (* This should only happen the first time als_of_file is called *)
+  if (!cat_dir = "") then
+    cat_dir := Filename.dirname cat_path;
+  if (!out_dir = "") then
+    out_dir := !cat_dir;
+
+  let cat_path = Filename.concat !cat_dir (Filename.basename cat_path) in
+
   let model_name =
     Filename.chop_extension (Filename.basename cat_path)
   in
-  let als_path = sprintf "%s.als" model_name in
+  let als_path = sprintf "%s.als" (Filename.concat !out_dir model_name) in
   if !Global_options.verbose then
     printf "Converting %s to %s.\n" cat_path als_path;
-  let als_path = Filename.concat "models" als_path in
   let oc = open_out als_path in
   let ppf = formatter_of_out_channel oc in
   let model_type, withsc, cat_model = parse_file cat_path in
