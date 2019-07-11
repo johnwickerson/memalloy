@@ -29,47 +29,44 @@ open! Format
 open! General_purpose
 open Cat_syntax
 
-let cat_dir : string ref = ref "."
-let out_dir : string ref = ref "."
+(* Set the first time als_of_file is called. The directory of the first (top-level) als file *)
+(* We set it there so it works whether called from the command line or from code *)
+let cat_dir : string ref = ref ""
+let out_dir : string ref = ref ""
 let unrolling_factor : int ref = ref 3
 
-let speclist =
-  ["-u", Arg.Set_int unrolling_factor,
-   sprintf "Number of times to unroll recursive definitions (optional, default=%d)" !unrolling_factor;
-      
-   "-o", Arg.Set_string out_dir,
-   sprintf "Output directory (default=%s)" !out_dir;
-  ]
-
 let get_args () =
-  let cat_path : string ref = ref "" in
   let intermediate_model : bool ref = ref false in
+  let cat_path : string ref = ref "" in
+
   let usage_msg =
     "A translator from the .cat format into the .als (Alloy) format.\nUsage: `cat2als [options] <cat_file.cat>`.\nOptions available:"
   in
-  let speclist =
-    Global_options.speclist @ speclist @ [
+
+  let speclist = Global_options.speclist @ [
+        "-u", Arg.Set_int unrolling_factor,
+        sprintf "Number of times to unroll recursive definitions (optional, default=%d)" !unrolling_factor;
+
+        "-o", Arg.Set_string out_dir,
+        sprintf "Output directory (default=%s)" !out_dir;
+
         "-i", Arg.Set intermediate_model,
         sprintf "Intermediate model; do not generate `consistent` predicate (optional, default=%b)" !intermediate_model;
-      ]
-  in
+      ] in
+
   Arg.parse speclist (fun filename -> cat_path := filename) usage_msg;
-  begin match Sys.file_exists !cat_path with
-  | false -> failwith "Could not find cat file %s" !cat_path
-  | _ -> ()
-  end;
-  let dir = Filename.dirname !cat_path in
-  let cat_file = Filename.basename !cat_path in
-  let _ = cat_dir := dir in
-  cat_file, !intermediate_model
+
+  if not (Sys.file_exists !cat_path) then
+    failwith "Could not find cat file %s" !cat_path;
+
+  !cat_path, !intermediate_model
 
 (** Parse the given .cat file into an abstract syntax tree *)
 let parse_file cat_path =
-  let cat_path = Filename.concat !cat_dir cat_path in
   let ic = open_in cat_path in
   let lexbuf = Lexing.from_channel ic in
   Cat_parser.main Cat_lexer.token lexbuf
-       
+
 (** {2 Unfolding recursive definitions} *)
 
 let add_subscript = sprintf "%s_%d"
@@ -82,7 +79,7 @@ let rec sub_subscript xs d = function
   | App (f, es) -> App (f, List.map (sub_subscript xs d) es)
   | Op1 (o, e) -> Op1 (o, sub_subscript xs d e)
   | Op (o, es) -> Op (o, List.map (sub_subscript xs d) es)
-				    
+
 (** If [xes] comprises the recursive definitions {i x=e(x,y)} and {i y=f(x,y)}, then [unfold_defs xes] produces a sequence of non-recursive definitions obtained by unrolling [xes]. The number of unrollings is given by [!unrolling_factor]. For instance, [unfold_defs xes] with [!unrolling_factor = 2] produces the sequence {i x0=0}, {i y0=0}, {i x1=e(x0,y0)}, {i y1=f(x0,y0)}, {i x=e(x1,y1)}, {i y=f(x1,y1)}. *)
 let unfold_defs xes =
   let xs = List.map fst xes in
@@ -106,7 +103,7 @@ let rec unfold_instrs = function
   | [] -> []
   | LetRec xes :: instrs -> unfold_defs xes @ unfold_instrs instrs
   | other_instr :: instrs -> other_instr :: unfold_instrs instrs
-				  
+
 (** {2 Generating Alloy code} *)
 
 type set_or_rel = Set | Rel
@@ -134,7 +131,7 @@ let build_env withsc arch =
   let sets = Archs.arch_sets !Global_options.fencerels arch in
   let mk_info x = (x, {args=[]; withsc=false}) in
   List.map mk_info (rels @ sets)
-    
+
 (** Look up variable in typing environment *)
 let lookup_var env x =
   try List.assoc x env with Not_found ->
@@ -162,7 +159,7 @@ let rec replace_vars_with_args args = function
 let als_of_type oc = function
   | Set -> fprintf oc "set E"
   | Rel -> fprintf oc "E->E"
-               
+
 let als_of_shape oc = function
   | Acyclic -> fprintf oc "is_acyclic"
   | Irreflexive -> fprintf oc "irreflexive"
@@ -209,7 +206,7 @@ let rec als_of_expr env tgt oc = function
      als_of_expr env Set oc (Op (Diff, [univ; e]))
   | Op1 (Comp,e) when tgt = Rel ->
      let univ = Op(Cross, [Var "EV"; Var "EV"]) in
-     als_of_expr env Rel oc (Op (Diff, [univ; e])) 
+     als_of_expr env Rel oc (Op (Diff, [univ; e]))
   | Op1 (Domain, e) when tgt = Set ->
      fprintf oc "dom[%a]" (als_of_expr env Rel) e
   | Op1 (Range, e) when tgt = Set ->
@@ -229,7 +226,7 @@ let rec als_of_expr env tgt oc = function
   | e -> failwith "Couldn't type %a as a %a"
            pp_expr e pp_set_or_rel tgt
 
-(** [als_of_axiom env oc (s,e)] converts the Cat axiom [s(e)] into an Alloy expression (sent to output channel [oc]), under the typing assumptions in [env]  *) 
+(** [als_of_axiom env oc (s,e)] converts the Cat axiom [s(e)] into an Alloy expression (sent to output channel [oc]), under the typing assumptions in [env]  *)
 let als_of_axiom env oc (s, e) =
   fprintf oc "%a[%a]" als_of_shape s (als_of_expr env Rel) e
 
@@ -239,7 +236,7 @@ let preamble cat_path model_name arch oc =
 	  cat_path (MyTime.today ()) (MyTime.now ());
   fprintf oc "module %s[E]\n" model_name;
   fprintf oc "open %a[E]\n\n" (Archs.pp_arch !Global_options.fencerels) arch
-	  
+
 (** Generates the final part of the Alloy file *)
 let postamble withsc arch axs oc c =
   fprintf oc "pred %a[e:PTag->E, X:%a] {\n"
@@ -255,7 +252,7 @@ let postamble withsc arch axs oc c =
   List.iter pp_ax (List.rev (List.filter check_constraint axs));
   if withsc then fprintf oc "  }\n";
   fprintf oc "}\n"
-	  
+
 (** [als_of_instr withsc arch oc (env, axs) ins] converts the Cat instruction [ins] into Alloy code (sent to out channel [oc]), assuming architecture [arch], typing environment [env], axiom list [axs], and [withsc] controlling whether the {i S} order is included. Returns an updated typing environment and axiom list. *)
 let rec als_of_instr withsc arch oc (env, axs) = function
   | Let (x,args,e) ->
@@ -287,19 +284,33 @@ let rec als_of_instr withsc arch oc (env, axs) = function
      let ax_info = {cnstrnt; withsc_ax=withsc} in
      (env, (n, ax_info) :: axs)
   | Include cat_path ->
-     let env',axs' = als_of_file true (Filename.concat "models" cat_path) in
+     let full_cat_path = Filename.concat !cat_dir cat_path in
+     let env',axs' = als_of_file true full_cat_path in
      fprintf oc "open %s[E]\n\n" (Filename.chop_extension cat_path);
      (env' @ env, axs @ axs')
 
-(** [als_of_file interm_model u path] converts the Cat file [path] into a complete Alloy file, which is saved with the same name as the Cat file but with the .als extension instead of .cat. The conversion includes the top-level predicates unless [interm_model] is set. It returns the typing environment and axiom list obtained at the end of processing the file. *)
+(**
+    [als_of_file interm_model u path] converts the Cat file [path] into a
+    complete Alloy file, which is saved with the same name as the Cat file but with
+    the .als extension instead of .cat. The conversion includes the top-level
+    predicates unless [interm_model] is set. It returns the typing environment and
+    axiom list obtained at the end of processing the file.
+ *)
 and als_of_file interm_model cat_path =
+  (* This should only happen the first time als_of_file is called *)
+  if (!cat_dir = "") then
+    cat_dir := Filename.dirname cat_path;
+  if (!out_dir = "") then
+    out_dir := !cat_dir;
+
+  let cat_path = Filename.concat !cat_dir (Filename.basename cat_path) in
+
   let model_name =
     Filename.chop_extension (Filename.basename cat_path)
   in
-  let als_path = sprintf "%s.als" model_name in
+  let als_path = sprintf "%s.als" (Filename.concat !out_dir model_name) in
   if !Global_options.verbose then
     printf "Converting %s to %s.\n" cat_path als_path;
-  let als_path = Filename.concat "models" als_path in
   let oc = open_out als_path in
   let ppf = formatter_of_out_channel oc in
   let model_type, withsc, cat_model = parse_file cat_path in
@@ -318,13 +329,13 @@ and als_of_file interm_model cat_path =
     end;
   close_out oc;
   env,axs
-		   
+
 let main () =
   let cat_path, interm_model = get_args () in
   assert (!unrolling_factor >= 0);
   let _ = als_of_file interm_model cat_path in
   exit 0
-    
+
 
 let _ =
   if MyStr.endswith Sys.argv.(0) "cat2als" then
