@@ -2,6 +2,8 @@ module exec_SQL[E]
 open exec[E]
 
 sig Exec_SQL extends Exec {
+  C : set E,        // Commit events
+
   rc : set E,       // Events in read-committed transactions
   rr : set E,       // Events in repeatable-read transactions
   sz : set E,       // Events in serializable transactions
@@ -13,11 +15,15 @@ sig Exec_SQL extends Exec {
   no cd
   no dd
 
-  // No fences
-  no F
+  // Commits are fences
+  /* TODO modify memalloy so that it allows commits even if they are not in R, W or F */
+  C = F
 
   // Events can be of only one type
-  disj[R, W]
+  disj[R, W, C]
+
+  // Reads, writes and commits are the only types of events
+  (R + W + C) = EV
 
   // Events can be in only one isolation level
   disj[rc, rr, sz]
@@ -30,6 +36,9 @@ sig Exec_SQL extends Exec {
   rr.sthd in rr
   sz.sthd in sz
 
+   // last event == commit
+  all e : E | no e.sb iff e in C
+
   // Only events in the same thread can come from the same statement
   sstmt in sthd
 
@@ -37,9 +46,18 @@ sig Exec_SQL extends Exec {
   is_equivalence[sstmt, EV - IW]
 }
 
+fun commit_of[X:Exec_SQL] : E->E {
+  X.sb :> X.C
+}
+
+one sig rm_C extends PTag {}
 one sig rm_rc extends PTag {}
 one sig rm_rr extends PTag {}
 one sig rm_sz extends PTag {}
+
+fun C[e:PTag->E, X:Exec_SQL] : set E {
+  X.C - e[rm_EV] - e[rm_C]
+}
 
 fun rc[e:PTag->E, X:Exec_SQL] : set E {
   X.rc - e[rm_EV] - e[rm_rc]
