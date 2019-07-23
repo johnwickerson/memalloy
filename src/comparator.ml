@@ -28,28 +28,25 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 open! Format
 open! General_purpose
 
-(** Check if we're on a Mac *)
-let running_osx () =
-  let ic = Unix.open_process_in "uname -s" in
-  let os_name = input_line ic in
-  ignore (Unix.close_process_in ic);
-  if os_name = "Darwin" then true else false
+(** Get the os name for alloy. Fails if the os is not one the ones supported by alloy *)
+let os =
+  if Sys.os_type == "Win32" then "x86-windows" else
+    let kernel_name_proc = Unix.open_process_in "uname -s" in
+    let platform_name_proc = Unix.open_process_in "uname -m" in
+    let kernel_name = input_line kernel_name_proc in
+    let platform_name = input_line platform_name_proc in
+    ignore (Unix.close_process_in kernel_name_proc);
+    ignore (Unix.close_process_in platform_name_proc);
+    match (String.lowercase_ascii platform_name, String.lowercase_ascii kernel_name) with
+      ("x86_64", "linux") -> "amd64-linux"
+    | ("x86", "linux") -> "x86-linux"
+    | (_, "darwin") -> "x86-mac"
+    | (_, "freebsd") -> "x86-freebsd"
+    | (_, _) -> failwith "OS %s-%s is not supported." platform_name kernel_name
 
 (** Interface to the Alloy Java application *)
 let run_alloy alloystar_dir xml_dir comparator_script iter solver quiet =
   let java_heap_size = opt "3g" iden (Sys.getenv_opt "JAVA_HEAP_SIZE") in
-  let os =
-    try Sys.getenv "OS" with Not_found ->
-      if running_osx () then "x86-mac" else
-        failwith
-          "ERROR: Environment variable 'OS' not set. Try `source configure.sh`."
-  in
-  let legal_oses =
-    ["x86-freebsd"; "x86-linux"; "x86-mac"; "x86-windows"; "amd64-linux"]
-  in
-  if not (List.mem os legal_oses) then
-    failwith "Environment variable 'OS' must be set to one of [%s]."
-      (String.concat "|" legal_oses);
   let solver_dir = MyFilename.concat [alloystar_dir; os] in
   let cmd =
     String.concat " "
