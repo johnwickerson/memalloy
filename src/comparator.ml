@@ -28,9 +28,17 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 open! Format
 open! General_purpose
 
-(** Get the os name for alloy. Fails if the os is not one the ones supported by alloy *)
-let os =
-  if Sys.os_type == "Win32" then "x86-windows" else
+(** Enum of the OS supported by the tool *)
+type supported_os =
+  | Linux_x86
+  | Linux_amd64
+  | MacOS
+  | FreeBSD
+  | Windows
+
+(** Get OS we are running on. Fails if the os is not one the ones supported by alloy *)
+let get_os () =
+  if Sys.os_type == "Win32" then Windows else
     let kernel_name_proc = Unix.open_process_in "uname -s" in
     let platform_name_proc = Unix.open_process_in "uname -m" in
     let kernel_name = input_line kernel_name_proc in
@@ -38,19 +46,26 @@ let os =
     ignore (Unix.close_process_in kernel_name_proc);
     ignore (Unix.close_process_in platform_name_proc);
     match (String.lowercase_ascii platform_name, String.lowercase_ascii kernel_name) with
-      ("x86_64", "linux") -> "amd64-linux"
-    | ("x86", "linux") -> "x86-linux"
-    | (_, "darwin") -> "x86-mac"
-    | (_, "freebsd") -> "x86-freebsd"
+      ("x86_64", "linux") -> Linux_amd64
+    | ("x86", "linux") -> Linux_x86
+    | (_, "darwin") -> MacOS
+    | (_, "freebsd") -> FreeBSD
     | (_, _) -> failwith "OS %s-%s is not supported." platform_name kernel_name
 
 (** Interface to the Alloy Java application *)
 let run_alloy alloystar_dir xml_dir comparator_script iter solver quiet =
+  let alloy_os_name = match get_os () with
+    | Linux_x86 -> "x86-linux"
+    | Linux_amd64 -> "amd64-linux"
+    | MacOS -> "x86-mac"
+    | FreeBSD -> "x86-freebsd"
+    | Windows -> "x86-windows"
+  in
   let java_heap_size = opt "3g" iden (Sys.getenv_opt "JAVA_HEAP_SIZE") in
-  let solver_dir = MyFilename.concat [alloystar_dir; os] in
+  let solver_dir = MyFilename.concat [alloystar_dir; alloy_os_name] in
   let cmd =
     String.concat " "
-      [sprintf "PATH=%s/%s:$PATH" alloystar_dir os;
+      [sprintf "PATH=%s:$PATH" solver_dir;
        "java";
        "-Xmx" ^ java_heap_size;
        "-Djava.library.path=" ^ solver_dir;
@@ -366,13 +381,13 @@ let main () =
         let first_litmus_test = Array.get (Sys.readdir lit_dir) 0 in
         let first_litmus_path = MyFilename.concat [lit_dir; first_litmus_test] in
         ignore (Sys.command (sprintf "cat %s" first_litmus_path));
-        if running_osx () then
+        if get_os () == MacOS then
           let first_png = Array.get (Sys.readdir png_dir) 0 in
           let first_png_path = MyFilename.concat [png_dir; first_png] in
           ignore (Sys.command (sprintf "open %s" first_png_path))
       end
     else
-      if running_osx () then
+      if get_os () == MacOS then
         ignore (Sys.command (sprintf "open %s" png_dir));
 
   (* 13. Compare against expected number of solutions. *)
