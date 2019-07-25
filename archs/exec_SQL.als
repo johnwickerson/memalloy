@@ -54,6 +54,11 @@ sig Exec_SQL extends Exec {
   is_acyclic[rf + sb]
 }
 
+/** Relate every event to the first event in its transaction */
+fun transaction_begin[X:Exec_SQL] : E->E {
+  ~(X.sb) :> (X.EV - X.sb[X.EV])
+}
+
 fun commit_of[X:Exec_SQL] : E->E {
   X.sb :> X.C
 }
