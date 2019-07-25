@@ -16,6 +16,9 @@ sig Exec_SQL extends Exec {
   no cd
   no dd
 
+  // No atomics
+  no atom
+
   // Commits are fences
   /* TODO modify memalloy so that it allows commits even if they are not in R, W or F */
   C = F
