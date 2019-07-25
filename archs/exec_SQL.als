@@ -4,6 +4,7 @@ open exec[E]
 sig Exec_SQL extends Exec {
   C : set E,        // Commit events
 
+  ru : set E,       // Events in read-uncommitted transactions
   rc : set E,       // Events in read-committed transactions
   rr : set E,       // Events in repeatable-read transactions
   sz : set E,       // Events in serializable transactions
@@ -26,12 +27,13 @@ sig Exec_SQL extends Exec {
   (R + W + C) = EV
 
   // Events can be in only one isolation level
-  disj[rc, rr, sz]
+  disj[ru, rc, rr, sz]
 
   // All events are in some isolation level
-  EV in (rc + rr + sz)
+  EV in (ru + rc + rr + sz)
 
   // Events in the same thread (transaction) are in the same isolation level
+  ru.sthd in ru
   rc.sthd in rc
   rr.sthd in rr
   sz.sthd in sz
@@ -51,12 +53,17 @@ fun commit_of[X:Exec_SQL] : E->E {
 }
 
 one sig rm_C extends PTag {}
+one sig rm_ru extends PTag {}
 one sig rm_rc extends PTag {}
 one sig rm_rr extends PTag {}
 one sig rm_sz extends PTag {}
 
 fun C[e:PTag->E, X:Exec_SQL] : set E {
   X.C - e[rm_EV] - e[rm_C]
+}
+
+fun ru[e:PTag->E, X:Exec_SQL] : set E {
+  X.ru - e[rm_EV] - e[rm_ru]
 }
 
 fun rc[e:PTag->E, X:Exec_SQL] : set E {
