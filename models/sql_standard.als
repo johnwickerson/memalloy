@@ -41,7 +41,7 @@ fun hb[e:PTag->E, X:Exec_SQL] : E->E {
 }
 
 pred Causality [e:PTag->E, X:Exec_SQL] {
-  is_acyclic[(hb[e,X]) + (po[e,X]) + (rf[e,X])]
+  is_acyclic[(hb[e,X]) + (po[e,X]) + (rf[e,X]) + (fr[e, X])]
 }
 
 pred consistent[e:PTag->E, X:Exec_SQL] {
