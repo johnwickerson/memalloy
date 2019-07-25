@@ -49,6 +49,9 @@ sig Exec_SQL extends Exec {
 
   // sstmt is an equivalence relation on EV
   is_equivalence[sstmt, EV - IW]
+
+  // Intra-thread read causality
+  is_acyclic[rf + sb]
 }
 
 fun commit_of[X:Exec_SQL] : E->E {
