@@ -126,6 +126,7 @@ let fence_sets = function
   | Power -> ["SYNC"; "LWSYNC"; "ISYNC"]
   | Arm7 | Arm8 -> ["DMB"; "DMBST"; "DMBLD"; "ISB"]
   | PTX -> ["MEMBAR_CTA"; "MEMBAR_GL"; "MEMBAR_SYS"]
+  | SQL -> ["C"]
   | _ -> []
 
 (** Pre-defined fence relations for given architecture *)
