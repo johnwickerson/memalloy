@@ -8,8 +8,6 @@ sig Exec_SQL extends Exec {
   rc : set E,       // Events in read-committed transactions
   rr : set E,       // Events in repeatable-read transactions
   sz : set E,       // Events in serializable transactions
-
-  sstmt : E->E,     // Same statement
 } {
   // No dependencies
   no ad
@@ -43,12 +41,6 @@ sig Exec_SQL extends Exec {
 
    // last event == commit
   all e : E | no e.sb iff e in C
-
-  // Only events in the same thread can come from the same statement
-  sstmt in sthd
-
-  // sstmt is an equivalence relation on EV
-  is_equivalence[sstmt, EV - IW]
 
   // Intra-thread read causality
   is_acyclic[rf + sb]

@@ -168,7 +168,7 @@ let rec arch_rels = function
              ["scta"; "sgl"; "membar_cta"; "membar_gl"; "membar_sys"]
   | OpenCL -> arch_rels C @ ["swg"; "sdv"; "sbar"]
   | OCaml -> arch_rels Basic
-  | SQL -> arch_rels Basic @ ["sstmt"]
+  | SQL -> arch_rels Basic
 
 (** Sets that should be reduced *)
 let arch_min_sets fences_as_relations arch =
