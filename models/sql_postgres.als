@@ -48,3 +48,6 @@ pred Causality [e:PTag->E, X:Exec_SQL] {
 pred consistent[e:PTag->E, X:Exec_SQL] {
   Causality[e, X]
 }
+
+pred dead[e:PTag->E, X:Exec_SQL] {}
+
