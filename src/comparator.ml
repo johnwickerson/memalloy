@@ -224,7 +224,7 @@ let main () =
        if Filename.check_suffix model ".cat" then
          ignore (Cat2als.als_of_file false model)
        else if Filename.check_suffix model ".als" then
-         ()
+         ignore (Cat2als.als_of_als_imports model)
        else
          failwith "ERROR: Unrecognised model type '%s'.\n" model
      in
