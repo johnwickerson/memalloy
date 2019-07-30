@@ -13,7 +13,7 @@ open basic[E]
  * The commit must happen before T2.
  */
 fun dirty_read_hb[e:PTag->E, X:Exec_SQL] : E->E {
-  let write_rf_to_rc = (rf[e, X] - sthd[e, X]) :> rc[e, X]
+  let write_rf_to_rc = (rf[e, X] - sthd[e, X]) :> (rc[e, X] + rr[e, X] + sz[e, X])
     , commit_before_rc_read = ~(commit_of[X]) . write_rf_to_rc
   | commit_before_rc_read
 }
