@@ -1,4 +1,4 @@
-module sql_standard[E]
+module sql_standard_base[E]
 
 open ../archs/exec_SQL[E]
 open basic[E]
@@ -25,7 +25,7 @@ fun dirty_read_hb[e:PTag->E, X:Exec_SQL] : E->E {
  *
  * So we disallow this pattern
  */
-pred No_illegal_non_repeatable_read[e:PTag->E, X:Exec_SQL] {
+pred no_illegal_non_repeatable_read[e:PTag->E, X:Exec_SQL] {
   // Only allow events in the same transaction to observe up to one event in
   // another transaction. I.e. don't allow them to read different values without a
   // corresponding write in their own transaction
@@ -35,19 +35,19 @@ pred No_illegal_non_repeatable_read[e:PTag->E, X:Exec_SQL] {
   implies lone e1.(~(rf[e, X])) + e2.(~(rf[e, X])) - (e1 + e2).(sthd[e, X])
 }
 
-fun hb[e:PTag->E, X:Exec_SQL] : E->E {
+fun base_hb[e:PTag->E, X:Exec_SQL] : E->E {
   // sb => hb (no reordering events in a transaction)
   sb[e, X] +
   dirty_read_hb[e, X]
 }
 
-pred Causality [e:PTag->E, X:Exec_SQL] {
-  is_acyclic[(hb[e,X]) + (po[e,X]) + (rf[e,X]) + (fr[e, X])]
+pred base_causality [e:PTag->E, X:Exec_SQL] {
+  is_acyclic[(base_hb[e,X]) + (po[e,X]) + (rf[e,X]) + (fr[e, X])]
 }
 
-pred consistent[e:PTag->E, X:Exec_SQL] {
-  No_illegal_non_repeatable_read[e, X]
-  Causality[e, X]
+pred base_consistent[e:PTag->E, X:Exec_SQL] {
+  no_illegal_non_repeatable_read[e, X]
+  base_causality[e, X]
 }
 
-pred dead[e:PTag->E, X:Exec_SQL] {}
+pred base_dead[e:PTag->E, X:Exec_SQL] {}
