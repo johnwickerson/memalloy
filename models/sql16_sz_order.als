@@ -1,7 +1,12 @@
-module sql_standard_sep_sz[E]
+module sql16_sep_sz[E]
+
+/**
+ * Interpret the standard as requiring a total order on serializable
+ * transactions
+ */
 
 open ../archs/exec_SQL[E]
-open sql_standard_base[E]
+open sql16_base[E]
 open basic[E]
 
 fun serializable_hb[e:PTag->E, X:Exec_SQL] : E->E {

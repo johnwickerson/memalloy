@@ -1,4 +1,4 @@
-module sql_standard_base[E]
+module sql16_base[E]
 
 open ../archs/exec_SQL[E]
 open basic[E]
