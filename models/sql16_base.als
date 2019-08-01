@@ -29,7 +29,7 @@ pred no_illegal_non_repeatable_read[e:PTag->E, X:Exec_SQL] {
   // Only allow events in the same transaction to observe up to one event in
   // another transaction. I.e. don't allow them to read different values without a
   // corresponding write in their own transaction
-  let target_events = rr[e, X] + sz[e, X]
+  let target_events = (rr[e, X] + sz[e, X]) & R[e, X]
   | all e1, e2 : target_events
   | e1->e2 in (sthd[e, X] & sloc[e, X])
   // Either they read from the same event outside the transaction (or no event)
