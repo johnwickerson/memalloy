@@ -32,7 +32,11 @@ pred no_illegal_non_repeatable_read[e:PTag->E, X:Exec_SQL] {
   let target_events = rr[e, X] + sz[e, X]
   | all e1, e2 : target_events
   | e1->e2 in (sthd[e, X] & sloc[e, X])
-  implies lone e1.(~(rf[e, X])) + e2.(~(rf[e, X])) - (e1 + e2).(sthd[e, X])
+  // Either they read from the same event outside the transaction (or no event)
+  implies e1.(~(rf[e, X])) = e2.(~(rf[e, X]))
+  // or one of them reads from an in-transaction event
+    or one e1.(~(rf[e, X])) & e1.(~(sb[e, X]))
+    or one e2.(~(rf[e, X])) & e2.(~(sb[e, X]))
 }
 
 fun base_hb[e:PTag->E, X:Exec_SQL] : E->E {
