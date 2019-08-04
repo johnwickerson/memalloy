@@ -30,6 +30,12 @@ fun repeatable_read_hb[e:PTag->E, X:Exec_SQL] : E->E {
     ~(X.commit_of) . (rf[e, X] - sthd[e, X]) . (X.transaction_begin) :> (X.rr+X.sz)
 }
 
+fun serializability_order[e:PTag->E, X:Exec_SQL] : E -> E {
+  sz[e, X] <:
+  (sthd[e, X]) . (rf[e, X] + fr[e, X] - sthd[e, X]) . (sthd[e, X])
+  :> sz[e, X]
+}
+
 fun hb[e:PTag->E, X:Exec_SQL] : E->E {
   sb[e, X] +
   read_commited_hb[e, X] +
@@ -42,6 +48,7 @@ pred Causality [e:PTag->E, X:Exec_SQL] {
 
 pred consistent[e:PTag->E, X:Exec_SQL] {
   Causality[e, X]
+  is_acyclic[serializability_order[e, X]]
 }
 
 pred dead[e:PTag->E, X:Exec_SQL] {}
