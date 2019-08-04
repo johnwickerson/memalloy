@@ -1,4 +1,4 @@
-module sql16_sep_sz[E]
+module sql16_sql16_sz_order[E]
 
 /**
  * Interpret the standard as requiring a total order on serializable
