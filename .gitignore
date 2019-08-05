@@ -1,2 +1,12 @@
 results
 src/_build
+
+## Build artifacts
+cat2als
+comparator
+doc
+gen
+mk_hash
+pp_comparator
+runtests
+weaken
