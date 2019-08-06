@@ -150,7 +150,7 @@ let arch_sets fences_as_relations arch =
     | PTX -> arch_sets Basic_HW
     | OpenCL -> arch_sets C @ ["L"; "G"; "FGA"; "REM"; "WG"; "DV"; "SY"]
     | OCaml -> arch_sets Basic @ ["A"]
-    | SQL -> arch_sets Basic @ ["rc"; "rr"; "sz"]
+    | SQL -> arch_sets Basic @ ["RC"; "RR"; "SER"]
   in
   let fences = if fences_as_relations then [] else fence_sets arch in
   fences @ arch_sets arch

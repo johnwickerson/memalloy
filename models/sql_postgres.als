@@ -27,13 +27,13 @@ fun read_commited_hb[e:PTag->E, X:Exec_SQL] : E->E {
  * the beginning of another one that reads from it
  */
 fun repeatable_read_hb[e:PTag->E, X:Exec_SQL] : E->E {
-    ~(X.commit_of) . (rf[e, X] - sthd[e, X]) . (X.transaction_begin) :> (X.rr+X.sz)
+    ~(X.commit_of) . (rf[e, X] - sthd[e, X]) . (X.transaction_begin) :> (X.RR+X.SER)
 }
 
 fun serializability_order[e:PTag->E, X:Exec_SQL] : E -> E {
-  sz[e, X] <:
+  SER[e, X] <:
   (sthd[e, X]) . (rf[e, X] + fr[e, X] - sthd[e, X]) . (sthd[e, X])
-  :> sz[e, X]
+  :> SER[e, X]
 }
 
 fun hb[e:PTag->E, X:Exec_SQL] : E->E {

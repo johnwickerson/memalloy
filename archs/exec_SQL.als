@@ -4,10 +4,10 @@ open exec[E]
 sig Exec_SQL extends Exec {
   C : set E,        // Commit events
 
-  ru : set E,       // Events in read-uncommitted transactions
-  rc : set E,       // Events in read-committed transactions
-  rr : set E,       // Events in repeatable-read transactions
-  sz : set E,       // Events in serializable transactions
+  RU : set E,       // Events in read-uncommitted transactions
+  RC : set E,       // Events in read-committed transactions
+  RR : set E,       // Events in repeatable-read transactions
+  SER : set E,       // Events in serializable transactions
 } {
   // No dependencies
   no ad
@@ -28,16 +28,16 @@ sig Exec_SQL extends Exec {
   (R + W + C) = EV
 
   // Events can be in only one isolation level
-  disj[ru, rc, rr, sz]
+  disj[RU, RC, RR, SER]
 
   // All events are in some isolation level
-  EV in (ru + rc + rr + sz)
+  EV in (RU + RC + RR + SER)
 
   // Events in the same thread (transaction) are in the same isolation level
-  ru.sthd in ru
-  rc.sthd in rc
-  rr.sthd in rr
-  sz.sthd in sz
+  RU.sthd in RU
+  RC.sthd in RC
+  RR.sthd in RR
+  SER.sthd in SER
 
    // last event == commit
   all e : E | no e.sb iff e in C
@@ -56,27 +56,27 @@ fun commit_of[X:Exec_SQL] : E->E {
 }
 
 one sig rm_C extends PTag {}
-one sig rm_ru extends PTag {}
-one sig rm_rc extends PTag {}
-one sig rm_rr extends PTag {}
-one sig rm_sz extends PTag {}
+one sig rm_RU extends PTag {}
+one sig rm_RC extends PTag {}
+one sig rm_RR extends PTag {}
+one sig rm_SER extends PTag {}
 
 fun C[e:PTag->E, X:Exec_SQL] : set E {
   X.C - e[rm_EV] - e[rm_C]
 }
 
-fun ru[e:PTag->E, X:Exec_SQL] : set E {
-  X.ru - e[rm_EV] - e[rm_ru]
+fun RU[e:PTag->E, X:Exec_SQL] : set E {
+  X.RU - e[rm_EV] - e[rm_RU]
 }
 
-fun rc[e:PTag->E, X:Exec_SQL] : set E {
-  X.rc - e[rm_EV] - e[rm_rc]
+fun RC[e:PTag->E, X:Exec_SQL] : set E {
+  X.RC - e[rm_EV] - e[rm_RC]
 }
 
-fun rr[e:PTag->E, X:Exec_SQL] : set E {
-  X.rr - e[rm_EV] - e[rm_rr]
+fun RR[e:PTag->E, X:Exec_SQL] : set E {
+  X.RR - e[rm_EV] - e[rm_RR]
 }
 
-fun sz[e:PTag->E, X:Exec_SQL] : set E {
-  X.sz - e[rm_EV] - e[rm_sz]
+fun SER[e:PTag->E, X:Exec_SQL] : set E {
+  X.SER - e[rm_EV] - e[rm_SER]
 }

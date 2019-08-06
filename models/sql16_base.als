@@ -13,7 +13,7 @@ open basic[E]
  * The commit must happen before T2.
  */
 fun dirty_read_hb[e:PTag->E, X:Exec_SQL] : E->E {
-  let write_rf_to_rc = (rf[e, X] - sthd[e, X]) :> (rc[e, X] + rr[e, X] + sz[e, X])
+  let write_rf_to_rc = (rf[e, X] - sthd[e, X]) :> (RC[e, X] + RR[e, X] + SER[e, X])
     , commit_before_rc_read = ~(commit_of[X]) . write_rf_to_rc
   | commit_before_rc_read
 }
@@ -29,7 +29,7 @@ pred no_illegal_non_repeatable_read[e:PTag->E, X:Exec_SQL] {
   // Only allow events in the same transaction to observe up to one event in
   // another transaction. I.e. don't allow them to read different values without a
   // corresponding write in their own transaction
-  let target_events = (rr[e, X] + sz[e, X]) & R[e, X]
+  let target_events = (RR[e, X] + SER[e, X]) & R[e, X]
   | all e1, e2 : target_events
   | e1->e2 in (sthd[e, X] & sloc[e, X])
   // Either they read from the same event outside the transaction (or no event)
