@@ -83,18 +83,32 @@ let pp_instr oc = function
   | Litmus.Cas _, _ ->
     failwith "Unexpected Cas instruction in SQL litmus test"
 
-let pp oc lt =
-  fprintf oc "Locations: %a.\n\n"
-    (MyList.pp_gen ", " MyLocation.pp) lt.Litmus.locs;
-  let pp_transaction tid cs =
-    let transaction_isolation_level = pp_isolation_level (isolation_level_of_transaction cs) in
-    fprintf oc "-- Transaction %d\n" tid;
-    fprintf oc "BEGIN TRANSACTION\n";
-    fprintf oc "SET ISOLATION LEVEL %s\n" transaction_isolation_level;
-    MyList.pp_gen ";\n" (Litmus.pp_component pp_instr) oc cs;
-    fprintf oc ";\n\n"
+let pp_transaction oc tid cs =
+  let transaction_isolation_level = pp_isolation_level (isolation_level_of_transaction cs) in
+  fprintf oc "-- Transaction %d\n" tid;
+  fprintf oc "BEGIN TRANSACTION\n";
+  fprintf oc "SET ISOLATION LEVEL %s\n" transaction_isolation_level;
+  MyList.pp_gen ";\n" (Litmus.pp_component pp_instr) oc cs;
+  fprintf oc ";\n\n"
+
+let pp_location_table oc locs =
+  fprintf oc "-- Table definition\n";
+  fprintf oc "CREATE TABLE table (\n";
+  fprintf oc "    loc varchar(5) PRIMARY KEY,\n";
+  fprintf oc "    val integer NOT NULL\n";
+  fprintf oc ")\n";
+
+  (* Insert initial rows *)
+  let pp_insert_row loc =
+    fprintf oc "INSERT INTO table VALUES (\"%a\", 0);\n"
+      MyLocation.pp loc
   in
-  List.iteri pp_transaction lt.Litmus.thds;
+  List.iter pp_insert_row locs;
+  fprintf oc "\n\n"
+
+let pp oc lt =
+  pp_location_table oc lt.Litmus.locs;
+  List.iteri (pp_transaction oc) lt.Litmus.thds;
   fprintf oc "Final: ";
   let pp_cnstrnt oc (a,v) = fprintf oc "%a==%d" Litmus.pp_addr a v in
   MyList.pp_gen " && " pp_cnstrnt oc lt.post
