@@ -27,13 +27,13 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
 open! Format
 open! General_purpose
-       
+
 type output_type = Dot | Als | Lit | C
 
 let als_sub = ref false
 let als_super = ref false
 let als_name = ref "hint"
-             
+
 let get_args () =
   let xml_path : string list ref = ref [] in
   let out_path : string list ref = ref [] in
@@ -44,28 +44,28 @@ let get_args () =
   let arch = ref None in
   let speclist =
     ["-Tdot", Arg.Set output_dot, "Produce .dot output";
-     
+
      "-Tals", Arg.Set output_als, "Produce .als constraints";
-     
+
      "-Tlit", Arg.Set output_lit, "Produce litmus test";
 
      "-Tc", Arg.Set output_c, "Produce executable C test";
 
      "-arch", Arg.String (set_option_ref arch),
      "Optional: execution type";
-     
+
      "-o", Arg.String (set_list_ref out_path),
      "Output file (mandatory)";
-     
+
      "-sub", Arg.Set als_sub,
      "Constrain as sub-execution (-Tals mode only)";
-     
+
      "-super", Arg.Set als_super,
      "Constrain as super-execution (-Tals mode only)";
-     
+
      "-name", Arg.Set_string als_name,
      "Name of als predicate (-Tals mode only)";
-     
+
     ]
   in
   let usage_msg = "Processing executions and generating litmus \
@@ -101,84 +101,84 @@ let run xml_path out_path out_type arch =
   begin
     match out_type with
     | Dot ->
-       assert (Filename.check_suffix out_path ".dot");
-       begin
-	 match exec with
-	 | Soln.Single x ->
-	    let g = Mk_graphviz.dot_of_execution x in
-	    fprintf fmtr "%a\n" Graphviz.pp_graph g
-	 | Soln.Double (x,y,pi) ->
-	    let g = Mk_graphviz.dot_of_execution_pair x y pi in
-	    fprintf fmtr "%a\n" Graphviz.pp_graph g
-       end
+      assert (Filename.check_suffix out_path ".dot");
+      begin
+        match exec with
+        | Soln.Single x ->
+          let g = Mk_graphviz.dot_of_execution x in
+          fprintf fmtr "%a\n" Graphviz.pp_graph g
+        | Soln.Double (x,y,pi) ->
+          let g = Mk_graphviz.dot_of_execution_pair x y pi in
+          fprintf fmtr "%a\n" Graphviz.pp_graph g
+      end
     | Als ->
-       assert (Filename.check_suffix out_path ".als");
-       begin
-         let converter = match !als_sub, !als_super with
-           | false, false -> Alsbackend.als_of_execution
-           | true, false -> Alsbackend.als_of_execution_strictsub
-           | false, true -> Alsbackend.als_of_execution_notsuper
-           | true, true -> assert false
-         in
-	 match exec with
-	 | Soln.Single x ->
-	    fprintf fmtr "%a\n" (converter !als_name) x
-	 | Soln.Double (x,y,pi) ->
-	    fprintf fmtr "%a\n" (converter !als_name) x;
-	    fprintf fmtr "%a\n" (converter !als_name) y;
-	    fprintf fmtr "%a\n" Alsbackend.als_of_rel ("pi", pi)
-       end
+      assert (Filename.check_suffix out_path ".als");
+      begin
+        let converter = match !als_sub, !als_super with
+          | false, false -> Alsbackend.als_of_execution
+          | true, false -> Alsbackend.als_of_execution_strictsub
+          | false, true -> Alsbackend.als_of_execution_notsuper
+          | true, true -> assert false
+        in
+        match exec with
+        | Soln.Single x ->
+          fprintf fmtr "%a\n" (converter !als_name) x
+        | Soln.Double (x,y,pi) ->
+          fprintf fmtr "%a\n" (converter !als_name) x;
+          fprintf fmtr "%a\n" (converter !als_name) y;
+          fprintf fmtr "%a\n" Alsbackend.als_of_rel ("pi", pi)
+      end
     | Lit ->
-       assert (Filename.check_suffix out_path ".litmus");
-       let name =
-         Filename.chop_extension (Filename.basename out_path)
-       in
-       begin
-	 match exec with
-	 | Soln.Single x ->
-	    let lt = Mk_litmus.litmus_of_execution x in
-	    (match arch with
-	     | Archs.Arm8 ->
-		let arm8_lt = Mk_arm8.arm8_of_lit name lt in
-		fprintf fmtr "%a\n" Mk_arm8.pp arm8_lt
-             | Archs.Power ->
-		let ppc_lt = Mk_ppc.ppc_of_lit name lt in
-		fprintf fmtr "%a\n" Mk_ppc.pp ppc_lt
-             | Archs.X86 ->
-		let x86_lt = Mk_x86.x86_of_lit name lt in
-		fprintf fmtr "%a\n" Mk_x86.pp x86_lt
-             | Archs.C ->
-                fprintf fmtr "%a\n" (Litmus_C.pp name LitmusC) lt
-	     | _ -> fprintf fmtr "%a\n" Litmus.pp lt)
-	 | Soln.Double (x,y,pi) ->
-	    let lt_src,lt =
-	      Mk_litmus.litmus_of_execution_pair x y pi
-	    in
-	    fprintf fmtr "%a\n" Litmus.pp lt_src;
-	    fprintf fmtr "\n";
-	    (match arch with
-	     | Archs.Arm8 ->
-		let arm8_lt = Mk_arm8.arm8_of_lit name lt in
-		fprintf fmtr "%a\n" Mk_arm8.pp arm8_lt
-	     | Archs.Power ->
-		let ppc_lt = Mk_ppc.ppc_of_lit name lt in
-		fprintf fmtr "%a\n" Mk_ppc.pp ppc_lt
-	     | _ -> fprintf fmtr "%a\n" Litmus.pp lt)
-       end
+      assert (Filename.check_suffix out_path ".litmus");
+      let name =
+        Filename.chop_extension (Filename.basename out_path)
+      in
+      begin
+        match exec with
+        | Soln.Single x ->
+          let lt = Mk_litmus.litmus_of_execution x in
+          (match arch with
+           | Archs.Arm8 ->
+             let arm8_lt = Mk_arm8.arm8_of_lit name lt in
+             fprintf fmtr "%a\n" Mk_arm8.pp arm8_lt
+           | Archs.Power ->
+             let ppc_lt = Mk_ppc.ppc_of_lit name lt in
+             fprintf fmtr "%a\n" Mk_ppc.pp ppc_lt
+           | Archs.X86 ->
+             let x86_lt = Mk_x86.x86_of_lit name lt in
+             fprintf fmtr "%a\n" Mk_x86.pp x86_lt
+           | Archs.C ->
+             fprintf fmtr "%a\n" (Litmus_C.pp name LitmusC) lt
+           | _ -> fprintf fmtr "%a\n" Litmus.pp lt)
+        | Soln.Double (x,y,pi) ->
+          let lt_src,lt =
+            Mk_litmus.litmus_of_execution_pair x y pi
+          in
+          fprintf fmtr "%a\n" Litmus.pp lt_src;
+          fprintf fmtr "\n";
+          (match arch with
+           | Archs.Arm8 ->
+             let arm8_lt = Mk_arm8.arm8_of_lit name lt in
+             fprintf fmtr "%a\n" Mk_arm8.pp arm8_lt
+           | Archs.Power ->
+             let ppc_lt = Mk_ppc.ppc_of_lit name lt in
+             fprintf fmtr "%a\n" Mk_ppc.pp ppc_lt
+           | _ -> fprintf fmtr "%a\n" Litmus.pp lt)
+      end
     | C ->
-       assert (Filename.check_suffix out_path ".c");
-       let name =
-         Filename.chop_extension (Filename.basename out_path)
-       in
-       begin
-         (* TODO: share this with the Lit stage? *)
-	 match exec with
-	 | Soln.Single x
-           | Soln.Double (x, _, _) ->
-            (* TODO: the double-execution case isn't quite right. *)
-	    let lt = Mk_litmus.litmus_of_execution x in
-            fprintf fmtr "%a\n" (Litmus_C.pp name ExecutableC11) lt
-       end
+      assert (Filename.check_suffix out_path ".c");
+      let name =
+        Filename.chop_extension (Filename.basename out_path)
+      in
+      begin
+        (* TODO: share this with the Lit stage? *)
+        match exec with
+        | Soln.Single x
+        | Soln.Double (x, _, _) ->
+          (* TODO: the double-execution case isn't quite right. *)
+          let lt = Mk_litmus.litmus_of_execution x in
+          fprintf fmtr "%a\n" (Litmus_C.pp name ExecutableC11) lt
+      end
   end;
   close_out oc
 
