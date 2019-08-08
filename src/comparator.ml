@@ -54,6 +54,7 @@ let run_alloy alloystar_dir xml_dir comparator_script iter solver quiet =
   let cmd =
     String.concat " "
       [sprintf "PATH=%s/%s:$PATH" alloystar_dir os;
+       "timeout 2h";
        "java";
        "-Xmx" ^ java_heap_size;
        "-Djava.library.path=" ^ solver_dir;
@@ -71,7 +72,12 @@ let run_alloy alloystar_dir xml_dir comparator_script iter solver quiet =
   Sys.catch_break true;
   begin try
     let status = Unix.system cmd in
-    if status <> Unix.WEXITED 0 then failwith "Alloy was unsuccessful."
+    match status with
+    | Unix.WEXITED 0 -> () (* exited normally *)
+    | Unix.WEXITED 124 -> printf "\nWARNING: Alloy timed out.\n"
+    | Unix.WEXITED n -> failwith "Alloy failed with code %d." n
+    | Unix.WSIGNALED n -> failwith "Alloy was killed with signal %d." n
+    | Unix.WSTOPPED n -> failwith "Alloy was stopped with signal %d." n
   with Sys.Break ->
     printf "\nWARNING: Alloy was interrupted.\n"
   end;
