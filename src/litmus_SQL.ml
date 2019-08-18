@@ -56,19 +56,23 @@ let isolation_level_of_transaction = function
   | [] ->
     failwith "Unexpected empty transaction in SQL litmus test"
 
-let pp_reg oc (tid,reg) = fprintf oc "t%dr%d" tid reg
+let pp_reg oc (t, n) = fprintf oc "t%dr%d" t n
+
+let pp_addr oc = function
+  | Litmus.Reg r -> pp_reg oc r
+  | Litmus.Loc l -> MyLocation.pp oc l
 
 let pp_instr oc = function
-  | Litmus.Load ((_, reg),Just loc), _ ->
-    fprintf oc "SELECT val AS r%d FROM table WHERE loc=\"%a\""
-      reg
+  | Litmus.Load (reg, Just loc), _ ->
+    fprintf oc "SELECT val AS %a FROM tbl WHERE loc='%a'"
+      pp_reg reg
       MyLocation.pp loc
   | Litmus.Store (Just loc, Just value), _ ->
-    fprintf oc "UPDATE table SET val=%d WHERE loc=\"%a\""
+    fprintf oc "UPDATE tbl SET val=%d WHERE loc='%a'"
       value
       MyLocation.pp loc
   | Litmus.Fence, attrs -> if List.mem "C" attrs
-    then fprintf oc "COMMIT TRANSACTION"
+    then fprintf oc "COMMIT TRANSACTION;"
     else failwith "Non-commit fence in SQL litmus test"
   | Litmus.Store (Just _, _), _ ->
     failwith "Unexpected location expression in SQL litmus test"
@@ -86,21 +90,21 @@ let pp_instr oc = function
 let pp_transaction oc tid cs =
   let transaction_isolation_level = pp_isolation_level (isolation_level_of_transaction cs) in
   fprintf oc "-- Transaction %d\n" tid;
-  fprintf oc "BEGIN TRANSACTION\n";
-  fprintf oc "SET ISOLATION LEVEL %s\n" transaction_isolation_level;
+  fprintf oc "BEGIN TRANSACTION;\n";
+  fprintf oc "SET TRANSACTION ISOLATION LEVEL %s;\n" transaction_isolation_level;
   MyList.pp_gen ";\n" (Litmus.pp_component pp_instr) oc cs;
-  fprintf oc ";\n\n"
+  fprintf oc "\n\n"
 
 let pp_location_table oc locs =
   fprintf oc "-- Table definition\n";
-  fprintf oc "CREATE TABLE table (\n";
+  fprintf oc "CREATE TEMP TABLE tbl (\n";
   fprintf oc "    loc varchar(5) PRIMARY KEY,\n";
   fprintf oc "    val integer NOT NULL\n";
-  fprintf oc ")\n";
+  fprintf oc ");\n";
 
   (* Insert initial rows *)
   let pp_insert_row loc =
-    fprintf oc "INSERT INTO table VALUES (\"%a\", 0);\n"
+    fprintf oc "INSERT INTO tbl VALUES ('%a', 0);\n"
       MyLocation.pp loc
   in
   List.iter pp_insert_row locs;
@@ -110,5 +114,5 @@ let pp oc lt =
   pp_location_table oc lt.Litmus.locs;
   List.iteri (pp_transaction oc) lt.Litmus.thds;
   fprintf oc "Final: ";
-  let pp_cnstrnt oc (a,v) = fprintf oc "%a==%d" Litmus.pp_addr a v in
+  let pp_cnstrnt oc (a,v) = fprintf oc "%a==%d" pp_addr a v in
   MyList.pp_gen " && " pp_cnstrnt oc lt.post
