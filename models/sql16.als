@@ -42,9 +42,18 @@ pred no_illegal_non_repeatable_read[e:PTag->E, X:Exec_SQL] {
     or one e2.(~(rf[e, X])) & e2.(~(sb[e, X]))
 }
 
-pred base_consistent[e:PTag->E, X:Exec_SQL] {
-  no_illegal_non_repeatable_read[e, X]
-  no_illegal_dirty_read[e, X]
+pred consistent_serializability[e:PTag->E, X:Exec_SQL] {
+  let serializability_order =
+      SER[e, X] <:
+      (sthd[e, X]) . (rf[e, X] + fr[e, X] - sthd[e, X]) . (sthd[e, X])
+      :> SER[e, X]
+    | is_acyclic[serializability_order]
 }
 
-pred base_dead[e:PTag->E, X:Exec_SQL] {}
+pred consistent[e:PTag->E, X:Exec_SQL] {
+  no_illegal_non_repeatable_read[e, X]
+  no_illegal_dirty_read[e, X]
+  consistent_serializability[e, X]
+}
+
+pred dead[e:PTag->E, X:Exec_SQL] {}
