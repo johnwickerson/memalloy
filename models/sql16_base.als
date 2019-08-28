@@ -10,12 +10,15 @@ open basic[E]
  * will have read a row that was never committed and that may thus be considered to
  * have never existed.
  *
- * The commit must happen before T2.
+ * If a read reads from a write, it can't have missed any other writes in that transaction
  */
-fun dirty_read_hb[e:PTag->E, X:Exec_SQL] : E->E {
-  let write_rf_to_rc = (rf[e, X] - sthd[e, X]) :> (RC[e, X] + RR[e, X] + SER[e, X])
-    , commit_before_rc_read = ~(commit_of[X]) . write_rf_to_rc
-  | commit_before_rc_read
+pred no_illegal_dirty_read[e:PTag->E, X:Exec_SQL] {
+  all W, R: EV[e, X] {
+    W->R not in sthd[e, X]
+    and W->R in rf[e, X]
+    and R in (RC[e, X] + RR[e, X] + SER[e, X]) implies
+        no R.(fr[e, X]) & W.(sthd[e, X])
+  }
 }
 
 /*
@@ -39,19 +42,9 @@ pred no_illegal_non_repeatable_read[e:PTag->E, X:Exec_SQL] {
     or one e2.(~(rf[e, X])) & e2.(~(sb[e, X]))
 }
 
-fun base_hb[e:PTag->E, X:Exec_SQL] : E->E {
-  // sb => hb (no reordering events in a transaction)
-  sb[e, X] +
-  dirty_read_hb[e, X]
-}
-
-pred base_causality [e:PTag->E, X:Exec_SQL] {
-  is_acyclic[(base_hb[e,X]) + (po[e,X]) + (rf[e,X]) + (fr[e, X])]
-}
-
 pred base_consistent[e:PTag->E, X:Exec_SQL] {
   no_illegal_non_repeatable_read[e, X]
-  base_causality[e, X]
+  no_illegal_dirty_read[e, X]
 }
 
 pred base_dead[e:PTag->E, X:Exec_SQL] {}
