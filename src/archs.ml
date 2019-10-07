@@ -27,7 +27,7 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
 open! Format
 open! General_purpose
-       
+
 type t =
   | Basic
   | C
@@ -39,6 +39,7 @@ type t =
   | PTX
   | OpenCL
   | OCaml
+  | SQL
 
 (** Defining a hierarchy of architectures *)
 let parent_arch = function
@@ -49,8 +50,9 @@ let parent_arch = function
   | Arm8                     -> Some Arm7
   | OpenCL                   -> Some C
   | OCaml                    -> Some Basic
+  | SQL                      -> Some Basic
 
-(** Convert architecture to Alloy module name *)      
+(** Convert architecture to Alloy module name *)
 let pp_arch fences_as_relations oc arch =
   let module_name = match arch with
     | Basic    -> "exec"
@@ -63,6 +65,7 @@ let pp_arch fences_as_relations oc arch =
     | PTX      -> "exec_ptx"
     | OpenCL   -> "exec_OpenCL"
     | OCaml    -> "exec_OCaml"
+    | SQL      -> "exec_SQL"
   in
   if fences_as_relations then
     fprintf oc "../archs/fences_as_relations/%s" module_name
@@ -81,6 +84,7 @@ let pp_Arch oc = function
   | PTX      -> fprintf oc "Exec_PTX"
   | OpenCL   -> fprintf oc "Exec_OpenCL"
   | OCaml    -> fprintf oc "Exec_OCaml"
+  | SQL      -> fprintf oc "Exec_SQL"
 
 (** Convert Alloy signature name to architecture *)
 let parse_Arch = function
@@ -94,6 +98,7 @@ let parse_Arch = function
   | "Exec_PTX"    -> PTX
   | "Exec_OpenCL" -> OpenCL
   | "Exec_OCaml"  -> OCaml
+  | "Exec_SQL"    -> SQL
   | x -> failwith "Unexpected architecture %s" x
 
 (** Parse architecture name *)
@@ -108,11 +113,12 @@ let parse_arch = function
   | "PTX"    -> PTX
   | "OpenCL" -> OpenCL
   | "OCaml"  -> OCaml
+  | "SQL"    -> SQL
   | x -> failwith "Unexpected architecture %s" x
 
 (** All supported architectures *)
 let all = ["BASIC"; "C"; "HW"; "X86"; "PPC"; "ARM7";
-           "ARM8"; "PTX"; "OpenCL"; "OCaml"]
+           "ARM8"; "PTX"; "OpenCL"; "OCaml"; "SQL"]
 
 (** Pre-defined fence sets for given architecture *)
 let fence_sets = function
@@ -120,6 +126,7 @@ let fence_sets = function
   | Power -> ["SYNC"; "LWSYNC"; "ISYNC"]
   | Arm7 | Arm8 -> ["DMB"; "DMBST"; "DMBLD"; "ISB"]
   | PTX -> ["MEMBAR_CTA"; "MEMBAR_GL"; "MEMBAR_SYS"]
+  | SQL -> ["C"]
   | _ -> []
 
 (** Pre-defined fence relations for given architecture *)
@@ -143,6 +150,7 @@ let arch_sets fences_as_relations arch =
     | PTX -> arch_sets Basic_HW
     | OpenCL -> arch_sets C @ ["L"; "G"; "FGA"; "REM"; "WG"; "DV"; "SY"]
     | OCaml -> arch_sets Basic @ ["A"]
+    | SQL -> arch_sets Basic @ ["RC"; "RR"; "SER"]
   in
   let fences = if fences_as_relations then [] else fence_sets arch in
   fences @ arch_sets arch
@@ -160,6 +168,7 @@ let rec arch_rels = function
              ["scta"; "sgl"; "membar_cta"; "membar_gl"; "membar_sys"]
   | OpenCL -> arch_rels C @ ["swg"; "sdv"; "sbar"]
   | OCaml -> arch_rels Basic
+  | SQL -> arch_rels Basic
 
 (** Sets that should be reduced *)
 let arch_min_sets fences_as_relations arch =
@@ -174,6 +183,8 @@ let arch_min_sets fences_as_relations arch =
     | PTX -> arch_min_sets Basic_HW
     | OpenCL -> arch_min_sets C @ ["WG"; "DV"; "SY"]
     | OCaml -> arch_min_sets Basic @ ["A"]
+    (* TODO Find what sets of SQL events should be reduced *)
+    | SQL -> arch_min_sets SQL
   in
   let fence_min_sets = function
     | Power -> ["SYNC","SYNC"]
@@ -185,9 +196,9 @@ let arch_min_sets fences_as_relations arch =
   fences @ List.map (fun x -> x,x) (arch_min_sets arch)
 
 let is_hw = function
-  | Basic | C | OpenCL | OCaml -> false
+  | Basic | C | OpenCL | OCaml | SQL -> false
   | Basic_HW | X86 | Power | Arm7 | Arm8 | PTX -> true
-  
+
 (** Relations that should be reduced *)
 let arch_min_rels fences_as_relations arch =
   let fences = if fences_as_relations then fence_rels arch else [] in

@@ -68,3 +68,25 @@ let iden x = x
 let opt a k = function None -> a | Some x -> k x
 
 let the = function None -> failwith "Expected Some here" | Some x -> x
+
+(** Read a channel until EOF and return a list of lines *)
+let rec input_lines ic =
+  try
+    let line = input_line ic in
+    line :: input_lines ic
+  with End_of_file ->
+    []
+
+
+
+(**
+   filter_map f l applies f to every element of l, filters out the None
+   elements and returns the list of the arguments of the Some elements.
+   from OCaml 4.08.0
+*)
+let rec filter_map f xs = match xs with
+  | [] -> []
+  | (x::xs') -> match f x with
+    | Some y -> y :: (filter_map f xs')
+    | None -> filter_map f xs'
+

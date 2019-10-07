@@ -61,6 +61,12 @@ let get_args () =
 
   !cat_path, !intermediate_model
 
+(** Set cat_dir to the dir of [cat_path] if it's not set *)
+let update_cat_dir cat_path =
+  (* This should only happen the first time we translate a cat file *)
+  if (!cat_dir = "") then cat_dir := Filename.dirname cat_path;
+  if (!out_dir = "") then out_dir := !cat_dir
+
 (** Parse the given .cat file into an abstract syntax tree *)
 let parse_file cat_path =
   let ic = open_in cat_path in
@@ -297,11 +303,7 @@ let rec als_of_instr withsc arch oc (env, axs) = function
     axiom list obtained at the end of processing the file.
  *)
 and als_of_file interm_model cat_path =
-  (* This should only happen the first time als_of_file is called *)
-  if (!cat_dir = "") then
-    cat_dir := Filename.dirname cat_path;
-  if (!out_dir = "") then
-    out_dir := !cat_dir;
+  update_cat_dir cat_path;
 
   let cat_path = Filename.concat !cat_dir (Filename.basename cat_path) in
 
@@ -329,6 +331,35 @@ and als_of_file interm_model cat_path =
     end;
   close_out oc;
   env,axs
+
+(** Convert any of the imports of an als file that are only in .cat form into .als *)
+let als_of_als_imports als_path =
+  update_cat_dir als_path;
+
+  (* Read *)
+  let ic = open_in als_path in
+  let lines = input_lines ic in
+  close_in ic;
+
+  (* Extract paths *)
+  let import_names = filter_map (MyStr.chop_prefix_opt "open ") lines in
+  let module_names = List.map (MyStr.chop_suffix "[E]") import_names in
+  let relative_module_names = List.map (Filename.concat !cat_dir) module_names in
+  (* Remove files that are already in als form *)
+  let relative_cat_only_module_names = List.filter
+      (fun n -> not (Sys.file_exists (Filename.remove_extension n ^ ".als")))
+      relative_module_names
+  in
+  let to_existing_cat_path path =
+    let cat_path = path ^ ".cat" in
+    if Sys.file_exists cat_path
+    then Some cat_path
+    else None
+  in
+  let relative_cat_paths = filter_map to_existing_cat_path relative_cat_only_module_names in
+
+  (* Convert *)
+  List.map (als_of_file true) relative_cat_paths
 
 let main () =
   let cat_path, interm_model = get_args () in

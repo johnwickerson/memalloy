@@ -60,6 +60,13 @@ let chop_prefix pre s =
     String.sub s pre_len (s_len - pre_len)
   else s
 
+
+(** If [str] starts with [prefix] then return the string without [prefix] otherwise None *)
+let chop_prefix_opt pre s =
+  if startswith s pre
+  then Some (chop_prefix pre s)
+  else None
+
 (** [pad_right n s] returns the string of length [n] formed by adding spaces to the end of [s] (or by trimming the end off [s] if [s] is already longer than [n]). *)
 let pad_right n s =
   let s_length = String.length s in
