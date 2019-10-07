@@ -16,7 +16,7 @@ pred no_illegal_dirty_read[e:PTag->E, X:Exec_SQL] {
   all W, R: EV[e, X] {
     W->R not in sthd[e, X]
     and W->R in rf[e, X]
-    and R in (RC[e, X] + RR[e, X]) implies
+    and R in (RC[e, X] + RR[e, X] + SER[e, X]) implies
         no R.(fr[e, X]) & W.(sthd[e, X])
   }
 }
@@ -32,7 +32,7 @@ pred no_illegal_non_repeatable_read[e:PTag->E, X:Exec_SQL] {
   // Only allow events in the same transaction to observe up to one event in
   // another transaction. I.e. don't allow them to read different values without a
   // corresponding write in their own transaction
-  let target_events = RR[e, X] & R[e, X]
+  let target_events = (RR[e, X] + SER[e, X]) & R[e, X]
   | all e1, e2 : target_events
   | e1->e2 in (sthd[e, X] & sloc[e, X])
   // Either they read from the same event outside the transaction (or no event)
@@ -42,18 +42,9 @@ pred no_illegal_non_repeatable_read[e:PTag->E, X:Exec_SQL] {
     or one e2.(~(rf[e, X])) & e2.(~(sb[e, X]))
 }
 
-pred consistent_serializability[e:PTag->E, X:Exec_SQL] {
-  let serializability_order =
-      SER[e, X] <:
-      (sthd[e, X]) . (rf[e, X] + fr[e, X] - sthd[e, X]) . (sthd[e, X])
-      :> SER[e, X]
-    | is_acyclic[serializability_order]
-}
-
 pred consistent[e:PTag->E, X:Exec_SQL] {
   no_illegal_non_repeatable_read[e, X]
   no_illegal_dirty_read[e, X]
-  consistent_serializability[e, X]
 }
 
 pred dead[e:PTag->E, X:Exec_SQL] {}
