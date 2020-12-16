@@ -63,7 +63,7 @@ type instruction =
   | LoadLink of Register.t * MyLocation.t expr * Value.t * Value.t expr
   | Store of MyLocation.t expr * Value.t expr
   | StoreCnd of MyLocation.t expr * Value.t expr
-  | Cas of MyLocation.t expr * Value.t * Value.t expr
+  | Cas of Register.t option * MyLocation.t expr * Value.t * Value.t expr
   | Fence
 
 (** Simple pretty-printing of attributes (for debugging) *)
@@ -90,10 +90,18 @@ let pp_instr oc = function
      fprintf oc "sc(%a,%a%a)"
 	     (pp_expr MyLocation.pp) le (pp_expr Value.pp) ve
              pp_attrs attrs
-  | Cas (le,v,ve), attrs ->
-     fprintf oc "cas(%a,%a,%a%a)"
+  | Cas (None,le,v,ve), attrs ->
+     fprintf oc "cas(?,%a,%a,%a%a)"
              (pp_expr MyLocation.pp) le Value.pp v (pp_expr Value.pp) ve
              pp_attrs attrs
+  | Cas (Some r,le,v,ve), attrs ->
+     fprintf oc "cas(%a,%a,%a,%a%a)"
+             Register.pp r
+             (pp_expr MyLocation.pp) le
+             Value.pp v
+             (pp_expr Value.pp) ve
+             pp_attrs attrs
+
   | Fence, attrs ->
      fprintf oc "fence(%a)"
 	     (MyList.pp_gen "" (fun oc -> fprintf oc ",%s")) attrs
