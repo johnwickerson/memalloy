@@ -103,10 +103,10 @@ let pp_instr pp_loc oc = function
         to avoid throwing off the indentation. *)
      fprintf oc "// elided store-conditional instruction"
 
-  | Litmus.Cas (obj,exp,des), attrs ->
+  | Litmus.Cas (r,obj,exp,des), attrs ->
      let mo = Litmus_C.get_mo attrs in
      let ms = get_ms attrs in
-     pp_cas pp_loc oc mo ms obj None exp des
+     pp_cas pp_loc oc mo ms obj r exp des
     
   | Litmus.Fence, attrs ->
      let mo = Litmus_C.get_mo attrs in
@@ -140,7 +140,7 @@ let partition_locs_in_instr s (a_locs, na_locs) = function
   | Litmus.LoadLink (_,le,_,_), attrs
   | Litmus.Store (le,_), attrs
   | Litmus.StoreCnd (le,_), attrs
-  | Litmus.Cas (le,_,_), attrs ->
+  | Litmus.Cas (_,le,_,_), attrs ->
      let l = Litmus.expr_base_of le in
      begin match List.mem s attrs with
      | true ->

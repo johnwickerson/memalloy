@@ -57,7 +57,10 @@ let mk_instr x maps reg_map e =
        let rval = List.assoc e maps.Exec.rval_map in
        let wval = List.assoc e maps.Exec.wval_map in
        let wval_expr = Litmus.mk_expr wval d_regs in
-       Litmus.Cas (loc_expr, rval, wval_expr)
+       (* Some CAS events spill their expected value into a register,
+          but this isn't guaranteed. *)
+       let reg = List.assoc_opt e reg_map in
+       Litmus.Cas (reg, loc_expr, rval, wval_expr)
     | true, false, false ->
        let reg = reg_of e in
        let loc = List.assoc e maps.Exec.loc_map in

@@ -146,9 +146,9 @@ let pp_instr dialect oc = function
         a separate StoreCnd instruction.  (We still print _something_,
         to avoid throwing off the indentation. *)
      fprintf oc "// elided store-conditional instruction"
-  | Litmus.Cas (obj,exp,des), attrs ->
+  | Litmus.Cas (r,obj,exp,des), attrs ->
      let mo = get_mo attrs in
-     pp_cas dialect oc mo obj None exp des
+     pp_cas dialect oc mo obj r exp des
 
   | Litmus.Fence, attrs ->
      let mo = get_mo attrs in
@@ -194,7 +194,7 @@ let partition_locs_in_instr s (a_locs, b_locs) = function
   | Litmus.LoadLink (_,le,_,_), attrs
   | Litmus.Store (le,_), attrs
   | Litmus.StoreCnd (le,_), attrs
-  | Litmus.Cas (le,_,_), attrs ->
+  | Litmus.Cas (_,le,_,_), attrs ->
      let l = Litmus.expr_base_of le in
      begin match List.mem s attrs with
      | true ->
@@ -221,13 +221,14 @@ let partition_locs s lt =
     CAS without a destination register.  (If one exists, we need to
     create a temporary variable to store it.) *)
 let rec contains_regless_cas = function
-  | Litmus.Basic (Litmus.Cas (_, _, _), _) -> true
+  | Litmus.Basic (Litmus.Cas (None, _, _, _), _) -> true
   | Litmus.Basic _ -> false
   | Litmus.If (_,_,cs) -> List.exists contains_regless_cas cs
 
 let rec extract_regs regs = function
   | Litmus.Basic (Litmus.Load (r,_), _)
-    | Litmus.Basic (Litmus.LoadLink (r,_,_,_), _) -> MySet.union [r] regs
+    | Litmus.Basic (Litmus.LoadLink (r,_,_,_), _)
+    | Litmus.Basic (Litmus.Cas (Some r,_,_,_), _) -> MySet.union [r] regs
   | Litmus.Basic _ -> regs
   | Litmus.If (r,_,cs) -> MySet.union [r] (List.fold_left extract_regs regs cs)
 
